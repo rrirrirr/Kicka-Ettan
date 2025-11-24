@@ -1,0 +1,75 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.15'
+          otp-version: '26'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get --only prod
+          cd assets && npm install
+
+      - name: Build frontend
+        run: |
+          cd assets
+          npm run build
+          cd ..
+
+      - name: Build release
+        env:
+          MIX_ENV: prod
+        run: |
+          mix compile
+          mix assets.deploy
+          mix release
+
+      - name: Create deployment tarball
+        run: |
+          cd _build/prod/rel/kicka_ettan
+          tar -czf /tmp/kicka_ettan.tar.gz .
+
+      - name: Deploy to Digital Ocean
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "/tmp/kicka_ettan.tar.gz"
+          target: "/tmp/"
+
+      - name: Restart application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl stop kicka_ettan
+            cd /home/deploy/kicka_ettan
+            rm -rf *
+            tar -xzf /tmp/kicka_ettan.tar.gz
+            rm /tmp/kicka_ettan.tar.gz
+            sudo systemctl start kicka_ettan
+            sudo systemctl status kicka_ettan
