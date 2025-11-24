@@ -1,0 +1,22 @@
+[Unit]
+Description=Kicka Ettan - Curling Lead Setup
+After=network.target postgresql.service
+
+[Service]
+Type=forking
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/kicka_ettan
+Environment="PORT=4000"
+Environment="MIX_ENV=prod"
+Environment="SECRET_KEY_BASE=GENERATE_WITH_mix_phx.gen.secret"
+Environment="DATABASE_URL=ecto://postgres:password@localhost/kicka_ettan_prod"
+Environment="PHX_HOST=kicka-ettan.se"
+ExecStart=/home/deploy/kicka_ettan/bin/kicka_ettan start
+ExecStop=/home/deploy/kicka_ettan/bin/kicka_ettan stop
+Restart=on-failure
+RestartSec=5
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

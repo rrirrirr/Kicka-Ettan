@@ -28,11 +28,11 @@ defmodule KickaEttan.Games.GameServer do
   end
 
   @doc """
-  Add a player to the game.
+  Join the game.
   """
-  def add_player(game_id, player_id, color) do
+  def join_game(game_id, player_id, color \\ nil) do
     with {:ok, game_server} <- lookup_game(game_id) do
-      GenServer.call(game_server, {:add_player, player_id, color})
+      GenServer.call(game_server, {:join_game, player_id, color})
     end
   end
 
@@ -86,14 +86,14 @@ defmodule KickaEttan.Games.GameServer do
   end
 
   @impl true
-  def handle_call({:add_player, player_id, color}, _from, game_state) do
-    case GameState.add_player(game_state, player_id, color) do
+  def handle_call({:join_game, player_id, color}, _from, game_state) do
+    case GameState.join_game(game_state, player_id, color) do
       {:ok, new_state} ->
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warn("Failed to add player #{player_id} to game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to join player #{player_id} to game #{game_state.game_id}: #{reason}")
         {:reply, error, game_state}
     end
   end
@@ -106,7 +106,7 @@ defmodule KickaEttan.Games.GameServer do
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warn("Failed to place stone for player #{player_id} in game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to place stone for player #{player_id} in game #{game_state.game_id}: #{reason}")
         {:reply, error, game_state}
     end
   end
@@ -119,7 +119,7 @@ defmodule KickaEttan.Games.GameServer do
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warn("Failed to confirm placement for player #{player_id} in game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to confirm placement for player #{player_id} in game #{game_state.game_id}: #{reason}")
         {:reply, error, game_state}
     end
   end
@@ -132,7 +132,7 @@ defmodule KickaEttan.Games.GameServer do
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warn("Failed to mark player #{player_id} as ready for next round in game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to mark player #{player_id} as ready for next round in game #{game_state.game_id}: #{reason}")
         {:reply, error, game_state}
     end
   end
@@ -155,7 +155,7 @@ defmodule KickaEttan.Games.GameServer do
     KickaEttanWeb.Endpoint.broadcast!(
       "game:#{game_state.game_id}", 
       "game_state_update", 
-      GameState.client_view(game_state)
+      game_state
     )
   end
 end

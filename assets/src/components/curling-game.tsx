@@ -1,805 +1,665 @@
-"use client"
+import { useState, useEffect, useRef } from 'react';
+import CurlingSheet from './curling-sheet';
+import DraggableStone from './draggable-stone';
+import StoneSelectionBar from './stone-selection-bar';
+import StoneMeasurements from './stone-measurements';
+import { Channel } from 'phoenix';
+import {
+  SHEET_WIDTH,
+  STONE_RADIUS,
+  VIEW_TOP_OFFSET,
+  VIEW_BOTTOM_OFFSET,
+  COLOR_ICE,
+  HOG_LINE_OFFSET,
+  BACK_LINE_OFFSET
+} from '../utils/constants';
 
-import React, { useState, useEffect, useRef } from "react"
-import type { MouseEvent } from "react"
-import { drawSheet } from "@/utils/drawing-utils"
-import InstructionsModal from "./instructions-modal"
-import { motion, AnimatePresence } from "framer-motion"
-
-// Draw the house (concentric circles)
-function drawHouse(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
-  // Outer circle (12-foot)
-  ctx.beginPath()
-  ctx.arc(x, y, radius, 0, Math.PI * 2)
-  ctx.strokeStyle = "#000"
-  ctx.lineWidth = 1
-  ctx.stroke()
-  ctx.fillStyle = "#b3d9ff"
-  ctx.fill()
-
-  // 8-foot circle
-  ctx.beginPath()
-  ctx.arc(x, y, radius * 0.67, 0, Math.PI * 2)
-  ctx.strokeStyle = "#000"
-  ctx.lineWidth = 1
-  ctx.stroke()
-  ctx.fillStyle = "#ffffff"
-  ctx.fill()
-
-  // 4-foot circle
-  ctx.beginPath()
-  ctx.arc(x, y, radius * 0.33, 0, Math.PI * 2)
-  ctx.strokeStyle = "#000"
-  ctx.lineWidth = 1
-  ctx.stroke()
-  ctx.fillStyle = "#ff6666"
-  ctx.fill()
-
-  // Button (center)
-  ctx.beginPath()
-  ctx.arc(x, y, radius * 0.1, 0, Math.PI * 2)
-  ctx.fillStyle = "#ffffff"
-  ctx.fill()
-  ctx.strokeStyle = "#000"
-  ctx.lineWidth = 1
-  ctx.stroke()
+interface CurlingGameProps {
+  gameState?: any;
+  playerId?: string;
+  channel?: Channel;
+  onShare?: () => void;
 }
 
-// Game states
-type GameState = "placement" | "finished"
+interface StonePosition {
+  index: number;
+  x: number;
+  y: number;
+  placed: boolean;
+  resetCount?: number;
+}
 
-export default function CurlingGame() {
-  // Fixed dimensions
-  const width = 300
-  const height = 600
-  const stoneSize = 30
-  const stoneRadius = stoneSize / 2
-  const barHeight = 60
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+// Helper function for collision resolution
+const resolveCollisions = (
+  currentIndex: number,
+  currentX: number,
+  currentY: number,
+  allStones: StonePosition[]
+) => {
+  const MIN_DISTANCE = STONE_RADIUS * 2;
+  let resolvedX = currentX;
+  let resolvedY = currentY;
 
-  // Game state
-  const [gameState, setGameState] = useState<GameState>("placement")
+  // Iterative collision resolution
+  for (let i = 0; i < 3; i++) { // Limit iterations to prevent infinite loops
+    let collisionFound = false;
 
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false)
+    allStones.forEach(otherStone => {
+      if (otherStone.index === currentIndex || !otherStone.placed) return;
 
-  // Pre-populated stones in the rock bar
-  const [stones, setStones] = useState([
-    { id: "stone1", x: 50, y: 0, inBar: true },
-    { id: "stone2", x: 100, y: 0, inBar: true },
-  ])
+      const dx = resolvedX - otherStone.x;
+      const dy = resolvedY - otherStone.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-  // Track which stone is being dragged
-  const [draggingId, setDraggingId] = useState<string | null>(null)
+      if (distance < MIN_DISTANCE) {
+        collisionFound = true;
+        // Calculate push vector
+        let nx = dx / distance;
+        let ny = dy / distance;
 
-  // Track if we're showing a visual indicator for overlap
-  const [overlapIndicator, setOverlapIndicator] = useState<{ x: number; y: number; show: boolean }>({
-    x: 0,
-    y: 0,
-    show: false,
-  })
+        // Handle exact overlap
+        if (distance === 0) {
+          nx = Math.random() * 2 - 1; // Random direction
+          ny = Math.random() * 2 - 1;
+          const len = Math.sqrt(nx * nx + ny * ny);
+          nx /= len;
+          ny /= len;
+        }
 
-  // Scoring information
-  const [scoreInfo, setScoreInfo] = useState<{
-    distances: { id: string; distance: number; rank: number }[]
-    closestStoneId: string | null
-  }>({
-    distances: [],
-    closestStoneId: null,
-  })
-
-  // Add this after other state declarations
-  const [selectedStoneId, setSelectedStoneId] = useState<string | null>(null)
-
-  // Add this after other constants
-  const measuringPoints = [
-    { id: "center", name: "Center of House", x: width / 2, y: height * 0.75 },
-    { id: "bottom", name: "Bottom of House", x: width / 2, y: height },
-    { id: "left", name: "Left of House", x: width / 2 - height * 0.25, y: height * 0.75 },
-    { id: "right", name: "Right of House", x: width / 2 + height * 0.25, y: height * 0.75 },
-    { id: "top", name: "Top of House", x: width / 2, y: height * 0.5 },
-    { id: "topLeft", name: "Top Left Corner", x: 0, y: 0 },
-    { id: "topRight", name: "Top Right Corner", x: width, y: 0 },
-  ]
-
-  // Calculate scores based on stone positions
-  const calculateScores = () => {
-    const sheetStones = stones.filter((s) => !s.inBar)
-
-    // Calculate distance to center of house for each stone
-    // Center of house is at 50% width, 75% height
-    const houseCenter = { x: width / 2, y: height * 0.75 }
-
-    const distances = sheetStones.map((stone) => {
-      const distance = Math.sqrt(Math.pow(stone.x - houseCenter.x, 2) + Math.pow(stone.y - houseCenter.y, 2))
-      return { id: stone.id, distance, rank: 0 }
-    })
-
-    // Sort by distance (closest first)
-    distances.sort((a, b) => a.distance - b.distance)
-
-    // Assign ranks
-    distances.forEach((item, index) => {
-      item.rank = index + 1
-    })
-
-    setScoreInfo({
-      distances,
-      closestStoneId: distances.length > 0 ? distances[0].id : null,
-    })
-  }
-
-  // Add this function after other utility functions
-  const getClosestMeasuringPoints = (stone: { x: number; y: number }) => {
-    // Calculate distance from stone center to each measuring point
-    const distances = measuringPoints.map((point) => {
-      const distance = Math.sqrt(Math.pow(stone.x - point.x, 2) + Math.pow(stone.y - point.y, 2))
-      // Distance to edge = distance to center - stone radius
-      const distanceToEdge = Math.max(0, distance - stoneRadius)
-      return {
-        ...point,
-        distance,
-        distanceToEdge,
+        // Move dropped stone out
+        resolvedX = otherStone.x + nx * (MIN_DISTANCE + 1);
+        resolvedY = otherStone.y + ny * (MIN_DISTANCE + 1);
       }
-    })
+    });
 
-    // Sort by distance and take the two closest
-    return distances.sort((a, b) => a.distance - b.distance).slice(0, 2)
+    if (!collisionFound) break;
   }
 
-  // Draw the curling sheet
+  // Ensure we stay within bounds after collision resolution
+  // Valid Y range:
+  // Min: Hog Line (VIEW_TOP_OFFSET - HOG_LINE_OFFSET)
+  // Max: Back Line (VIEW_TOP_OFFSET + BACK_LINE_OFFSET)
+  // We allow stones to touch/overlap the back line, so we clamp center to [minY + radius, maxY + radius]
+  const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET; // Should be 0 if offsets match
+  const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
+
+  const minY = hogLineY + STONE_RADIUS;
+  const maxY = backLineY + STONE_RADIUS;
+
+  resolvedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, resolvedX));
+  resolvedY = Math.max(minY, Math.min(maxY, resolvedY));
+
+  return { x: resolvedX, y: resolvedY };
+};
+
+
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler } from 'lucide-react';
+
+// ... existing imports ...
+
+const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps) => {
+  const [myStones, setMyStones] = useState<StonePosition[]>([]);
+  const [myColor, setMyColor] = useState<'red' | 'yellow' | null>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [selectedHistoryRound, setSelectedHistoryRound] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [sheetDimensions, setSheetDimensions] = useState({ width: 0, height: 0 });
+  const [scale, setScale] = useState(1);
+  const [highlightedStone, setHighlightedStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
+  const [hoveredStone, setHoveredStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
+  const [showMeasurements, setShowMeasurements] = useState(false);
+
+  // Update scale and dimensions when container resizes
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    if (!containerRef.current) return;
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const containerHeight = containerRef.current.offsetHeight;
 
-    // Set canvas dimensions
-    canvas.width = width
-    canvas.height = height
+        // If container has no size yet, skip
+        if (containerWidth === 0 || containerHeight === 0) return;
 
-    // Draw the sheet
-    drawSheet(ctx, width, height)
-  }, [width, height])
+        const sheetAspectRatio = SHEET_WIDTH / (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET);
 
-  // Calculate scores when transitioning to finished state
+        // Always use full container width
+        const newWidth = containerWidth;
+        const newHeight = newWidth / sheetAspectRatio;
+
+        setSheetDimensions({ width: newWidth, height: newHeight });
+        setScale(newWidth / SHEET_WIDTH);
+      }
+    };
+
+    // Use ResizeObserver to detect container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions();
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    // Initial call
+    updateDimensions();
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [myColor]);
+
+  const [lastInitializedRound, setLastInitializedRound] = useState(0);
+
+  // Initialize stones based on game state
   useEffect(() => {
-    if (gameState === "finished") {
-      calculateScores()
-    }
-  }, [gameState])
+    if (gameState && playerId) {
+      const player = gameState.players.find((p: any) => p.id === playerId);
+      if (player) {
+        setMyColor(player.color);
 
-  // Check if two stones are overlapping
-  const areOverlapping = (stone1: { x: number; y: number }, stone2: { x: number; y: number }) => {
-    const distance = Math.sqrt(Math.pow(stone1.x - stone2.x, 2) + Math.pow(stone1.y - stone2.y, 2))
-    return distance < stoneSize // If distance is less than stone diameter, they overlap
-  }
-
-  // Calculate the nearest valid position for a stone
-  const findNearestValidPosition = (
-    stonePosition: { x: number; y: number },
-    otherStones: Array<{ x: number; y: number }>,
-    containerWidth: number,
-    containerHeight: number,
-  ) => {
-    // Clone the position to avoid modifying the original
-    const newPosition = { ...stonePosition }
-    let iterations = 0
-    const maxIterations = 10 // Prevent infinite loops
-
-    // Keep adjusting position until no overlaps or max iterations reached
-    while (iterations < maxIterations) {
-      let hasOverlap = false
-
-      // Check for overlaps with each stone
-      for (const otherStone of otherStones) {
-        if (areOverlapping(newPosition, otherStone)) {
-          hasOverlap = true
-
-          // Calculate direction vector from other stone to current stone
-          const dirX = newPosition.x - otherStone.x
-          const dirY = newPosition.y - otherStone.y
-
-          // Handle case where stones are exactly on top of each other
-          if (dirX === 0 && dirY === 0) {
-            // Move slightly to the right if exactly overlapping
-            newPosition.x += stoneSize
-            continue
-          }
-
-          // Calculate distance between centers
-          const distance = Math.sqrt(dirX * dirX + dirY * dirY)
-
-          // Normalize direction vector
-          const normDirX = dirX / distance
-          const normDirY = dirY / distance
-
-          // Calculate minimum distance needed to prevent overlap
-          const minDistance = stoneSize
-
-          // Move stone along direction vector to prevent overlap
-          newPosition.x = otherStone.x + normDirX * minDistance
-          newPosition.y = otherStone.y + normDirY * minDistance
-
-          // Break to recheck all stones with the new position
-          break
+        // Initialize stones if not already done or if round changed
+        if (gameState.current_round > lastInitializedRound) {
+          const initialStones = Array.from({ length: gameState.stones_per_team }).map((_, i) => ({
+            index: i,
+            x: 0,
+            y: 0,
+            placed: false,
+            resetCount: 0
+          }));
+          setMyStones(initialStones);
+          setLastInitializedRound(gameState.current_round);
+          setIsReady(false);
         }
       }
 
-      // If no overlaps, we're done
-      if (!hasOverlap) {
-        break
+      // Check if we are ready
+      if (gameState.player_ready && gameState.player_ready[playerId]) {
+        setIsReady(true);
+      } else {
+        setIsReady(false);
+      }
+    }
+  }, [gameState, playerId]);
+
+  const handleStoneDragEnd = (index: number, dropPoint: { x: number; y: number }, offset: { x: number; y: number }) => {
+    if (!sheetRef.current || isReady) return;
+
+    const sheetRect = sheetRef.current.getBoundingClientRect();
+
+    // Check if dropped within the sheet
+    if (
+      dropPoint.x >= sheetRect.left &&
+      dropPoint.x <= sheetRect.right &&
+      dropPoint.y >= sheetRect.top &&
+      dropPoint.y <= sheetRect.bottom
+    ) {
+      // Find the stone to check if it was already placed
+      const stone = myStones.find(s => s.index === index);
+
+      // Convert drop point to logical coordinates (cm)
+      // X: 0 to SHEET_WIDTH
+      // Y: VIEW_TOP_OFFSET to VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET (relative to tee line)
+      // But our internal storage for x,y should probably be relative to the Tee Line (0,0) or top-left of sheet?
+      // Let's store them as logical coordinates relative to the Tee Line (0,0 center) for consistency with backend?
+      // OR, to match the SVG coordinate system we defined in CurlingSheet:
+      // Origin (0,0) is Top-Left of the VIEWBOX.
+      // ViewBox width = SHEET_WIDTH
+      // ViewBox height = VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET
+      // Tee Line is at Y = VIEW_TOP_OFFSET
+      // Center Line is at X = SHEET_WIDTH / 2
+
+      // Let's store coordinates in the SVG coordinate system (0,0 top-left of view)
+      // This makes rendering easier.
+
+      let rawX, rawY;
+
+      if (stone && stone.placed) {
+        // If already placed, use the offset to calculate new position relative to old position
+        // Offset is in pixels, need to convert to logical units
+        const logicalOffsetX = offset.x / scale;
+        const logicalOffsetY = offset.y / scale;
+
+        rawX = stone.x + logicalOffsetX;
+        rawY = stone.y + logicalOffsetY;
+      } else {
+        // If coming from bar, calculate relative position from drop point
+        const relativeX = dropPoint.x - sheetRect.left;
+        const relativeY = dropPoint.y - sheetRect.top;
+
+        rawX = relativeX / scale;
+        rawY = relativeY / scale;
       }
 
-      iterations++
-    }
+      // Clamp to sheet boundaries (accounting for stone radius)
+      // Valid Y range: Hog Line to Back Line
+      // Hog Line: We want to be strictly below it.
+      // Back Line: We want to allow touching/overlapping, but not fully past.
+      const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+      const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
 
-    // Ensure the stone stays within container bounds
-    // Left boundary
-    if (newPosition.x - stoneRadius < 0) {
-      newPosition.x = stoneRadius
-    }
+      // MinY: Center must be at least Radius away (touching). Add 1px to be strictly below?
+      // User said "still able to place above". Maybe they mean touching is bad?
+      // Let's stick to Radius for now, but ensure it's working.
+      const minY = hogLineY + STONE_RADIUS;
 
-    // Right boundary
-    if (newPosition.x + stoneRadius > containerWidth) {
-      newPosition.x = containerWidth - stoneRadius
-    }
+      // MaxY: Center on the back line means half the stone is out.
+      // Previous was backLineY + STONE_RADIUS (top edge on line).
+      // User said "too far below". Let's restrict center to backLineY.
+      const maxY = backLineY;
 
-    // Top boundary
-    if (newPosition.y - stoneRadius < 0) {
-      newPosition.y = stoneRadius
-    }
+      const clampedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, rawX));
+      const clampedY = Math.max(minY, Math.min(maxY, rawY));
 
-    // Bottom boundary - allow stones to be partially beyond the backline
-    if (newPosition.y + stoneRadius * 2 > containerHeight) {
-      // Only constrain if the stone is completely beyond the backline
-      newPosition.y = containerHeight
-    }
+      // Resolve collisions
+      const { x: resolvedX, y: resolvedY } = resolveCollisions(index, clampedX, clampedY, myStones);
 
-    return newPosition
-  }
-
-  // Add this function after other event handlers
-  const handleStoneClick = (id: string) => {
-    if (gameState !== "finished") return
-
-    // Toggle selection if clicking the same stone
-    if (selectedStoneId === id) {
-      setSelectedStoneId(null)
+      updateStonePosition(index, resolvedX, resolvedY, true);
     } else {
-      setSelectedStoneId(id)
+      // Dropped outside - reset to bar
+      setMyStones(prev => prev.map(s =>
+        s.index === index ? { ...s, placed: false, resetCount: (s.resetCount || 0) + 1 } : s
+      ));
     }
-  }
+  };
 
-  // Start dragging a stone
-  const startDrag = (id: string, e: MouseEvent) => {
-    // Don't allow dragging in finished state
-    if (gameState === "finished") return
+  const updateStonePosition = (index: number, x: number, y: number, placed: boolean) => {
+    setMyStones(prev => prev.map(s =>
+      s.index === index ? { ...s, x, y, placed } : s
+    ));
+  };
 
-    e.preventDefault()
-    setDraggingId(id)
-    setOverlapIndicator({ x: 0, y: 0, show: false })
+  const handleConfirmPlacement = () => {
+    if (!channel) return;
 
-    // Get container position (assuming it doesn't move during drag)
-    const container = document.getElementById("drag-container")
-    if (!container) return
-    const containerRect = container.getBoundingClientRect()
-
-    // Handle mouse movement
-    function handleMouseMove(e: MouseEvent) {
-      // Calculate new position relative to container
-      const x = e.clientX - containerRect.left
-      const y = e.clientY - containerRect.top
-
-      // Update stone position using functional update
-      setStones((prevStones) => {
-        // Check for potential overlaps during drag
-        const otherStones = prevStones.filter((s) => s.id !== id && !s.inBar)
-        const updatedStone = { ...prevStones.find((s) => s.id === id)!, x, y, inBar: false }
-
-        // Check if the current position would cause an overlap
-        const wouldOverlap = otherStones.some((otherStone) => areOverlapping(updatedStone, otherStone))
-
-        // Show visual indicator if there would be an overlap
-        if (wouldOverlap) {
-          setOverlapIndicator({ x, y, show: true })
-        } else {
-          setOverlapIndicator({ x: 0, y: 0, show: false })
-        }
-
-        return prevStones.map((s) => (s.id === id ? updatedStone : s))
-      })
-    }
-
-    // Handle mouse up
-    function handleMouseUp(e: MouseEvent) {
-      setDraggingId(null) // Stop dragging state
-      setOverlapIndicator({ x: 0, y: 0, show: false })
-
-      // Check if stone is dropped in the container
-      const isInContainer =
-        e.clientX >= containerRect.left &&
-        e.clientX <= containerRect.right &&
-        e.clientY >= containerRect.top &&
-        e.clientY <= containerRect.bottom
-
-      // Update stones using functional update
-      setStones((prevStones) => {
-        // Get the current stone being dragged
-        const currentStone = prevStones.find((s) => s.id === id)
-        if (!currentStone) return prevStones
-
-        // Check for overlaps with other stones on the sheet
-        const otherStones = prevStones.filter((s) => s.id !== id && !s.inBar)
-        const hasOverlap = otherStones.some((otherStone) => areOverlapping(currentStone, otherStone))
-
-        // Check if the stone is outside boundaries
-        const x = currentStone.x
-        const y = currentStone.y
-
-        const isOutsideLeft = x - stoneRadius < 0
-        const isOutsideRight = x + stoneRadius > width
-        const isOutsideTop = y - stoneRadius < 0
-        // For the backline, we allow stones to be partially beyond it
-        const isCompletelyBeyondBackline = y - stoneRadius * 2 >= height
-
-        const isOutsideBoundary = isOutsideLeft || isOutsideRight || isOutsideTop || isCompletelyBeyondBackline
-
-        return prevStones.map((s) => {
-          if (s.id === id) {
-            if (isInContainer && !isOutsideBoundary) {
-              if (hasOverlap) {
-                // Find nearest valid position
-                const validPosition = findNearestValidPosition(
-                  { x: currentStone.x, y: currentStone.y },
-                  otherStones,
-                  width,
-                  height,
-                )
-
-                // Use the valid position
-                return {
-                  ...s,
-                  inBar: false,
-                  x: validPosition.x,
-                  y: validPosition.y,
-                }
-              } else {
-                // No overlap, keep current position
-                return {
-                  ...s,
-                  inBar: false,
-                }
-              }
-            } else {
-              // Dropped outside or outside boundary: return to bar state
-              return {
-                ...s,
-                inBar: true,
-                x: 50 + prevStones.filter((stone) => stone.inBar).length * 40,
-                y: 0,
-              }
-            }
-          }
-          return s
+    // Send all stone placements
+    const placementPromises = myStones.filter(s => s.placed).map(stone => {
+      return new Promise((resolve, reject) => {
+        channel.push("place_stone", {
+          stone_index: stone.index,
+          position: { x: stone.x, y: stone.y }
         })
+          .receive("ok", resolve)
+          .receive("error", (reasons: any) => reject(reasons));
+      });
+    });
+
+    // Wait for all placements to be acknowledged before confirming
+    Promise.all(placementPromises)
+      .then(() => {
+        channel.push("confirm_placement", {})
+          .receive("ok", () => {
+            setIsReady(true);
+          })
+          .receive("error", (reasons: any) => {
+            console.error("Confirmation failed", reasons);
+            alert("Failed to confirm placement: " + JSON.stringify(reasons));
+          });
       })
+      .catch(err => {
+        console.error("Failed to place stones", err);
+        alert("Failed to save stone positions: " + JSON.stringify(err));
+      });
+  };
 
-      document.removeEventListener("mousemove", handleMouseMove)
-      document.removeEventListener("mouseup", handleMouseUp)
+  const handleNextRound = () => {
+    setHighlightedStone(null);
+    setHoveredStone(null);
+    if (channel) {
+      channel.push("ready_for_next_round", {});
     }
+  };
 
-    document.addEventListener("mousemove", handleMouseMove)
-    document.addEventListener("mouseup", handleMouseUp)
+  if (!gameState || !playerId || !myColor) {
+    return <div>Loading game...</div>;
   }
 
-  // Handle finish button click
-  const handleFinish = () => {
-    setGameState("finished")
+  const allStonesPlaced = myStones.every(s => s.placed);
+
+
+
+  // Calculate pixel size for stones
+  const stonePixelSize = STONE_RADIUS * 2 * scale;
+
+  // Determine which stones to display (History vs Live)
+  const isHistoryMode = selectedHistoryRound !== null;
+  let displayRedStones: any[] = [];
+  let displayYellowStones: any[] = [];
+
+  if (isHistoryMode) {
+    const historyRound = gameState.history && gameState.history[selectedHistoryRound];
+    if (historyRound) {
+      displayRedStones = historyRound.stones?.red || [];
+      displayYellowStones = historyRound.stones?.yellow || [];
+    }
+  } else {
+    displayRedStones = gameState.stones.red || [];
+    displayYellowStones = gameState.stones.yellow || [];
   }
 
-  // Handle restart button click
-  const handleRestart = () => {
-    // Reset stones to initial state
-    setStones([
-      { id: "stone1", x: 50, y: 0, inBar: true },
-      { id: "stone2", x: 100, y: 0, inBar: true },
-    ])
-    setGameState("placement")
-  }
-
-  // Get stone rank by id
-  const getStoneRank = (stoneId: string): number | null => {
-    const stoneInfo = scoreInfo.distances.find((d) => d.id === stoneId)
-    return stoneInfo ? stoneInfo.rank : null
-  }
-
-  // Get stones in the bar and on the sheet
-  const barStones = stones.filter((s) => s.inBar)
-  const sheetStones = stones.filter((s) => !s.inBar)
+  // Helper to render stones
+  const renderStones = (stones: any[], color: 'red' | 'yellow') => {
+    return stones.map((pos: any, i: number) => (
+      <div
+        key={`${color}-${i}`}
+        className="absolute rounded-full border-2 border-white shadow-md flex items-center justify-center"
+        style={{
+          width: stonePixelSize,
+          height: stonePixelSize,
+          backgroundColor: gameState.team_colors ? gameState.team_colors[color] : (color === 'red' ? '#cc0000' : '#e6b800'),
+          left: pos.x * scale,
+          top: pos.y * scale,
+          marginLeft: -stonePixelSize / 2,
+          marginTop: -stonePixelSize / 2,
+          cursor: (gameState.phase === 'combined' || isHistoryMode) ? 'pointer' : 'default',
+          transform: (highlightedStone?.color === color && highlightedStone?.index === i) ? 'scale(1.05)' : 'scale(1)',
+          transition: 'all 0.08s cubic-bezier(0.4, 0.0, 0.2, 1)'
+        }}
+        onClick={() => {
+          if (gameState.phase === 'combined' || isHistoryMode) {
+            setHighlightedStone(prev =>
+              prev?.color === color && prev?.index === i ? null : { color, index: i }
+            );
+          }
+        }}
+        onMouseEnter={() => {
+          if (gameState.phase === 'combined' || isHistoryMode) {
+            setHoveredStone({ color, index: i });
+          }
+        }}
+        onMouseLeave={() => {
+          if (gameState.phase === 'combined' || isHistoryMode) {
+            setHoveredStone(null);
+          }
+        }}
+      >
+        <div
+          className="rounded-full"
+          style={{
+            width: stonePixelSize * 0.5,
+            height: stonePixelSize * 0.25,
+            backgroundColor: color === 'red' ? '#ffcccc' : '#ffeb99'
+          }}
+        />
+      </div>
+    ));
+  };
 
   return (
-    <div className="flex flex-col items-center p-4">
-      <AnimatePresence mode="wait">
-        {gameState === "placement" ? (
-          <motion.h1
-            key="placement-title"
-            className="text-xl font-bold mb-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            Kicka Ettan - Place Your Stones
-          </motion.h1>
-        ) : (
-          <motion.h1
-            key="finished-title"
-            className="text-xl font-bold mb-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            Final Stone Positions
-          </motion.h1>
-        )}
-      </AnimatePresence>
+    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] overflow-hidden">
+      {/* Main Game Area - Flex grow to take available space */}
+      <div ref={containerRef} className="flex-grow w-full relative overflow-y-auto flex flex-col items-center justify-end min-h-0">
+        {/* Decorative background track extending to top */}
+        <div
+          className="absolute top-0 bottom-0 border-x-4 border-blue-900"
+          style={{
+            width: sheetDimensions.width,
+            backgroundColor: COLOR_ICE,
+            zIndex: 0
+          }}
+        />
 
-      {/* Curling sheet container */}
-      <div
-        id="drag-container"
-        className="relative border border-gray-300"
-        style={{ width: `${width}px`, height: `${height}px` }}
-      >
-        {/* Curling sheet background */}
-        <canvas ref={canvasRef} width={width} height={height} className="absolute top-0 left-0" />
-
-        {/* Boundary indicators - only showing top, left, and right boundaries */}
-        <div className="absolute inset-0 pointer-events-none border-2 border-transparent border-t-blue-500 border-l-blue-500 border-r-blue-500" />
-
-        {/* Stones on the sheet */}
-        {sheetStones.map((stone) => (
-          <div
-            key={stone.id}
-            className={`absolute rounded-full ${gameState === "placement" ? "cursor-grab" : "cursor-pointer"} ${draggingId === stone.id ? "cursor-grabbing" : ""} ${gameState === "finished" && stone.id === scoreInfo.closestStoneId ? "ring-2 ring-yellow-400 ring-offset-2" : ""} ${gameState === "finished" && stone.id === selectedStoneId ? "ring-2 ring-emerald-500 ring-offset-2" : ""}`}
-            style={{
-              width: `${stoneSize}px`,
-              height: `${stoneSize}px`,
-              backgroundColor: "rgb(220, 53, 69)",
-              border: "2px solid black",
-              left: `${stone.x - stoneSize / 2}px`,
-              top: `${stone.y - stoneSize / 2}px`,
-              zIndex: draggingId === stone.id ? 10 : 1,
-              boxShadow: draggingId === stone.id ? "0 0 10px rgba(0,0,0,0.5)" : "none",
-              transition: gameState === "finished" ? "all 0.5s ease-in-out" : "none",
-            }}
-            onClick={() => handleStoneClick(stone.id)}
-            onMouseDown={(e) => gameState === "placement" && startDrag(stone.id, e)}
-          >
-            {/* Stone handle */}
-            <div
-              className="absolute rounded-full bg-transparent border-2 border-black"
-              style={{
-                width: "60%",
-                height: "60%",
-                top: "20%",
-                left: "20%",
-              }}
+        <div
+          className="relative border-x-4 border-blue-900 bg-white shadow-2xl z-10"
+          style={{
+            width: sheetDimensions.width,
+            height: sheetDimensions.height,
+            // No margin auto here, we want it to start from top if scrolling
+          }}
+        >
+          <div ref={sheetRef} className="absolute inset-0">
+            <CurlingSheet
+              width="100%"
+              round={isHistoryMode && gameState.history[selectedHistoryRound] ? gameState.history[selectedHistoryRound].round : gameState.current_round}
+              phase={isHistoryMode ? 'combined' : gameState.phase}
             />
-
-            {/* Team indicator */}
-            <div
-              className="absolute rounded-full bg-white border border-black"
-              style={{
-                width: "30%",
-                height: "30%",
-                top: "35%",
-                left: "35%",
-              }}
-            />
-
-            {/* Stone rank number (only in finished state) */}
-            {gameState === "finished" && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + (getStoneRank(stone.id) || 0) * 0.1 }}
-                className="absolute text-emerald-500 font-extrabold text-lg"
-                style={{
-                  top: `-${stoneSize / 2 + 2}px`,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  textShadow: "0 0 3px white, 0 0 5px white",
-                  zIndex: 20,
-                }}
-              >
-                {getStoneRank(stone.id)}
-              </motion.div>
-            )}
           </div>
-        ))}
 
-        {/* Overlap indicator */}
-        {overlapIndicator.show && gameState === "placement" && (
-          <div
-            className="absolute rounded-full border-2 border-red-500 bg-red-200 bg-opacity-50 pointer-events-none"
-            style={{
-              width: `${stoneSize}px`,
-              height: `${stoneSize}px`,
-              left: `${overlapIndicator.x - stoneSize / 2}px`,
-              top: `${overlapIndicator.y - stoneSize / 2}px`,
-              zIndex: 5,
-            }}
-          />
-        )}
-
-        {/* Distance lines in finished state */}
-        {gameState === "finished" &&
-          scoreInfo.distances.map(({ id, distance }) => {
-            const stone = stones.find((s) => s.id === id)
-            if (!stone) return null
-
-            const houseCenter = { x: width / 2, y: height * 0.75 }
-
-            return (
-              <svg
-                key={`distance-${id}`}
-                className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                style={{ zIndex: 0 }}
-              >
-                <line
-                  x1={stone.x}
-                  y1={stone.y}
-                  x2={houseCenter.x}
-                  y2={houseCenter.y}
-                  stroke={id === scoreInfo.closestStoneId ? "#FFD700" : "#888"}
-                  strokeWidth="1"
-                  strokeDasharray={id === scoreInfo.closestStoneId ? "none" : "5,5"}
-                />
-              </svg>
+          {/* Render placed stones */}
+          {/* My local stones (during placement, ONLY if not in history mode) */}
+          {!isHistoryMode && !isReady && gameState.phase === 'placement' && myStones.map(stone => (
+            stone.placed && (
+              <DraggableStone
+                key={`my-${stone.index}-${stone.x}-${stone.y}`}
+                color={myColor}
+                index={stone.index}
+                position={{
+                  x: stone.x * scale,
+                  y: stone.y * scale
+                }}
+                onDragEnd={handleStoneDragEnd}
+                isPlaced={true}
+                size={stonePixelSize}
+                customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
+              />
             )
-          })}
+          ))}
 
-        {/* Add this after the distance lines section */}
-        {/* Measurement lines for selected stone */}
-        {gameState === "finished" &&
-          selectedStoneId &&
-          (() => {
-            const selectedStone = stones.find((s) => s.id === selectedStoneId)
-            if (!selectedStone) return null
+          {/* Render Red and Yellow stones (Live or History) */}
+          {renderStones(displayRedStones, 'red')}
+          {renderStones(displayYellowStones, 'yellow')}
 
-            const closestPoints = getClosestMeasuringPoints(selectedStone)
-
-            return (
-              <>
-                {closestPoints.map((point, index) => (
-                  <React.Fragment key={`measure-${point.id}`}>
-                    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 15 }}>
-                      <line
-                        x1={selectedStone.x}
-                        y1={selectedStone.y}
-                        x2={point.x}
-                        y2={point.y}
-                        stroke={index === 0 ? "#10b981" : "#3b82f6"}
-                        strokeWidth="1.5"
-                        strokeDasharray="5,5"
-                      />
-
-                      {/* Add a small circle at the measuring point */}
-                      <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r="3"
-                        fill={index === 0 ? "#10b981" : "#3b82f6"}
-                        stroke="#fff"
-                        strokeWidth="1"
-                      />
-                    </svg>
-
-                    {/* Distance label */}
-                    <div
-                      className={`absolute px-1 py-0.5 rounded text-xs font-bold text-white ${index === 0 ? "bg-emerald-500" : "bg-blue-500"}`}
-                      style={{
-                        left: (selectedStone.x + point.x) / 2,
-                        top: (selectedStone.y + point.y) / 2,
-                        transform: "translate(-50%, -50%)",
-                        zIndex: 16,
-                      }}
-                    >
-                      {point.distanceToEdge.toFixed(1)}px
-                    </div>
-                  </React.Fragment>
-                ))}
-
-                {/* Add labels for the measuring points */}
-                {closestPoints.map((point, index) => (
-                  <div
-                    key={`label-${point.id}`}
-                    className={`absolute px-1 py-0.5 rounded text-xs font-bold text-white ${index === 0 ? "bg-emerald-500" : "bg-blue-500"}`}
-                    style={{
-                      left: point.x,
-                      top: point.y + (index === 0 ? -15 : 15),
-                      transform: "translateX(-50%)",
-                      zIndex: 16,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {point.name}
-                  </div>
-                ))}
-              </>
-            )
-          })()}
-
-        {/* House center indicator in finished state */}
-        {gameState === "finished" && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="absolute w-4 h-4 rounded-full bg-yellow-400 border border-black"
-            style={{
-              left: `${width / 2 - 8}px`,
-              top: `${height * 0.75 - 8}px`,
-              zIndex: 5,
-              boxShadow: "0 0 8px rgba(255,215,0,0.6)",
-            }}
-          />
-        )}
+          {/* Measurement lines in combined phase or history mode */}
+          {(gameState.phase === 'combined' || isHistoryMode) && (
+            <StoneMeasurements
+              stones={{
+                red: displayRedStones,
+                yellow: displayYellowStones
+              }}
+              scale={scale}
+              highlightedStone={highlightedStone || hoveredStone}
+              showMeasurements={showMeasurements}
+            />
+          )}
+        </div>
       </div>
 
-      <AnimatePresence>
-        {gameState === "placement" ? (
-          <motion.div
-            className="flex items-center mt-8 w-full"
-            style={{ maxWidth: `${width}px` }}
-            initial={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            key="game-controls"
-          >
-            {/* Info button */}
+      {/* Controls Area - Fixed at bottom */}
+      <div className="w-full card-gradient backdrop-blur-md p-4 shrink-0 z-20 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] border-t border-gray-100/20">
+        <div className="flex gap-2 min-h-[64px]">
+          {/* Persistent Menu Button */}
+          <div className="relative shrink-0 flex items-center">
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="mr-4 p-2 bg-white text-black rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 border border-gray-300"
-              aria-label="Game instructions"
+              onClick={() => setShowMenu(!showMenu)}
+              className="w-12 h-12 rounded-full bg-[var(--bauhaus-yellow)] text-black flex items-center justify-center hover:scale-105 hover:shadow-lg shadow-md transition-all active:scale-95"
+              aria-label="Menu"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <Menu size={24} />
             </button>
 
-            {/* Rock bar */}
-            <div
-              id="rock-bar"
-              className="flex-1 flex justify-start items-center gap-4 p-2 bg-gray-100 rounded-md"
-              style={{ height: `${barHeight}px` }}
-            >
-              {/* Stones in the bar */}
-              {barStones.map((stone, index) => (
-                <div
-                  key={stone.id}
-                  className={`relative rounded-full cursor-grab ${draggingId === stone.id ? "cursor-grabbing" : ""}`}
-                  style={{
-                    width: `${stoneSize}px`,
-                    height: `${stoneSize}px`,
-                    backgroundColor: "rgb(220, 53, 69)",
-                    border: "2px solid black",
-                    zIndex: draggingId === stone.id ? 10 : 1,
-                    boxShadow: draggingId === stone.id ? "0 0 10px rgba(0,0,0,0.5)" : "none",
-                    marginLeft: index === 0 ? `${stoneRadius}px` : "0",
-                  }}
-                  onMouseDown={(e) => startDrag(stone.id, e)}
-                >
-                  {/* Stone handle */}
-                  <div
-                    className="absolute rounded-full bg-transparent border-2 border-black"
-                    style={{
-                      width: "60%",
-                      height: "60%",
-                      top: "20%",
-                      left: "20%",
+            {showMenu && (
+              <div className="absolute bottom-16 left-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 min-w-[220px] z-50 animate-in fade-in slide-in-from-bottom-2">
+                {onShare && (
+                  <button
+                    onClick={() => {
+                      onShare();
+                      setShowMenu(false);
                     }}
-                  />
-
-                  {/* Team indicator */}
-                  <div
-                    className="absolute rounded-full bg-white border border-black"
-                    style={{
-                      width: "30%",
-                      height: "30%",
-                      top: "35%",
-                      left: "35%",
-                    }}
-                  />
-                </div>
-              ))}
-
-              {/* Add a finish button only when both stones are placed */}
-              {sheetStones.length === 2 && (
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                  >
+                    <Share2 size={16} />
+                    Share
+                  </button>
+                )}
                 <button
-                  onClick={handleFinish}
-                  className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  onClick={() => {
+                    if (gameState.history && gameState.history.length > 0) {
+                      setSelectedHistoryRound(0); // Start at most recent round
+                    } else {
+                      alert("No history available yet.");
+                    }
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                 >
-                  Finish
+                  <HistoryIcon size={16} />
+                  History
                 </button>
-              )}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            className="mt-8 w-full flex justify-center"
-            style={{ maxWidth: `${width}px` }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            key="scoring-controls"
-          >
-            {/* Scoring information */}
-            <div className="bg-white p-4 rounded-lg shadow-md w-full">
-              <h2 className="text-lg font-semibold mb-2">Stone Positions</h2>
-              {scoreInfo.distances.length > 0 ? (
-                <div className="space-y-2">
-                  {scoreInfo.distances.map(({ id, distance, rank }) => (
-                    <div key={id} className="flex justify-between items-center">
-                      <div className="flex items-center">
-                        <div
-                          className={`w-6 h-6 rounded-full mr-2 flex items-center justify-center text-xs font-bold ${id === scoreInfo.closestStoneId ? "bg-yellow-400 text-black" : "bg-gray-200 text-gray-700"}`}
-                        >
-                          {rank}
-                        </div>
-                        <span>Stone {rank}</span>
-                      </div>
-                      <span className="font-mono">
-                        {distance.toFixed(1)} px from center
-                        {id === scoreInfo.closestStoneId && " (closest)"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>No stones on the sheet</p>
-              )}
+                <button
+                  onClick={() => {
+                    setShowHelp(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                >
+                  <Info size={16} />
+                  Help
+                </button>
+                <div className="h-px bg-gray-200 my-1" />
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  Exit Game
+                </button>
+              </div>
+            )}
+          </div>
 
-              <div className="mt-4 p-3 bg-gray-100 rounded-md text-sm">
-                <p className="font-medium">Stone Ranking</p>
-                <p>Numbers above stones indicate their ranking by distance from the button (center).</p>
-                <p>Stone #1 is closest to the button and would score in a real game.</p>
+          {/* Contextual Controls */}
+          <div className="flex-grow flex items-center justify-center">
+            {/* Placement Phase - Active */}
+            {gameState.phase === 'placement' && !isReady && !isHistoryMode && (
+              <div className="w-full flex items-center gap-2">
+                {!allStonesPlaced ? (
+                  <div className="flex-grow">
+                    {myColor && (
+                      <StoneSelectionBar
+                        stones={myStones}
+                        color={myColor}
+                        onStoneDragEnd={handleStoneDragEnd}
+                        stoneSize={stonePixelSize}
+                        customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleConfirmPlacement}
+                    className="flex-grow h-12 font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white"
+                  >
+                    finish placement
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Placement Phase - Waiting */}
+            {isReady && gameState.phase === 'placement' && (
+              <div className="w-full p-4 bg-[var(--bauhaus-yellow)]/20 text-[var(--bauhaus-yellow)] font-bold rounded-2xl text-center animate-pulse border border-[var(--bauhaus-yellow)]/30 lowercase tracking-tight">
+                waiting for opponent...
+              </div>
+            )}
+
+            {/* Combined/Playing Phase */}
+            {gameState.phase === 'combined' && (
+              <div className="w-full flex gap-2">
+                <button
+                  onClick={() => setShowMeasurements(!showMeasurements)}
+                  className={`relative w-12 h-12 font-bold rounded-2xl shadow-md transition-all flex items-center justify-center text-white hover:shadow-lg active:scale-95 group ${showMeasurements ? 'bg-[var(--bauhaus-blue)]' : 'bg-gray-400'
+                    }`}
+                  aria-label="Toggle measurements"
+                >
+                  <Ruler size={20} />
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 hidden group-hover:block">
+                    <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                      {showMeasurements ? 'Hide measurements' : 'Show measurements'}
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={handleNextRound}
+                  className="flex-grow h-12 font-bold rounded-2xl shadow-md transition-all active:scale-95 hover:shadow-lg bg-[var(--bauhaus-red)] hover:bg-red-600 text-white lowercase tracking-tight"
+                >
+                  start new round
+                </button>
+              </div>
+            )}
+
+            {/* History Controls */}
+            {isHistoryMode && (
+              <div className="w-full flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedHistoryRound(Math.min(gameState.history.length - 1, selectedHistoryRound! + 1))}
+                  disabled={selectedHistoryRound === gameState.history.length - 1}
+                  className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
+                  aria-label="Earlier Round"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => setSelectedHistoryRound(null)}
+                  className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white flex flex-col items-center justify-center leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
+                >
+                  <span>return to game</span>
+                  <span className="text-xs font-normal opacity-90">viewing round {gameState.history[selectedHistoryRound!].round}</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedHistoryRound(Math.max(0, selectedHistoryRound! - 1))}
+                  disabled={selectedHistoryRound === 0}
+                  className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
+                  aria-label="Later Round"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Help Dialog */}
+      {
+        showHelp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 relative animate-in fade-in zoom-in duration-200">
+              <button
+                onClick={() => setShowHelp(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <h2 className="text-xl font-bold mb-4 text-gray-800 lowercase tracking-tight">how to play</h2>
+
+              <div className="space-y-3 text-gray-600">
+                <p>
+                  <strong className="text-gray-800">1. Place Stones:</strong> Drag your stones from the bottom bar onto the sheet.
+                </p>
+                <p>
+                  <strong className="text-gray-800">2. Strategize:</strong> Place stones to guard the house or set up future shots.
+                </p>
+                <p>
+                  <strong className="text-gray-800">3. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
+                </p>
               </div>
 
               <button
-                onClick={handleRestart}
-                className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                onClick={() => setShowHelp(false)}
+                className="w-full mt-6 py-2 font-semibold rounded-lg transition-colors"
+                style={{ backgroundColor: '#2563eb', color: 'white' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
               >
-                Play Again
+                Got it
               </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Instructions Modal */}
-      <InstructionsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
-      {/* Debug info - only show in placement mode */}
-      {gameState === "placement" && (
-        <div className="mt-4 text-sm">
-          <div>Stones on sheet: {sheetStones.length}</div>
-          <div>Stones in bar: {barStones.length}</div>
-          <div>{draggingId ? `Dragging: ${draggingId}` : "Not dragging"}</div>
-        </div>
-      )}
+          </div>
+        )
+      }
     </div>
-  )
-}
+  );
+};
 
+export default CurlingGame;

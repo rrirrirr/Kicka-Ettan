@@ -45,7 +45,7 @@ defmodule KickaEttanWeb.Endpoint do
   plug Plug.Session, @session_options
 
   plug Corsica,
-    origins: ["http://localhost:5173"], # React dev server
+    origins: [~r{^http://localhost:\d+$}], # Allow any localhost port
     allow_headers: :all,
     allow_credentials: true
 

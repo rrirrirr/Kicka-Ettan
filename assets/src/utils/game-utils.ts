@@ -27,8 +27,8 @@ export function areOverlapping(
  */
 export function distanceToCenter(
   stone: { position: { x: number; y: number } },
-  sheetWidth: number,
-  sheetHeight: number,
+  _sheetWidth: number,
+  _sheetHeight: number,
 ): number {
   // Center of the house is at 50% width, 80% height from top
   const centerX = 50

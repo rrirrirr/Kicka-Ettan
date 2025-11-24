@@ -9,7 +9,7 @@ defmodule KickaEttan.Games.Janitor do
 
   # Clean up games that have been inactive for 24 hours
   @cleanup_interval :timer.hours(1)  # Check every hour
-  @max_inactive_time :timer.hours(24)  # 24 hours of inactivity
+
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -46,7 +46,7 @@ defmodule KickaEttan.Games.Janitor do
     {:noreply, %{state | last_cleanup: DateTime.utc_now()}}
   end
 
-  defp check_and_cleanup_game(game_id, game_state) do
+  defp check_and_cleanup_game(_game_id, _game_state) do
     # For now, we'll just keep games around
     # In a real implementation, you'd track last activity timestamp
     # and terminate games that have been inactive for too long

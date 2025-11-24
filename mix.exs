@@ -41,7 +41,7 @@ defmodule KickaEttan.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
       {:plug_cowboy, "~> 2.5"},
       
       # CORS handling for development
@@ -49,9 +49,11 @@ defmodule KickaEttan.MixProject do
       
       # Development and testing tools
       {:swoosh, "~> 1.3"},
+      {:hackney, "~> 1.9"},
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
+      {:phoenix_live_dashboard, "~> 0.8.3"},
       
       # Linting and static analysis
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},

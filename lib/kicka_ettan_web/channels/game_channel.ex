@@ -10,15 +10,22 @@ defmodule KickaEttanWeb.GameChannel do
     # Assign game_id to socket for future reference
     socket = assign(socket, :game_id, game_id)
     
-    # Try to get the current game state
-    case GameServer.get_game_state(game_id) do
+    # Try to join the game
+    color = Map.get(params, "color")
+    case GameServer.join_game(game_id, player_id, color) do
       {:ok, game_state} ->
-        {:ok, %{game_state: game_state, player_id: player_id}, socket}
+        # Filter the game state for this specific player to hide opponent stones during placement
+        client_view = KickaEttan.Games.GameState.client_view(game_state, player_id)
+        {:ok, %{game_state: client_view, player_id: player_id}, socket}
       
       {:error, :not_found} ->
-        # If game doesn't exist yet, we might want to create it
-        # For now, just return an error
         {:error, %{reason: "Game not found"}}
+        
+      {:error, :game_full} ->
+        {:error, %{reason: "Game is full"}}
+        
+      {:error, reason} ->
+        {:error, %{reason: reason}}
     end
   end
 
@@ -63,12 +70,25 @@ defmodule KickaEttanWeb.GameChannel do
         {:reply, {:error, %{reason: reason}}, socket}
     end
   end
+  intercept ["game_state_update"]
 
+  @impl true
+  def handle_out("game_state_update", game_state, socket) do
+    player_id = socket.assigns.player_id
+    
+    # Filter the game state for this specific player
+    client_view = KickaEttan.Games.GameState.client_view(game_state, player_id)
+    
+    push(socket, "game_state_update", client_view)
+    {:noreply, socket}
+  end
   # Handle disconnects
   @impl true
   def terminate(reason, socket) do
     # Log disconnection
-    Logger.info("Player #{socket.assigns.player_id} disconnected from game #{socket.assigns.game_id}: #{inspect(reason)}")
+    game_id = Map.get(socket.assigns, :game_id, "unknown")
+    player_id = Map.get(socket.assigns, :player_id, "unknown")
+    Logger.info("Player #{player_id} disconnected from game #{game_id}: #{inspect(reason)}")
     :ok
   end
 end

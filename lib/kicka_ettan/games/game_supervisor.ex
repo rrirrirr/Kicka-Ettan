@@ -32,7 +32,7 @@ defmodule KickaEttan.Games.GameSupervisor do
         Logger.info("Created new game: #{game_id}")
         {:ok, game_id}
       {:error, {:already_started, _pid}} ->
-        Logger.warn("Attempted to create a game with an existing ID: #{game_id}")
+        Logger.warning("Attempted to create a game with an existing ID: #{game_id}")
         {:error, :already_exists}
       {:error, reason} = error ->
         Logger.error("Failed to create game: #{inspect(reason)}")
@@ -49,7 +49,7 @@ defmodule KickaEttan.Games.GameSupervisor do
         Logger.info("Terminating game: #{game_id}")
         DynamicSupervisor.terminate_child(__MODULE__, pid)
       [] -> 
-        Logger.warn("Attempted to terminate non-existent game: #{game_id}")
+        Logger.warning("Attempted to terminate non-existent game: #{game_id}")
         {:error, :not_found}
     end
   end

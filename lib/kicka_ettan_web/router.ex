@@ -5,17 +5,11 @@ defmodule KickaEttanWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api", KickaEttanWeb do
+  scope "/api", KickaEttanWeb.API do
     pipe_through :api
 
    resources "/games", GameController, only: [:create, :show]
     post "/games/:id/join", GameController, :join
-  end
-
- # For serving the React app in production
-  scope "/", KickaEttanWeb do
-    get "/", PageController, :index
-    get "/*path", PageController, :index
   end
 
   # Enable LiveDashboard in development
@@ -31,5 +25,11 @@ defmodule KickaEttanWeb.Router do
       pipe_through [:fetch_session, :protect_from_forgery]
       live_dashboard "/dashboard", metrics: KickaEttanWeb.Telemetry
     end
+  end
+
+  # For serving the React app in production
+  scope "/", KickaEttanWeb do
+    get "/", PageController, :index
+    get "/*path", PageController, :index
   end
 end

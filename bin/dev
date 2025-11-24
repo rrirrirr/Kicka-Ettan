@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# Exit on error
+set -e
+
+# Function to handle kill signal
+cleanup() {
+    echo "Stopping processes..."
+    # Kill all child processes of this script
+    pkill -P $$
+    # Stop Docker container
+    echo "Stopping database..."
+    docker stop kicka_ettan_db
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
+echo "Starting Database..."
+if [ ! "$(docker ps -a -q -f name=kicka_ettan_db)" ]; then
+    if [ "$(docker ps -aq -f status=exited -f name=kicka_ettan_db)" ]; then
+        # cleanup
+        docker rm kicka_ettan_db
+    fi
+    # Run new container
+    docker run --name kicka_ettan_db \
+        -e POSTGRES_USER=postgres \
+        -e POSTGRES_PASSWORD=postgres \
+        -e POSTGRES_DB=kicka_ettan_dev \
+        -p 5432:5432 \
+        -d postgres:15-alpine
+else
+    # Start existing container
+    docker start kicka_ettan_db
+fi
+
+echo "Waiting for Database..."
+# Simple wait loop for Postgres
+until docker exec kicka_ettan_db pg_isready -U postgres; do
+  echo "Waiting for database to be ready..."
+  sleep 1
+done
+
+echo "Starting Phoenix Backend..."
+# Start Phoenix in the background
+mix phx.server &
+
+echo "Starting Vite Frontend..."
+# Start Vite in the background
+(cd assets && bun run dev) &
+
+# Wait for any process to exit
+wait -n
+  
+# Exit with status of process that exited first
+exit $?
