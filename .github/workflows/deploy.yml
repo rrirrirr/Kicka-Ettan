@@ -34,7 +34,7 @@ jobs:
       - name: Build frontend
         run: |
           cd assets
-          npm run build
+          bun run build
           cd ..
 
       - name: Build release
