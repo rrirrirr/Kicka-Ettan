@@ -19,27 +19,22 @@ jobs:
           elixir-version: '1.15'
           otp-version: '26'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get --only prod
-          cd assets && bun install
+          cd assets && $HOME/.bun/bin/bun install
 
       - name: Build frontend
         run: |
           cd assets
-          bun run build
+          $HOME/.bun/bin/bun run build
           cd ..
 
       - name: Build release
