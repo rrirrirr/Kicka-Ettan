@@ -73,8 +73,8 @@ defmodule KickaEttan.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["cmd --cd assets npm install"],
-      "assets.build": ["cmd --cd assets npm run build"],
+      "assets.setup": ["cmd --cd assets bun install"],
+      "assets.build": ["cmd --cd assets bun run build"],
       "assets.deploy": ["assets.build", "phx.digest"]
     ]
   end
