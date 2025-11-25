@@ -9,7 +9,6 @@ import {
   STONE_RADIUS,
   VIEW_TOP_OFFSET,
   VIEW_BOTTOM_OFFSET,
-  COLOR_ICE,
   HOG_LINE_OFFSET,
   BACK_LINE_OFFSET
 } from '../utils/constants';
@@ -387,21 +386,12 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] overflow-hidden">
+    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] overflow-hidden bg-[#f0f8ff] border-x-4 border-blue-900 relative">
       {/* Main Game Area - Flex grow to take available space */}
-      <div ref={containerRef} className="flex-grow w-full relative overflow-y-auto flex flex-col items-center justify-end min-h-0">
-        {/* Decorative background track extending to top */}
-        <div
-          className="absolute top-0 bottom-0 border-x-4 border-blue-900"
-          style={{
-            width: sheetDimensions.width,
-            backgroundColor: COLOR_ICE,
-            zIndex: 0
-          }}
-        />
+      <div ref={containerRef} className="flex-grow w-full relative overflow-y-auto flex flex-col items-center justify-end min-h-0 z-10">
 
         <div
-          className="relative border-x-4 border-blue-900 bg-white shadow-2xl z-10"
+          className="relative z-10"
           style={{
             width: sheetDimensions.width,
             height: sheetDimensions.height,
@@ -455,8 +445,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         </div>
       </div>
 
-      {/* Controls Area - Fixed at bottom */}
-      <div className="w-full card-gradient backdrop-blur-md p-4 shrink-0 z-20 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] border-t border-gray-100/20">
+      {/* Controls Area - Floating Card */}
+      <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 z-20 shadow-2xl border border-white/20 m-4 rounded-3xl mb-6">
         <div className="flex gap-2 min-h-[64px]">
           {/* Persistent Menu Button */}
           <div className="relative shrink-0 flex items-center">
