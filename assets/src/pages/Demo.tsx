@@ -50,7 +50,7 @@ const Demo = () => {
                 }, 500);
             }
         },
-        on: (event: string, callback: (data: any) => void) => {
+        on: (_event: string, _callback: (data: any) => void) => {
         },
         join: () => ({
             receive: (status: string, callback: () => void) => {
