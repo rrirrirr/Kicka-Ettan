@@ -17,7 +17,7 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: {
-        app: "./src/main.tsx"
+        app: "./index.html"
       }
     }
   },
