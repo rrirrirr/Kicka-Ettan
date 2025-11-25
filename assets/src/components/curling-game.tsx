@@ -386,7 +386,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] overflow-hidden bg-[#f0f8ff] border-x-4 border-blue-900 relative">
+    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] overflow-hidden bg-[#f0f8ff] relative">
       {/* Main Game Area - Flex grow to take available space */}
       <div ref={containerRef} className="flex-grow w-full relative overflow-y-auto flex flex-col items-center justify-end min-h-0 z-10">
 
