@@ -11,4 +11,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: "../priv/static",
+    emptyOutDir: true,
+    manifest: true,
+    rollupOptions: {
+      input: {
+        app: "./src/main.tsx"
+      }
+    }
+  },
 });
