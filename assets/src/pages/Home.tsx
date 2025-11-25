@@ -71,15 +71,6 @@ const Home = () => {
         <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
             <AnimatedBackground />
 
-            {/* Info Button - Fixed Position */}
-            <button
-                onClick={() => setShowInfo(true)}
-                className="fixed top-4 right-4 z-20 w-12 h-12 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
-                aria-label="About this project"
-            >
-                <Info size={24} className="text-gray-700 group-hover:text-[var(--bauhaus-blue)] transition-colors" />
-            </button>
-
             {/* Info Dialog */}
             {showInfo && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md p-4" onClick={() => setShowInfo(false)}>
@@ -128,8 +119,15 @@ const Home = () => {
 
             <div className="card-gradient backdrop-blur-md p-8 rounded-3xl shadow-2xl w-full max-w-md text-center relative overflow-hidden z-10">
                 <GameTitle className="mb-4 relative z-10" />
-                <p className="mb-8 text-gray-600 font-medium relative z-10">
+                <p className="mb-8 text-gray-600 font-medium text-center relative z-10 flex items-center justify-center gap-2">
                     Finally, a game your lead can't mess up.
+                    <button
+                        onClick={() => setShowInfo(true)}
+                        className="w-6 h-6 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow hover:shadow-lg transition-all flex items-center justify-center group flex-shrink-0"
+                        aria-label="About this project"
+                    >
+                        <Info size={14} className="text-gray-700 group-hover:text-[var(--bauhaus-blue)] transition-colors" />
+                    </button>
                 </p>
 
                 {error && (
