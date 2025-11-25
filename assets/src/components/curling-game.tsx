@@ -386,7 +386,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] md:h-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[#f0f8ff] backdrop-blur-md overflow-hidden relative transition-all duration-300">
+    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] md:h-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[#f0f8ff] backdrop-blur-md relative transition-all duration-300">
       {/* Main Game Area - Flex grow to take available space */}
       <div ref={containerRef} className="flex-grow w-full relative overflow-y-auto flex flex-col items-center justify-end min-h-0 z-10">
 
@@ -447,7 +447,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
       {/* Controls Area - Floating Card */}
       <div className="w-full px-3">
-        <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 z-20 shadow-2xl border border-white/20 my-4 rounded-3xl mb-6">
+        <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 relative z-20 shadow-2xl border border-white/20 my-4 rounded-3xl mb-6">
           <div className="flex gap-2 min-h-[64px]">
             {/* Persistent Menu Button */}
             <div className="relative shrink-0 flex items-center">
