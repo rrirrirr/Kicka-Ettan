@@ -61,7 +61,7 @@ const Demo = () => {
     } as unknown as Channel;
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen md:px-4 flex items-center md:justify-start justify-center">
             <CurlingGame
                 gameState={mockGameState}
                 playerId={playerId}

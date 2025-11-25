@@ -124,7 +124,7 @@ const GameRoom = () => {
     // If game is full/active, render full screen game
     if (isGameFull) {
         return (
-            <div className="min-h-screen md:py-12 md:px-4 flex items-center justify-center">
+            <div className="min-h-screen md:px-4 flex items-center md:justify-start justify-center">
                 <CurlingGame
                     gameState={gameState}
                     playerId={playerId}
