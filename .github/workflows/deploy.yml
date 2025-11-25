@@ -24,12 +24,17 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
       - name: Install dependencies
         run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get --only prod
-          cd assets && npm install
+          cd assets && bun install
 
       - name: Build frontend
         run: |

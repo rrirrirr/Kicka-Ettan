@@ -8,8 +8,8 @@ echo "🏗️  Building Kicka Ettan..."
 # 1. Build frontend assets
 echo "📦 Building frontend assets..."
 cd assets
-npm install
-npm run build
+bun install
+bun run build
 cd ..
 
 # 2. Get production dependencies
