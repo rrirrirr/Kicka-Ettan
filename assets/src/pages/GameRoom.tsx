@@ -142,22 +142,26 @@ const GameRoom = () => {
                 <header className="flex flex-wrap justify-between items-center mb-8 card-gradient backdrop-blur-md p-4 rounded-2xl shadow-lg gap-4">
                     <GameTitle size="small" />
                     <div className="flex gap-2 sm:gap-4 items-center">
-                        <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[var(--bauhaus-yellow)]/20 text-[var(--bauhaus-yellow)] rounded-full border border-[var(--bauhaus-yellow)]/30 flex items-center">
-                            <span className="font-bold text-[10px] sm:text-xs mr-1.5 sm:mr-2 uppercase tracking-wider text-gray-600">you:</span>
-                            <span
-                                className="font-bold lowercase"
-                                style={{ color: gameState.team_colors?.[myPlayer?.color!] || (myPlayer?.color === 'red' ? '#D22730' : '#185494') }}
+                        <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/50 flex items-center gap-2">
+                            {/* My Dot */}
+                            <div
+                                className="w-6 h-6 rounded-full shadow-inner border border-black/10 relative"
+                                style={{ backgroundColor: gameState.team_colors?.[myPlayer?.color!] || (myPlayer?.color === 'red' ? '#D22730' : '#185494') }}
                             >
-                                {myPlayer?.color && gameState.team_colors ? getColorName(gameState.team_colors[myPlayer.color]) : (myPlayer?.color || 'spectator')}
-                            </span>
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/10 to-transparent" />
+                            </div>
+
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">vs</span>
+
+                            {/* Opponent Dot */}
+                            <div
+                                className="w-6 h-6 rounded-full shadow-inner border border-black/10 relative"
+                                style={{ backgroundColor: gameState.team_colors?.[myPlayer?.color === 'red' ? 'yellow' : 'red'] || (myPlayer?.color === 'red' ? '#185494' : '#D22730') }}
+                            >
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/10 to-transparent" />
+                            </div>
                         </div>
-                        <button
-                            onClick={handleShare}
-                            className="bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all font-bold text-sm lowercase tracking-tight flex items-center gap-2"
-                        >
-                            <Share2 size={16} />
-                            <span className="hidden sm:inline">share</span>
-                        </button>
+
                     </div>
                 </header>
 
@@ -168,7 +172,7 @@ const GameRoom = () => {
 
                     <h2 className="text-3xl font-bold mb-6 text-gray-900 relative z-10 lowercase tracking-tighter">waiting for opponent...</h2>
                     <p className="mb-8 text-gray-600 font-medium relative z-10">Share the invite link with a friend to start playing.</p>
-                    <div className="p-2 pl-4 bg-gray-50 rounded-xl border border-gray-100 font-mono text-sm text-gray-500 relative z-10 flex items-center justify-between gap-4">
+                    <div className="p-2 pl-4 bg-gray-50 rounded-xl border border-gray-100 font-mono text-sm text-gray-500 relative z-10 flex items-center justify-between gap-4 mb-6">
                         <span className="truncate">{window.location.href}</span>
                         <button
                             onClick={copyInviteLink}
@@ -178,6 +182,14 @@ const GameRoom = () => {
                             {showCopiedToast ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
                         </button>
                     </div>
+
+                    <button
+                        onClick={handleShare}
+                        className="w-full bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white py-3 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all font-bold text-base lowercase tracking-tight flex items-center justify-center gap-2 relative z-10"
+                    >
+                        <Share2 size={18} />
+                        invite team
+                    </button>
                 </div>
             </div>
 
