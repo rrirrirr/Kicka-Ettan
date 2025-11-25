@@ -62,8 +62,17 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                 <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_4} fill={COLOR_RED} />
                 <circle cx={cx} cy={teeY} r={BUTTON_RADIUS} fill={COLOR_WHITE} stroke={COLOR_BLACK} strokeWidth="1" />
 
-                {/* Lines */}
-                {/* Hog Line */}
+                {/* Center Line - stops at back line */}
+                <line
+                    x1={cx}
+                    y1={0}
+                    x2={cx}
+                    y2={teeY + BACK_LINE_OFFSET}
+                    stroke={COLOR_BLACK}
+                    strokeWidth="2"
+                />
+
+                {/* Hog Line - drawn after center line so it appears on top */}
                 <line
                     x1="0"
                     y1={teeY - HOG_LINE_OFFSET}
@@ -89,16 +98,6 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                     y1={teeY + BACK_LINE_OFFSET}
                     x2={SHEET_WIDTH}
                     y2={teeY + BACK_LINE_OFFSET}
-                    stroke={COLOR_BLACK}
-                    strokeWidth="2"
-                />
-
-                {/* Center Line */}
-                <line
-                    x1={cx}
-                    y1={0}
-                    x2={cx}
-                    y2={viewHeight}
                     stroke={COLOR_BLACK}
                     strokeWidth="2"
                 />
