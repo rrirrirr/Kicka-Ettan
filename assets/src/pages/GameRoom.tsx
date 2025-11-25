@@ -5,6 +5,7 @@ import CurlingGame from '../components/curling-game';
 import GameTitle from '../components/GameTitle';
 import { Share2, Copy, Check } from 'lucide-react';
 import { saveGameToHistory } from '../lib/gameHistory';
+import { Button, Card } from '../components/ui';
 
 interface Player {
     id: string;
@@ -84,11 +85,11 @@ const GameRoom = () => {
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
-                <div className="card-gradient backdrop-blur-sm p-8 rounded-3xl shadow-2xl text-center max-w-md w-full border border-red-100">
+                <Card className="p-8 text-center max-w-md w-full border border-red-100">
                     <h2 className="text-2xl font-bold text-[var(--bauhaus-red)] mb-4">Error</h2>
                     <p className="font-medium text-gray-700">{error}</p>
                     <a href="/" className="mt-6 inline-block text-[var(--bauhaus-blue)] font-bold hover:underline">Go Home</a>
-                </div>
+                </Card>
             </div>
         );
     }
@@ -148,7 +149,7 @@ const GameRoom = () => {
                     </div>
                 </header>
 
-                <div className="card-gradient backdrop-blur-sm p-12 rounded-3xl shadow-2xl text-center relative overflow-hidden">
+                <Card className="p-12 text-center">
                     {/* Decorative elements */}
                     <div className="absolute top-0 left-0 w-48 h-48 bg-[var(--bauhaus-red)] rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
                     <div className="absolute bottom-0 right-0 w-64 h-64 bg-[var(--bauhaus-blue)] rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
@@ -157,23 +158,23 @@ const GameRoom = () => {
                     <p className="mb-8 text-gray-600 font-medium relative z-10">Share the invite link with a friend to start playing.</p>
                     <div className="p-2 pl-4 bg-gray-50 rounded-xl border border-gray-100 font-mono text-sm text-gray-500 relative z-10 flex items-center justify-between gap-4 mb-6">
                         <span className="truncate">{window.location.href}</span>
-                        <button
+                        <Button
+                            variant="icon"
                             onClick={copyInviteLink}
-                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-600 hover:text-gray-900"
                             aria-label="Copy link"
                         >
                             {showCopiedToast ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
-                        </button>
+                        </Button>
                     </div>
 
-                    <button
+                    <Button
                         onClick={handleShare}
-                        className="w-full bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white py-3 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all font-bold text-base lowercase tracking-tight flex items-center justify-center gap-2 relative z-10"
+                        className="w-full py-3 text-base relative z-10"
                     >
                         <Share2 size={18} />
                         invite team
-                    </button>
-                </div>
+                    </Button>
+                </Card>
             </div>
 
             {/* Toast Notification */}

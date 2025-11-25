@@ -1,45 +1,50 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Play, History, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import GameTitle from '../components/GameTitle';
-import { getLastGame, getGameHistory, SavedGame } from '../lib/gameHistory';
-import { History, ChevronDown, ChevronUp, Play, Info, X } from 'lucide-react';
-
+import { Dialog, Button, Card } from '../components/ui';
 import { config } from '../config';
 
 const Home = () => {
     const navigate = useNavigate();
+    const [stonesPerPlayer, setStonesPerPlayer] = useState(2);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [stonesPerPlayer, setStonesPerPlayer] = useState(2);
-    const [team1Color, setTeam1Color] = useState('#ff0000');
-    const [team2Color, setTeam2Color] = useState('#ffdd00');
-    const [showColorPicker, setShowColorPicker] = useState<'team1' | 'team2' | null>(null);
-    const [lastGame, setLastGame] = useState<SavedGame | null>(null);
-    const [history, setHistory] = useState<SavedGame[]>([]);
     const [showHistory, setShowHistory] = useState(false);
     const [showInfo, setShowInfo] = useState(false);
+    const [history, setHistory] = useState<any[]>([]);
 
-    useEffect(() => {
-        setLastGame(getLastGame());
-        setHistory(getGameHistory());
-    }, []);
+    // Team Color State
+    const [team1Color, setTeam1Color] = useState('#D22730'); // Default Red
+    const [team2Color, setTeam2Color] = useState('#185494'); // Default Blue
+    const [showColorPicker, setShowColorPicker] = useState<'team1' | 'team2' | null>(null);
 
     const PRESET_COLORS = [
-        '#ff0000', // Red
-        '#ffdd00', // Yellow
-        '#0066ff', // Blue
-        '#00cc00', // Green
-        '#ff8800', // Orange
-        '#9900ff', // Purple
-        '#ff00aa', // Pink
-        '#1a1a1a'  // Black
+        '#D22730', // Red
+        '#185494', // Blue
+        '#FFDD00', // Yellow
+        '#00CC00', // Green
+        '#FF8800', // Orange
+        '#9900FF', // Purple
+        '#FF00AA', // Pink
+        '#1A1A1A'  // Black
     ];
 
-    const handleStartGame = async () => {
+    useEffect(() => {
+        const savedHistory = localStorage.getItem('kicka_ettan_history');
+        if (savedHistory) {
+            try {
+                setHistory(JSON.parse(savedHistory));
+            } catch (e) {
+                console.error('Failed to parse history', e);
+            }
+        }
+    }, []);
+
+    const createGame = async () => {
         setIsLoading(true);
         setError(null);
-
         try {
             const response = await fetch(`${config.apiUrl}/api/games`, {
                 method: 'POST',
@@ -47,7 +52,7 @@ const Home = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    stones_per_team: stonesPerPlayer,
+                    stones_per_player: stonesPerPlayer,
                     team1_color: team1Color,
                     team2_color: team2Color
                 }),
@@ -58,64 +63,61 @@ const Home = () => {
             }
 
             const data = await response.json();
+
+            // Save to history
+            const newHistory = [{
+                gameId: data.game_id,
+                timestamp: new Date().toISOString()
+            }, ...history].slice(0, 10); // Keep last 10
+
+            localStorage.setItem('kicka_ettan_history', JSON.stringify(newHistory));
+
             navigate(`/game/${data.game_id}`);
         } catch (err) {
-            setError('Failed to start game. Please try again.');
-            console.error(err);
+            setError('Failed to create game. Please try again.');
         } finally {
             setIsLoading(false);
         }
     };
+
+    const lastGame = history[0];
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
             <AnimatedBackground />
 
             {/* Info Dialog */}
-            {showInfo && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md p-4" onClick={() => setShowInfo(false)}>
-                    <div className="card-gradient rounded-3xl shadow-2xl p-8 max-w-lg w-full animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-start mb-6">
-                            <h2 className="text-3xl font-black lowercase tracking-tighter text-gray-900">about kicka · ettan</h2>
-                            <button
-                                onClick={() => setShowInfo(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                aria-label="Close"
-                            >
-                                <X size={20} className="text-gray-600" />
-                            </button>
-                        </div>
+            <Dialog
+                isOpen={showInfo}
+                onClose={() => setShowInfo(false)}
+                title="about kicka · ettan"
+            >
+                <p>
+                    <strong className="text-gray-900">Kicka Ettan</strong> (Kick the Lead) is a setup tool for real curling games. It helps teams pre-position their lead stones digitally before playing on the actual ice.
+                </p>
 
-                        <div className="space-y-4 text-gray-700 text-sm leading-relaxed">
-                            <p>
-                                <strong className="text-gray-900">Kicka Ettan</strong> (Kick the Lead) is a setup tool for real curling games. It helps teams pre-position their lead stones digitally before playing on the actual ice.
-                            </p>
+                <p>
+                    Instead of physically playing your lead stones, both teams use this app to strategically place them. Once decided, you set up the real stones on the ice in those positions and continue playing the rest of the end normally.
+                </p>
 
-                            <p>
-                                Instead of physically playing your lead stones, both teams use this app to strategically place them. Once decided, you set up the real stones on the ice in those positions and continue playing the rest of the end normally.
-                            </p>
-
-                            <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
-                                <h3 className="font-bold text-gray-900 mb-2 text-xs uppercase tracking-wider">How It Works</h3>
-                                <ol className="space-y-2 text-xs">
-                                    <li><strong>1.</strong> Both teams digitally place their lead stones during the placement phase</li>
-                                    <li><strong>2.</strong> After confirmation, all stone positions are revealed</li>
-                                    <li><strong>3.</strong> Go to the rink and physically set up stones in those exact positions</li>
-                                    <li><strong>4.</strong> Play the rest of the end with real stones from this setup</li>
-                                </ol>
-                            </div>
-
-                            <p className="text-xs text-gray-500 italic">
-                                This speeds up the game and adds strategic depth by allowing teams to plan their lead stone positions carefully before stepping on the ice.
-                            </p>
-
-                            <p className="text-xs text-gray-500">
-                                Built with Phoenix (Elixir), React, and TypeScript. Real-time multiplayer powered by Phoenix Channels.
-                            </p>
-                        </div>
-                    </div>
+                <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
+                    <h3 className="font-bold text-gray-900 mb-2 text-xs uppercase tracking-wider">How It Works</h3>
+                    <ol className="space-y-2 text-xs">
+                        <li><strong>1.</strong> Both teams digitally place their lead stones during the placement phase</li>
+                        <li><strong>2.</strong> After confirmation, all stone positions are revealed</li>
+                        <li><strong>3.</strong> Go to the rink and physically set up stones in those exact positions</li>
+                        <li><strong>4.</strong> Play the rest of the end with real stones from this setup</li>
+                    </ol>
                 </div>
-            )}
+
+                <p className="text-xs text-gray-500 italic">
+                    This speeds up the game and adds strategic depth by allowing teams to plan their lead stone positions carefully before stepping on the ice.
+                </p>
+
+                <p className="text-xs text-gray-500">
+                    Built with Phoenix (Elixir), React, and TypeScript. Real-time multiplayer powered by Phoenix Channels.
+                </p>
+            </Dialog>
 
             <div className="card-gradient backdrop-blur-md p-8 rounded-3xl shadow-2xl w-full max-w-md text-center relative overflow-hidden z-10">
                 <GameTitle className="mb-4 relative z-10" />
@@ -158,102 +160,83 @@ const Home = () => {
                         <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
                             team colors
                         </label>
-                        <div className="flex gap-8 justify-center">
-                            <div className="flex flex-col items-center gap-3">
-                                <span className="text-xs font-bold text-gray-500 lowercase tracking-tight">team 1</span>
-                                <button
-                                    onClick={() => setShowColorPicker('team1')}
-                                    className="group hover:scale-105 transition-transform"
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setShowColorPicker('team1')}
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 transition-colors"
+                            >
+                                <div
+                                    className="w-8 h-8 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
+                                    style={{ backgroundColor: team1Color }}
                                 >
-                                    {/* Flattened irregular sphere */}
-                                    <div
-                                        className="w-20 h-16 shadow-lg border-3 border-white"
-                                        style={{
-                                            backgroundColor: team1Color,
-                                            borderRadius: '45% 55% 52% 48% / 38% 35% 45% 42%',
-                                            borderWidth: '3px',
-                                            borderStyle: 'solid',
-                                            borderColor: 'white'
-                                        }}
-                                    ></div>
-                                </button>
-                            </div>
-                            <div className="flex flex-col items-center gap-3">
-                                <span className="text-xs font-bold text-gray-500 lowercase tracking-tight">team 2</span>
-                                <button
-                                    onClick={() => setShowColorPicker('team2')}
-                                    className="group hover:scale-105 transition-transform"
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
+                                </div>
+                                <span className="font-bold text-gray-700 lowercase">team 1</span>
+                            </button>
+                            <button
+                                onClick={() => setShowColorPicker('team2')}
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 transition-colors"
+                            >
+                                <div
+                                    className="w-8 h-8 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
+                                    style={{ backgroundColor: team2Color }}
                                 >
-                                    {/* Flattened irregular sphere */}
-                                    <div
-                                        className="w-20 h-16 shadow-lg border-3 border-white"
-                                        style={{
-                                            backgroundColor: team2Color,
-                                            borderRadius: '52% 48% 45% 55% / 42% 45% 35% 38%',
-                                            borderWidth: '3px',
-                                            borderStyle: 'solid',
-                                            borderColor: 'white'
-                                        }}
-                                    ></div>
-                                </button>
-                            </div>
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
+                                </div>
+                                <span className="font-bold text-gray-700 lowercase">team 2</span>
+                            </button>
                         </div>
+
+                        {/* Color Picker Dialog */}
+                        {showColorPicker && (
+                            <Dialog
+                                isOpen={true}
+                                onClose={() => setShowColorPicker(null)}
+                                title="select color"
+                            >
+                                <div className="grid grid-cols-4 gap-4 mb-4">
+                                    {PRESET_COLORS.map(color => {
+                                        const otherTeamColor = showColorPicker === 'team1' ? team2Color : team1Color;
+                                        const isTaken = color.toUpperCase() === otherTeamColor.toUpperCase();
+
+                                        return (
+                                            <button
+                                                key={color}
+                                                onClick={() => {
+                                                    if (isTaken) return;
+                                                    if (showColorPicker === 'team1') setTeam1Color(color);
+                                                    else setTeam2Color(color);
+                                                    setShowColorPicker(null);
+                                                }}
+                                                className={`w-12 h-12 rounded-full shadow-sm transition-all ring-2 ${isTaken
+                                                    ? 'ring-red-400 opacity-40 cursor-not-allowed'
+                                                    : 'ring-transparent hover:ring-gray-300 hover:scale-110'
+                                                    }`}
+                                                style={{ backgroundColor: color }}
+                                                disabled={isTaken}
+                                                title={isTaken ? 'Already taken by other team' : ''}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            </Dialog>
+                        )}
                     </div>
                 </div>
 
-                {showColorPicker && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md p-4" onClick={() => setShowColorPicker(null)}>
-                        <div className="card-gradient rounded-3xl shadow-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-                            <h3 className="text-lg font-bold mb-6 text-gray-800 text-center">
-                                Select Color
-                            </h3>
-                            <div className="grid grid-cols-4 gap-4 mb-8">
-                                {PRESET_COLORS.map(color => {
-                                    const otherTeamColor = showColorPicker === 'team1' ? team2Color : team1Color;
-                                    const isTaken = color.toUpperCase() === otherTeamColor.toUpperCase();
-
-                                    return (
-                                        <button
-                                            key={color}
-                                            onClick={() => {
-                                                if (isTaken) return; // Don't allow selecting same color
-                                                if (showColorPicker === 'team1') setTeam1Color(color);
-                                                else setTeam2Color(color);
-                                                setShowColorPicker(null);
-                                            }}
-                                            className={`w-10 h-10 rounded-full shadow-sm transition-all ring-2 ${isTaken
-                                                ? 'ring-red-400 opacity-40 cursor-not-allowed'
-                                                : 'ring-transparent hover:ring-gray-200 hover:scale-110'
-                                                }`}
-                                            style={{ backgroundColor: color }}
-                                            disabled={isTaken}
-                                            title={isTaken ? 'Already taken by other team' : ''}
-                                        />
-                                    );
-                                })}
-                            </div>
-                            <button
-                                onClick={() => setShowColorPicker(null)}
-                                className="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-gray-700 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <button
-                    onClick={handleStartGame}
-                    disabled={isLoading}
-                    className="w-full bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed relative z-10 lowercase tracking-tight"
+                <Button
+                    onClick={createGame}
+                    isLoading={isLoading}
+                    className="w-full py-4 text-lg rounded-2xl"
                 >
+                    <Play size={20} fill="currentColor" />
                     {isLoading ? 'creating...' : 'create game'}
-                </button>
+                </Button>
             </div>
 
             {lastGame && (
                 <div className="mt-6 w-full max-w-md">
-                    <div className="card-gradient backdrop-blur-md p-6 rounded-3xl shadow-xl relative overflow-hidden z-10">
+                    <Card className="p-6 z-10">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 lowercase tracking-tight">
                             <History size={20} className="text-[var(--bauhaus-blue)]" />
                             recent games
@@ -300,7 +283,7 @@ const Home = () => {
                                 )}
                             </div>
                         )}
-                    </div>
+                    </Card>
                 </div>
             )}
         </div>

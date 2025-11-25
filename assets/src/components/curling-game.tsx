@@ -1,5 +1,7 @@
+
 import { useState, useEffect, useRef } from 'react';
 import CurlingSheet from './curling-sheet';
+import { Dialog } from './ui/Dialog';
 import DraggableStone from './draggable-stone';
 import StoneSelectionBar from './stone-selection-bar';
 import StoneMeasurements from './stone-measurements';
@@ -92,7 +94,7 @@ const resolveCollisions = (
 };
 
 
-import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X } from 'lucide-react';
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler } from 'lucide-react';
 
 // ... existing imports ...
 
@@ -341,7 +343,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   const renderStones = (stones: any[], color: 'red' | 'yellow') => {
     return stones.map((pos: any, i: number) => (
       <div
-        key={`${color}-${i}`}
+        key={`${color} -${i} `}
         className="absolute rounded-full border-2 border-white shadow-md flex items-center justify-center"
         style={{
           width: stonePixelSize,
@@ -411,7 +413,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
           {!isHistoryMode && !isReady && gameState.phase === 'placement' && myStones.map(stone => (
             stone.placed && (
               <DraggableStone
-                key={`my-${stone.index}-${stone.x}-${stone.y}`}
+                key={`my - ${stone.index} -${stone.x} -${stone.y} `}
                 color={myColor}
                 index={stone.index}
                 position={{
@@ -549,8 +551,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                 <div className="w-full flex gap-2">
                   <button
                     onClick={() => setShowMeasurements(!showMeasurements)}
-                    className={`relative w-12 h-12 font-bold rounded-2xl shadow-md transition-all flex items-center justify-center text-white hover:shadow-lg active:scale-95 group ${showMeasurements ? 'bg-[var(--bauhaus-blue)]' : 'bg-gray-400'
-                      }`}
+                    className={`relative w - 12 h - 12 font - bold rounded - 2xl shadow - md transition - all flex items - center justify - center text - white hover: shadow - lg active: scale - 95 group ${showMeasurements ? 'bg-[var(--bauhaus-blue)]' : 'bg-gray-400'
+                      } `}
                     aria-label="Toggle measurements"
                   >
                     <Ruler size={20} />
@@ -610,36 +612,22 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       </div>
 
       {/* Help Dialog */}
-      {
-        showHelp && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/20 backdrop-blur-md p-4" onClick={() => setShowHelp(false)}>
-            <div className="card-gradient rounded-3xl shadow-2xl p-8 max-w-lg w-full animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-3xl font-black lowercase tracking-tighter text-gray-900">how to play</h2>
-                <button
-                  onClick={() => setShowHelp(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="Close"
-                >
-                  <X size={20} className="text-gray-600" />
-                </button>
-              </div>
-
-              <div className="space-y-4 text-gray-700 text-sm leading-relaxed">
-                <p>
-                  <strong className="text-gray-900">1. Place Stones:</strong> Drag your stones from the bottom bar onto the sheet.
-                </p>
-                <p>
-                  <strong className="text-gray-900">2. Strategize:</strong> Place stones to guard the house or set up future shots.
-                </p>
-                <p>
-                  <strong className="text-gray-900">3. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
-                </p>
-              </div>
-            </div>
-          </div>
-        )
-      }
+      {/* Help Dialog */}
+      <Dialog
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        title="how to play"
+      >
+        <p>
+          <strong className="text-gray-900">1. Place Stones:</strong> Drag your stones from the bottom bar onto the sheet.
+        </p>
+        <p>
+          <strong className="text-gray-900">2. Strategize:</strong> Place stones to guard the house or set up future shots.
+        </p>
+        <p>
+          <strong className="text-gray-900">3. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
+        </p>
+      </Dialog>
     </div>
   );
 };
