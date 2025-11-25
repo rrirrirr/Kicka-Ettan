@@ -446,163 +446,165 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       </div>
 
       {/* Controls Area - Floating Card */}
-      <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 z-20 shadow-2xl border border-white/20 m-4 rounded-3xl mb-6">
-        <div className="flex gap-2 min-h-[64px]">
-          {/* Persistent Menu Button */}
-          <div className="relative shrink-0 flex items-center">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="w-12 h-12 rounded-full bg-[var(--bauhaus-yellow)] text-black flex items-center justify-center hover:scale-105 hover:shadow-lg shadow-md transition-all active:scale-95"
-              aria-label="Menu"
-            >
-              <Menu size={24} />
-            </button>
+      <div className="w-full px-3">
+        <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 z-20 shadow-2xl border border-white/20 my-4 rounded-3xl mb-6">
+          <div className="flex gap-2 min-h-[64px]">
+            {/* Persistent Menu Button */}
+            <div className="relative shrink-0 flex items-center">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="w-12 h-12 rounded-full bg-[var(--bauhaus-yellow)] text-black flex items-center justify-center hover:scale-105 hover:shadow-lg shadow-md transition-all active:scale-95"
+                aria-label="Menu"
+              >
+                <Menu size={24} />
+              </button>
 
-            {showMenu && (
-              <div className="absolute bottom-16 left-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 min-w-[220px] z-50 animate-in fade-in slide-in-from-bottom-2">
-                {onShare && (
+              {showMenu && (
+                <div className="absolute bottom-16 left-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 min-w-[220px] z-50 animate-in fade-in slide-in-from-bottom-2">
+                  {onShare && (
+                    <button
+                      onClick={() => {
+                        onShare();
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    >
+                      <Share2 size={16} />
+                      Share
+                    </button>
+                  )}
                   <button
                     onClick={() => {
-                      onShare();
+                      if (gameState.history && gameState.history.length > 0) {
+                        setSelectedHistoryRound(0); // Start at most recent round
+                      } else {
+                        alert("No history available yet.");
+                      }
                       setShowMenu(false);
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                   >
-                    <Share2 size={16} />
-                    Share
+                    <HistoryIcon size={16} />
+                    History
                   </button>
-                )}
-                <button
-                  onClick={() => {
-                    if (gameState.history && gameState.history.length > 0) {
-                      setSelectedHistoryRound(0); // Start at most recent round
-                    } else {
-                      alert("No history available yet.");
-                    }
-                    setShowMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                >
-                  <HistoryIcon size={16} />
-                  History
-                </button>
-                <button
-                  onClick={() => {
-                    setShowHelp(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                >
-                  <Info size={16} />
-                  Help
-                </button>
-                <div className="h-px bg-gray-200 my-1" />
-                <button
-                  onClick={() => window.location.href = '/'}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded flex items-center gap-2"
-                >
-                  <LogOut size={16} />
-                  Exit Game
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Contextual Controls */}
-          <div className="flex-grow flex items-center justify-center">
-            {/* Placement Phase - Active */}
-            {gameState.phase === 'placement' && !isReady && !isHistoryMode && (
-              <div className="w-full flex items-center gap-2">
-                {!allStonesPlaced ? (
-                  <div className="flex-grow">
-                    {myColor && (
-                      <StoneSelectionBar
-                        stones={myStones}
-                        color={myColor}
-                        onStoneDragEnd={handleStoneDragEnd}
-                        stoneSize={stonePixelSize}
-                        customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
-                      />
-                    )}
-                  </div>
-                ) : (
                   <button
-                    onClick={handleConfirmPlacement}
-                    className="flex-grow h-12 font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white"
+                    onClick={() => {
+                      setShowHelp(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                   >
-                    finish placement
+                    <Info size={16} />
+                    Help
                   </button>
-                )}
-              </div>
-            )}
+                  <div className="h-px bg-gray-200 my-1" />
+                  <button
+                    onClick={() => window.location.href = '/'}
+                    className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded flex items-center gap-2"
+                  >
+                    <LogOut size={16} />
+                    Exit Game
+                  </button>
+                </div>
+              )}
+            </div>
 
-            {/* Placement Phase - Waiting */}
-            {isReady && gameState.phase === 'placement' && (
-              <div className="w-full p-4 bg-[var(--bauhaus-yellow)]/20 text-[var(--bauhaus-yellow)] font-bold rounded-2xl text-center animate-pulse border border-[var(--bauhaus-yellow)]/30 lowercase tracking-tight">
-                waiting for opponent...
-              </div>
-            )}
-
-            {/* Combined/Playing Phase */}
-            {gameState.phase === 'combined' && (
-              <div className="w-full flex gap-2">
-                <button
-                  onClick={() => setShowMeasurements(!showMeasurements)}
-                  className={`relative w-12 h-12 font-bold rounded-2xl shadow-md transition-all flex items-center justify-center text-white hover:shadow-lg active:scale-95 group ${showMeasurements ? 'bg-[var(--bauhaus-blue)]' : 'bg-gray-400'
-                    }`}
-                  aria-label="Toggle measurements"
-                >
-                  <Ruler size={20} />
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full mb-2 hidden group-hover:block">
-                    <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                      {showMeasurements ? 'Hide measurements' : 'Show measurements'}
+            {/* Contextual Controls */}
+            <div className="flex-grow flex items-center justify-center">
+              {/* Placement Phase - Active */}
+              {gameState.phase === 'placement' && !isReady && !isHistoryMode && (
+                <div className="w-full flex items-center gap-2">
+                  {!allStonesPlaced ? (
+                    <div className="flex-grow">
+                      {myColor && (
+                        <StoneSelectionBar
+                          stones={myStones}
+                          color={myColor}
+                          onStoneDragEnd={handleStoneDragEnd}
+                          stoneSize={stonePixelSize}
+                          customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
+                        />
+                      )}
                     </div>
-                  </div>
-                </button>
-                <button
-                  onClick={handleNextRound}
-                  className="flex-grow h-12 font-bold rounded-2xl shadow-md transition-all active:scale-95 hover:shadow-lg bg-[var(--bauhaus-red)] hover:bg-red-600 text-white lowercase tracking-tight"
-                >
-                  start new round
-                </button>
-              </div>
-            )}
+                  ) : (
+                    <button
+                      onClick={handleConfirmPlacement}
+                      className="flex-grow h-12 font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white"
+                    >
+                      finish placement
+                    </button>
+                  )}
+                </div>
+              )}
 
-            {/* History Controls */}
-            {isHistoryMode && (
-              <div className="w-full flex items-center gap-2">
-                <button
-                  onClick={() => setSelectedHistoryRound(Math.min(gameState.history.length - 1, selectedHistoryRound! + 1))}
-                  disabled={selectedHistoryRound === gameState.history.length - 1}
-                  className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
-                  aria-label="Earlier Round"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
+              {/* Placement Phase - Waiting */}
+              {isReady && gameState.phase === 'placement' && (
+                <div className="w-full p-4 bg-[var(--bauhaus-yellow)]/20 text-[var(--bauhaus-yellow)] font-bold rounded-2xl text-center animate-pulse border border-[var(--bauhaus-yellow)]/30 lowercase tracking-tight">
+                  waiting for opponent...
+                </div>
+              )}
 
-                <button
-                  onClick={() => setSelectedHistoryRound(null)}
-                  className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white flex flex-col items-center justify-center leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
-                >
-                  <span>return to game</span>
-                  <span className="text-xs font-normal opacity-90">viewing round {gameState.history[selectedHistoryRound!].round}</span>
-                </button>
+              {/* Combined/Playing Phase */}
+              {gameState.phase === 'combined' && (
+                <div className="w-full flex gap-2">
+                  <button
+                    onClick={() => setShowMeasurements(!showMeasurements)}
+                    className={`relative w-12 h-12 font-bold rounded-2xl shadow-md transition-all flex items-center justify-center text-white hover:shadow-lg active:scale-95 group ${showMeasurements ? 'bg-[var(--bauhaus-blue)]' : 'bg-gray-400'
+                      }`}
+                    aria-label="Toggle measurements"
+                  >
+                    <Ruler size={20} />
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 hidden group-hover:block">
+                      <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                        {showMeasurements ? 'Hide measurements' : 'Show measurements'}
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleNextRound}
+                    className="flex-grow h-12 font-bold rounded-2xl shadow-md transition-all active:scale-95 hover:shadow-lg bg-[var(--bauhaus-red)] hover:bg-red-600 text-white lowercase tracking-tight"
+                  >
+                    start new round
+                  </button>
+                </div>
+              )}
 
-                <button
-                  onClick={() => setSelectedHistoryRound(Math.max(0, selectedHistoryRound! - 1))}
-                  disabled={selectedHistoryRound === 0}
-                  className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
-                  aria-label="Later Round"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            )}
+              {/* History Controls */}
+              {isHistoryMode && (
+                <div className="w-full flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedHistoryRound(Math.min(gameState.history.length - 1, selectedHistoryRound! + 1))}
+                    disabled={selectedHistoryRound === gameState.history.length - 1}
+                    className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
+                    aria-label="Earlier Round"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedHistoryRound(null)}
+                    className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white flex flex-col items-center justify-center leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
+                  >
+                    <span>return to game</span>
+                    <span className="text-xs font-normal opacity-90">viewing round {gameState.history[selectedHistoryRound!].round}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedHistoryRound(Math.max(0, selectedHistoryRound! - 1))}
+                    disabled={selectedHistoryRound === 0}
+                    className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
+                    aria-label="Later Round"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
