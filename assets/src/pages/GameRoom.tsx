@@ -20,24 +20,7 @@ interface GameState {
     team_colors?: { red: string; yellow: string };
 }
 
-// Helper function to get readable color name from hex
-const getColorName = (hexColor: string): string => {
-    const colorMap: { [key: string]: string } = {
-        '#FF0000': 'red',
-        '#CC0000': 'red',        // Default red
-        '#FFDD00': 'yellow',
-        '#E6B800': 'yellow',     // Default yellow
-        '#0066FF': 'blue',
-        '#00CC00': 'green',
-        '#FF8800': 'orange',
-        '#9900FF': 'purple',
-        '#FF00AA': 'pink',
-        '#1A1A1A': 'black'
-    };
 
-    const upperHex = hexColor.toUpperCase();
-    return colorMap[upperHex] || hexColor;
-};
 
 const GameRoom = () => {
     const { gameId } = useParams<{ gameId: string }>();
