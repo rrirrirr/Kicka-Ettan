@@ -6,6 +6,6 @@ defmodule KickaEttanWeb.PageController do
     # Send the index.html file
     conn
     |> put_resp_header("content-type", "text/html; charset=utf-8")
-    |> send_file(200, "priv/static/index.html")
+    |> send_file(200, Application.app_dir(:kicka_ettan, "priv/static/index.html"))
   end
 end
