@@ -92,7 +92,7 @@ const resolveCollisions = (
 };
 
 
-import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler } from 'lucide-react';
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X } from 'lucide-react';
 
 // ... existing imports ...
 
@@ -612,40 +612,30 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       {/* Help Dialog */}
       {
         showHelp && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 relative animate-in fade-in zoom-in duration-200">
-              <button
-                onClick={() => setShowHelp(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              <h2 className="text-xl font-bold mb-4 text-gray-800 lowercase tracking-tight">how to play</h2>
-
-              <div className="space-y-3 text-gray-600">
-                <p>
-                  <strong className="text-gray-800">1. Place Stones:</strong> Drag your stones from the bottom bar onto the sheet.
-                </p>
-                <p>
-                  <strong className="text-gray-800">2. Strategize:</strong> Place stones to guard the house or set up future shots.
-                </p>
-                <p>
-                  <strong className="text-gray-800">3. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
-                </p>
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/20 backdrop-blur-md p-4" onClick={() => setShowHelp(false)}>
+            <div className="card-gradient rounded-3xl shadow-2xl p-8 max-w-lg w-full animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-3xl font-black lowercase tracking-tighter text-gray-900">how to play</h2>
+                <button
+                  onClick={() => setShowHelp(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
               </div>
 
-              <button
-                onClick={() => setShowHelp(false)}
-                className="w-full mt-6 py-2 font-semibold rounded-lg transition-colors"
-                style={{ backgroundColor: '#2563eb', color: 'white' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-              >
-                Got it
-              </button>
+              <div className="space-y-4 text-gray-700 text-sm leading-relaxed">
+                <p>
+                  <strong className="text-gray-900">1. Place Stones:</strong> Drag your stones from the bottom bar onto the sheet.
+                </p>
+                <p>
+                  <strong className="text-gray-900">2. Strategize:</strong> Place stones to guard the house or set up future shots.
+                </p>
+                <p>
+                  <strong className="text-gray-900">3. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
+                </p>
+              </div>
             </div>
           </div>
         )
