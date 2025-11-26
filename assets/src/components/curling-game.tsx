@@ -442,11 +442,17 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
   return (
     <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[#f0f8ff] backdrop-blur-md transition-all duration-300 overflow-hidden">
+      {/* Full-height Sidelines (Mobile Only) */}
+      <div
+        className="absolute inset-y-0 border-x border-gray-200 md:border-none pointer-events-none z-0 left-1/2 -translate-x-1/2"
+        style={{ width: sheetDimensions.width }}
+      />
+
       {/* Main Game Area - Flex grow to take available space */}
-      <div ref={containerRef} className="flex-grow w-full relative flex flex-col items-center justify-end min-h-0 z-10">
+      <div ref={containerRef} className="flex-grow w-full relative flex flex-col items-center justify-end min-h-0">
 
         <div
-          className="relative z-10"
+          className="relative z-10 border-x border-gray-200 md:border-none"
           style={{
             width: sheetDimensions.width,
             height: sheetDimensions.height,
