@@ -1,17 +1,21 @@
 // Environment configuration
 const getApiUrl = () => {
-    // Check if we're in development (localhost)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:4000';
+    // In development, always use the dev server
+    // This works for localhost, 127.0.0.1, and local network IPs like 192.168.x.x
+    if (import.meta.env.DEV) {
+        // If accessing via local network IP, use that IP for the API too
+        const hostname = window.location.hostname;
+        return `http://${hostname}:4000`;
     }
     // Production - use same domain as frontend
     return `${window.location.protocol}//${window.location.host}`;
 };
 
 const getWebSocketUrl = () => {
-    // Check if we're in development (localhost)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'ws://localhost:4000/socket';
+    // In development, always use the dev server
+    if (import.meta.env.DEV) {
+        const hostname = window.location.hostname;
+        return `ws://${hostname}:4000/socket`;
     }
     // Production - use wss with same domain
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
