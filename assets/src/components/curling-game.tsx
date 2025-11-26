@@ -113,6 +113,19 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   const [hoveredStone, setHoveredStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
   const [showMeasurements, setShowMeasurements] = useState(false);
 
+  // Lock body scroll to prevent "double scroll" on mobile
+  useEffect(() => {
+    // Only apply on mobile/when fixed
+    if (window.innerWidth < 768) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+    };
+  }, []);
+
   // Update scale and dimensions when container resizes
   useEffect(() => {
     if (!containerRef.current) return;
@@ -125,14 +138,24 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         // If container has no size yet, skip
         if (containerWidth === 0 || containerHeight === 0) return;
 
-        const sheetAspectRatio = SHEET_WIDTH / (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET);
+        // Calculate available space
+        const availableWidth = containerWidth;
+        const availableHeight = containerHeight;
 
-        // Always use full container width
-        const newWidth = containerWidth;
-        const newHeight = newWidth / sheetAspectRatio;
+        // Calculate scale factors for both dimensions
+        const scaleWidth = availableWidth / SHEET_WIDTH;
+        const scaleHeight = availableHeight / (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET);
 
-        setSheetDimensions({ width: newWidth, height: newHeight });
-        setScale(newWidth / SHEET_WIDTH);
+        // Use the smaller scale to ensure it fits completely
+        // But don't scale UP too much if we have tons of space (optional, but good for desktop)
+        // For mobile, we want to maximize usage.
+        const newScale = Math.min(scaleWidth, scaleHeight);
+
+        setSheetDimensions({
+          width: SHEET_WIDTH * newScale,
+          height: (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET) * newScale
+        });
+        setScale(newScale);
       }
     };
 
@@ -265,6 +288,36 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     }
   };
 
+  const handleSheetClick = (e: React.MouseEvent) => {
+    if (!sheetRef.current || isReady || gameState.phase !== 'placement' || isHistoryMode) return;
+
+    // Find first unplaced stone
+    const stoneToPlace = myStones.find(s => !s.placed);
+    if (!stoneToPlace) return;
+
+    const sheetRect = sheetRef.current.getBoundingClientRect();
+    const clickX = e.clientX - sheetRect.left;
+    const clickY = e.clientY - sheetRect.top;
+
+    // Convert to logical coordinates
+    const rawX = clickX / scale;
+    const rawY = clickY / scale;
+
+    // Clamp to sheet boundaries
+    const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+    const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
+    const minY = hogLineY + STONE_RADIUS;
+    const maxY = backLineY;
+
+    const clampedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, rawX));
+    const clampedY = Math.max(minY, Math.min(maxY, rawY));
+
+    // Resolve collisions
+    const { x: resolvedX, y: resolvedY } = resolveCollisions(stoneToPlace.index, clampedX, clampedY, myStones);
+
+    updateStonePosition(stoneToPlace.index, resolvedX, resolvedY, true);
+  };
+
   const updateStonePosition = (index: number, x: number, y: number, placed: boolean) => {
     setMyStones(prev => prev.map(s =>
       s.index === index ? { ...s, x, y, placed } : s
@@ -357,7 +410,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
           transform: (highlightedStone?.color === color && highlightedStone?.index === i) ? 'scale(1.05)' : 'scale(1)',
           transition: 'all 0.08s cubic-bezier(0.4, 0.0, 0.2, 1)'
         }}
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent sheet click
           if (gameState.phase === 'combined' || isHistoryMode) {
             setHighlightedStone(prev =>
               prev?.color === color && prev?.index === i ? null : { color, index: i }
@@ -388,9 +442,9 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md mx-auto h-[100dvh] md:h-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[#f0f8ff] backdrop-blur-md relative transition-all duration-300">
+    <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[#f0f8ff] backdrop-blur-md transition-all duration-300 overflow-hidden">
       {/* Main Game Area - Flex grow to take available space */}
-      <div ref={containerRef} className="flex-grow w-full relative overflow-y-auto flex flex-col items-center justify-end min-h-0 z-10">
+      <div ref={containerRef} className="flex-grow w-full relative flex flex-col items-center justify-end min-h-0 z-10">
 
         <div
           className="relative z-10"
@@ -400,7 +454,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
             // No margin auto here, we want it to start from top if scrolling
           }}
         >
-          <div ref={sheetRef} className="absolute inset-0">
+          <div ref={sheetRef} className="absolute inset-0" onClick={handleSheetClick}>
             <CurlingSheet
               width="100%"
               round={isHistoryMode && gameState.history[selectedHistoryRound] ? gameState.history[selectedHistoryRound].round : gameState.current_round}
@@ -424,6 +478,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                 isPlaced={true}
                 size={stonePixelSize}
                 customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
+                onClick={(e) => e.stopPropagation()}
               />
             )
           ))}

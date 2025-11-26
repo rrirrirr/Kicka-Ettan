@@ -9,6 +9,7 @@ interface DraggableStoneProps {
     onDragEnd: (index: number, position: { x: number; y: number }, offset: { x: number; y: number }) => void;
     isPlaced?: boolean;
     size?: number;
+    onClick?: (e: React.MouseEvent) => void;
 }
 
 const DraggableStone: React.FC<DraggableStoneProps> = ({
@@ -18,7 +19,8 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
     position,
     onDragEnd,
     isPlaced = false,
-    size = 40
+    size = 40,
+    onClick
 }) => {
     const stoneColor = customColor || (color === 'red' ? '#ff0000' : '#ffdd00');
     const handleColor = color === 'red' ? '#ffcccc' : '#ffeb99';
@@ -35,6 +37,7 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
                 const y = info.point.y;
                 onDragEnd(index, { x, y }, { x: info.offset.x, y: info.offset.y });
             }}
+            onClick={onClick}
             style={{
                 width: size,
                 height: size,
