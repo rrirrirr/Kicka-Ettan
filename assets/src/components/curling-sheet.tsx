@@ -59,9 +59,9 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                 {/* Sidelines */}
 
                 {/* House Rings */}
-                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_12} fill={COLOR_BLUE} />
+                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_12} fill={COLOR_BLUE} stroke={COLOR_BLACK} strokeWidth="1" />
                 <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_8} fill={COLOR_WHITE} stroke={COLOR_BLACK} strokeWidth="1" />
-                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_4} fill={COLOR_RED} />
+                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_4} fill={COLOR_RED} stroke={COLOR_BLACK} strokeWidth="1" />
                 <circle cx={cx} cy={teeY} r={BUTTON_RADIUS} fill={COLOR_WHITE} stroke={COLOR_BLACK} strokeWidth="1" />
 
                 {/* Center Line - stops at back line */}

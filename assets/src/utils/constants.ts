@@ -22,8 +22,8 @@ export const VIEW_TOP_OFFSET = HOG_LINE_OFFSET; // Hog Line
 export const VIEW_BOTTOM_OFFSET = BACK_LINE_OFFSET + (STONE_RADIUS * 2); // Back Line + 1 stone diameter
 
 // Colors
-export const COLOR_ICE = "#f0f8ff";
-export const COLOR_RED = "#cc0000";
-export const COLOR_BLUE = "#003399";
+export const COLOR_ICE = "#F0F8FF"; // Icy White
+export const COLOR_RED = "#D22730"; // Standard Red
+export const COLOR_BLUE = "#185494"; // Standard Blue
 export const COLOR_WHITE = "#ffffff";
-export const COLOR_BLACK = "#000000";
+export const COLOR_BLACK = "#252333"; // Deep Lavender (using as black)

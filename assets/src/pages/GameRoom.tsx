@@ -86,9 +86,9 @@ const GameRoom = () => {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
                 <Card className="p-8 text-center max-w-md w-full border border-red-100">
-                    <h2 className="text-2xl font-bold text-[var(--bauhaus-red)] mb-4">Error</h2>
+                    <h2 className="text-2xl font-bold text-[var(--icy-accent)] mb-4">Error</h2>
                     <p className="font-medium text-gray-700">{error}</p>
-                    <a href="/" className="mt-6 inline-block text-[var(--bauhaus-blue)] font-bold hover:underline">Go Home</a>
+                    <a href="/" className="mt-6 inline-block text-[var(--icy-blue-medium)] font-bold hover:underline">Go Home</a>
                 </Card>
             </div>
         );
@@ -97,7 +97,7 @@ const GameRoom = () => {
     if (!gameState) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <p className="text-xl font-bold text-[var(--bauhaus-blue)] animate-pulse">Connecting...</p>
+                <p className="text-xl font-bold text-[var(--icy-blue-medium)] animate-pulse">Connecting...</p>
             </div>
         );
     }
@@ -151,8 +151,8 @@ const GameRoom = () => {
 
                 <Card className="p-12 text-center">
                     {/* Decorative elements */}
-                    <div className="absolute top-0 left-0 w-48 h-48 bg-[var(--bauhaus-red)] rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
-                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-[var(--bauhaus-blue)] rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
+                    <div className="absolute top-0 left-0 w-48 h-48 bg-[var(--icy-accent)] rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
+                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-[var(--icy-blue-medium)] rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
 
                     <h2 className="text-3xl font-bold mb-6 text-gray-900 relative z-10 lowercase tracking-tighter">waiting for opponent...</h2>
                     <p className="mb-8 text-gray-600 font-medium relative z-10">Share the invite link with a friend to start playing.</p>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import CurlingSheet from './curling-sheet';
 import { Dialog } from './ui/Dialog';
+import { Button } from './ui/Button';
 import DraggableStone from './draggable-stone';
 import StoneSelectionBar from './stone-selection-bar';
 import StoneMeasurements from './stone-measurements';
@@ -441,7 +442,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   };
 
   return (
-    <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[#f0f8ff] backdrop-blur-md transition-all duration-300 overflow-hidden">
+    <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[var(--icy-white)] backdrop-blur-md transition-all duration-300 overflow-hidden">
       {/* Full-height Sidelines (Mobile Only) */}
       <div
         className="absolute inset-y-0 border-x border-gray-200 md:border-none pointer-events-none z-0 left-1/2 -translate-x-1/2"
@@ -515,7 +516,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
             <div className="relative shrink-0 flex items-center">
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="w-12 h-12 rounded-full bg-[var(--bauhaus-yellow)] text-black flex items-center justify-center hover:scale-105 hover:shadow-lg shadow-md transition-all active:scale-95"
+                className="w-12 h-12 rounded-full bg-[var(--icy-button-bg)] text-[var(--icy-button-text)] flex items-center justify-center hover:scale-105 hover:shadow-lg shadow-md transition-all active:scale-95"
                 aria-label="Menu"
               >
                 <Menu size={24} />
@@ -589,19 +590,19 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                       )}
                     </div>
                   ) : (
-                    <button
+                    <Button
                       onClick={handleConfirmPlacement}
-                      className="flex-grow h-12 font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white"
+                      className="flex-grow h-12 text-base"
                     >
                       finish placement
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
 
               {/* Placement Phase - Waiting */}
               {isReady && gameState.phase === 'placement' && (
-                <div className="w-full p-4 bg-[var(--bauhaus-yellow)]/20 text-[var(--bauhaus-yellow)] font-bold rounded-2xl text-center animate-pulse border border-[var(--bauhaus-yellow)]/30 lowercase tracking-tight">
+                <div className="w-full p-4 bg-[var(--icy-blue-light)]/20 text-[var(--icy-blue-dark)] font-bold rounded-2xl text-center animate-pulse border border-[var(--icy-blue-light)]/30 lowercase tracking-tight">
                   waiting for opponent...
                 </div>
               )}
@@ -609,10 +610,9 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
               {/* Combined/Playing Phase */}
               {gameState.phase === 'combined' && (
                 <div className="w-full flex gap-2">
-                  <button
+                  <Button
                     onClick={() => setShowMeasurements(!showMeasurements)}
-                    className={`relative w - 12 h - 12 font - bold rounded - 2xl shadow - md transition - all flex items - center justify - center text - white hover: shadow - lg active: scale - 95 group ${showMeasurements ? 'bg-[var(--bauhaus-blue)]' : 'bg-gray-400'
-                      } `}
+                    className={`w-12 h-12 rounded-2xl p-0 relative group ${showMeasurements ? '' : 'bg-gray-400 hover:bg-gray-500 text-white shadow-none'}`}
                     aria-label="Toggle measurements"
                   >
                     <Ruler size={20} />
@@ -622,13 +622,14 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                         {showMeasurements ? 'Hide measurements' : 'Show measurements'}
                       </div>
                     </div>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={handleNextRound}
-                    className="flex-grow h-12 font-bold rounded-2xl shadow-md transition-all active:scale-95 hover:shadow-lg bg-[var(--bauhaus-red)] hover:bg-red-600 text-white lowercase tracking-tight"
+                    variant="destructive"
+                    className="flex-grow h-12 text-base"
                   >
                     start new round
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -648,7 +649,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
                   <button
                     onClick={() => setSelectedHistoryRound(null)}
-                    className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white flex flex-col items-center justify-center leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
+                    className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--icy-button-bg)] hover:brightness-110 text-[var(--icy-button-text)] flex flex-col items-center justify-center leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
                   >
                     <span>return to game</span>
                     <span className="text-xs font-normal opacity-90">viewing round {gameState.history[selectedHistoryRound!].round}</span>
@@ -672,20 +673,16 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       </div>
 
       {/* Help Dialog */}
-      {/* Help Dialog */}
       <Dialog
         isOpen={showHelp}
         onClose={() => setShowHelp(false)}
         title="how to play"
       >
         <p>
-          <strong className="text-gray-900">1. Place Stones:</strong> Drag your stones from the bottom bar onto the sheet.
+          <strong className="text-gray-900">1. Place Stones:</strong> Click where you want to place your stone or drag your stones from the bottom bar onto the sheet.
         </p>
         <p>
-          <strong className="text-gray-900">2. Strategize:</strong> Place stones to guard the house or set up future shots.
-        </p>
-        <p>
-          <strong className="text-gray-900">3. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
+          <strong className="text-gray-900">2. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
         </p>
       </Dialog>
     </div>
