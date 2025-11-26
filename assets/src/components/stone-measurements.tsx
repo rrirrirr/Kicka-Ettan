@@ -14,8 +14,8 @@ interface StoneMeasurementsProps {
 }
 
 const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, highlightedStone, showMeasurements = true }) => {
-    const centerLineX = SHEET_WIDTH / 2 - 5.0;
-    const teeLineY = VIEW_TOP_OFFSET - 14.5;
+    const centerLineX = SHEET_WIDTH / 2;
+    const teeLineY = VIEW_TOP_OFFSET;
 
     const allStones: Array<{ pos: StonePosition; color: 'red' | 'yellow'; index: number }> = [
         ...stones.red.map((pos, idx) => ({ pos, color: 'red' as const, index: idx })),
