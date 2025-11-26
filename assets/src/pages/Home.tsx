@@ -52,7 +52,7 @@ const Home = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    stones_per_player: stonesPerPlayer,
+                    stones_per_team: stonesPerPlayer,
                     team1_color: team1Color,
                     team2_color: team2Color
                 }),
@@ -111,11 +111,7 @@ const Home = () => {
                 </div>
 
                 <p className="text-xs text-gray-500 italic">
-                    This speeds up the game and adds strategic depth by allowing teams to plan their lead stone positions carefully before stepping on the ice.
-                </p>
-
-                <p className="text-xs text-gray-500">
-                    Built with Phoenix (Elixir), React, and TypeScript. Real-time multiplayer powered by Phoenix Channels.
+                    Skip the stones everyone forgets about anyway and get to the good part.
                 </p>
             </Dialog>
 
@@ -128,7 +124,7 @@ const Home = () => {
                         className="w-6 h-6 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow animate-glow flex items-center justify-center group flex-shrink-0"
                         aria-label="About this project"
                     >
-                        <Info size={14} className="text-gray-700 group-hover:text-[var(--bauhaus-blue)] transition-colors" />
+                        <Info size={14} className="text-gray-700 group-hover:text-[var(--icy-blue-medium)] transition-colors" />
                     </button>
                 </p>
 
@@ -150,9 +146,9 @@ const Home = () => {
                                 max="8"
                                 value={stonesPerPlayer}
                                 onChange={(e) => setStonesPerPlayer(parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--bauhaus-blue)]"
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--icy-button-bg)]"
                             />
-                            <span className="font-bold text-2xl w-8 text-center text-[var(--bauhaus-blue)]">{stonesPerPlayer}</span>
+                            <span className="font-bold text-2xl w-8 text-center text-[var(--icy-button-bg)]">{stonesPerPlayer}</span>
                         </div>
                     </div>
 
@@ -227,6 +223,7 @@ const Home = () => {
                 <Button
                     onClick={createGame}
                     isLoading={isLoading}
+                    variant="destructive"
                     className="w-full py-4 text-lg rounded-2xl"
                 >
                     <Play size={20} fill="currentColor" />
@@ -238,7 +235,7 @@ const Home = () => {
                 <div className="mt-6 w-full max-w-md">
                     <Card className="p-6 z-10">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 lowercase tracking-tight">
-                            <History size={20} className="text-[var(--bauhaus-blue)]" />
+                            <History size={20} className="text-[var(--icy-button-bg)]" />
                             recent games
                         </h3>
 
@@ -250,7 +247,7 @@ const Home = () => {
                                 <span className="text-xs text-gray-500 uppercase tracking-wider">last played</span>
                                 <span className="text-sm font-mono text-gray-600">#{lastGame.gameId.slice(0, 8)}</span>
                             </div>
-                            <div className="bg-[var(--bauhaus-yellow)] text-black p-2 rounded-full group-hover:scale-110 transition-transform">
+                            <div className="bg-[var(--icy-blue-light)] text-black p-2 rounded-full group-hover:scale-110 transition-transform">
                                 <Play size={16} fill="currentColor" />
                             </div>
                         </button>

@@ -12,52 +12,72 @@
   font-weight: 400;
 
   color-scheme: light;
-  color: #1A1A1A;
-  background-color: #f4f4f0;
+  color: #1B4965;
+  /* Icy Blue Dark */
+  background-color: #F0F8FF;
+  /* Icy White */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Soft Bauhaus Palette */
-  --bauhaus-red: #D22730;
-  --bauhaus-blue: #185494;
-  --bauhaus-yellow: #F1B434;
-  --bauhaus-black: #1A1A1A;
-  --bauhaus-white: #f8f8f6;
+  /* Icy Glass Palette */
+  /* Icy Glass Palette */
+  --icy-blue-dark: #252333;
+  /* Deep Lavender for text */
+  --icy-blue-medium: #62B6CB;
+  --icy-blue-light: #BEE9E8;
+  --icy-white: #F0F8FF;
+  --icy-accent: #252333;
+  /* Deep Lavender */
+  --icy-black: #252333;
+  /* Using Deep Lavender as Black */
+  --icy-red: #D22730;
+  /* Standard Red for title dot */
+
+  /* High Contrast Elements */
+  --icy-button-bg: #252333;
+  /* Deep Lavender for buttons */
+  --icy-button-text: #ffffff;
+
+  --icy-button-hover: #353345;
+  /* Lighter Deep Lavender */
+  --icy-accent-hover: #454255;
+  /* Even lighter Deep Lavender */
 
   --radius: 1.5rem;
   /* Soft, rounded */
   --border-width: 0px;
 
-  --background: var(--bauhaus-white);
-  --foreground: var(--bauhaus-black);
+  --background: var(--icy-white);
+  --foreground: var(--icy-blue-dark);
 
   --card: #ffffff;
-  --card-foreground: var(--bauhaus-black);
+  --card-foreground: var(--icy-blue-dark);
 
   --popover: #ffffff;
-  --popover-foreground: var(--bauhaus-black);
+  --popover-foreground: var(--icy-blue-dark);
 
-  --primary: var(--bauhaus-blue);
-  --primary-foreground: #ffffff;
+  --primary: var(--icy-button-bg);
+  /* Use dark blue for primary actions */
+  --primary-foreground: var(--icy-button-text);
 
-  --secondary: var(--bauhaus-yellow);
-  --secondary-foreground: var(--bauhaus-black);
+  --secondary: var(--icy-blue-light);
+  --secondary-foreground: var(--icy-blue-dark);
 
   --muted: #f0f0f0;
   --muted-foreground: #737373;
 
-  --accent: var(--bauhaus-red);
+  --accent: var(--icy-accent);
   --accent-foreground: #ffffff;
 
-  --destructive: var(--bauhaus-red);
+  --destructive: var(--icy-accent);
   --destructive-foreground: #ffffff;
 
   --border: #e5e5e5;
   --input: #e5e5e5;
-  --ring: var(--bauhaus-blue);
+  --ring: var(--icy-blue-medium);
 }
 
 body {
@@ -66,9 +86,9 @@ body {
   min-height: 100vh;
   background-color: var(--background);
   background-image:
-    radial-gradient(circle at 15% 50%, rgba(241, 180, 52, 0.1) 0%, transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(210, 39, 48, 0.08) 0%, transparent 25%),
-    radial-gradient(circle at 50% 80%, rgba(24, 84, 148, 0.08) 0%, transparent 40%);
+    radial-gradient(circle at 15% 50%, rgba(98, 182, 203, 0.15) 0%, transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(238, 108, 77, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, rgba(27, 73, 101, 0.05) 0%, transparent 40%);
   background-attachment: fixed;
 }
 
@@ -131,8 +151,8 @@ body {
 
   /* Standard Animations */
   .animate-glow {
-    @apply duration-200 ease-out hover:shadow-lg hover:brightness-110;
-    transition-property: transform, box-shadow, filter;
+    @apply duration-200 ease-out hover:shadow-lg;
+    transition-property: transform, box-shadow, background-color;
   }
 
   .glass-panel {

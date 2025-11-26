@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'icon';
+    variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'icon';
     size?: 'sm' | 'md' | 'lg' | 'icon';
     isLoading?: boolean;
 }
@@ -14,11 +14,12 @@ export const Button: React.FC<ButtonProps> = ({
     children,
     ...props
 }) => {
-    const baseStyles = "font-bold flex items-center justify-center gap-2 rounded-xl lowercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed animate-glow";
+    const baseStyles = "font-bold flex items-center justify-center gap-2 rounded-xl lowercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed animate-glow transition-all active:scale-95";
 
     const variants = {
-        primary: "bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white shadow-md animate-glow",
-        secondary: "bg-[var(--bauhaus-yellow)] hover:bg-yellow-400 text-black shadow-md animate-glow",
+        primary: "bg-[var(--icy-button-bg)] text-[var(--icy-button-text)] shadow-md animate-glow hover:bg-[var(--icy-button-hover)] transition-all duration-200",
+        secondary: "bg-[var(--icy-blue-light)] hover:bg-[var(--icy-blue-medium)] text-[var(--icy-blue-dark)] shadow-md animate-glow transition-all duration-200",
+        destructive: "bg-[var(--icy-accent)] text-white shadow-md animate-glow hover:bg-[var(--icy-accent-hover)] transition-all duration-200",
         outline: "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm",
         ghost: "hover:bg-gray-100 text-gray-600 hover:text-gray-900",
         icon: "hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded-lg"
