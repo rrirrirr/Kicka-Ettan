@@ -14,12 +14,12 @@ export const Button: React.FC<ButtonProps> = ({
     children,
     ...props
 }) => {
-    const baseStyles = "font-bold transition-all flex items-center justify-center gap-2 rounded-xl lowercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseStyles = "font-bold flex items-center justify-center gap-2 rounded-xl lowercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed animate-glow";
 
     const variants = {
-        primary: "bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white shadow-md hover:shadow-lg hover:scale-[1.02] hover:brightness-110",
-        secondary: "bg-[var(--bauhaus-yellow)] hover:bg-yellow-400 text-black shadow-md hover:shadow-lg hover:scale-[1.02] hover:brightness-110",
-        outline: "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm hover:scale-[1.02]",
+        primary: "bg-[var(--bauhaus-blue)] hover:bg-blue-700 text-white shadow-md animate-glow",
+        secondary: "bg-[var(--bauhaus-yellow)] hover:bg-yellow-400 text-black shadow-md animate-glow",
+        outline: "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm",
         ghost: "hover:bg-gray-100 text-gray-600 hover:text-gray-900",
         icon: "hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded-lg"
     };

@@ -396,8 +396,10 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   const renderStones = (stones: any[], color: 'red' | 'yellow') => {
     return stones.map((pos: any, i: number) => (
       <div
-        key={`${color} -${i} `}
-        className="absolute rounded-full border-2 border-white shadow-md flex items-center justify-center"
+        key={`${color}-${i}`}
+        className={`absolute rounded-full border-2 border-white shadow-md flex items-center justify-center animate-glow ${(highlightedStone?.color === color && highlightedStone?.index === i) ? 'scale-105 ring-2 ring-white/50' : ''
+          } ${(gameState.phase === 'combined' || isHistoryMode) ? 'cursor-pointer' : 'cursor-default'
+          }`}
         style={{
           width: stonePixelSize,
           height: stonePixelSize,
@@ -406,9 +408,6 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
           top: pos.y * scale,
           marginLeft: -stonePixelSize / 2,
           marginTop: -stonePixelSize / 2,
-          cursor: (gameState.phase === 'combined' || isHistoryMode) ? 'pointer' : 'default',
-          transform: (highlightedStone?.color === color && highlightedStone?.index === i) ? 'scale(1.05)' : 'scale(1)',
-          transition: 'all 0.08s cubic-bezier(0.4, 0.0, 0.2, 1)'
         }}
         onClick={(e) => {
           e.stopPropagation(); // Prevent sheet click

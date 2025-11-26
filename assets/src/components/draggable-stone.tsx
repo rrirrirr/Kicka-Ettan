@@ -30,21 +30,20 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
             drag
             dragMomentum={false}
             dragElastic={0}
-            whileHover={{ scale: 1.1 }}
-            whileDrag={{ scale: 1.2, zIndex: 100 }}
+            whileDrag={{ scale: 1.1, zIndex: 100 }}
             onDragEnd={(_event, info) => {
                 const x = info.point.x;
                 const y = info.point.y;
                 onDragEnd(index, { x, y }, { x: info.offset.x, y: info.offset.y });
             }}
             onClick={onClick}
+            className="animate-glow"
             style={{
                 width: size,
                 height: size,
                 borderRadius: '50%',
                 backgroundColor: stoneColor,
                 border: '2px solid #fff',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
                 position: isPlaced ? 'absolute' : 'relative',
                 left: isPlaced ? position?.x : undefined,
                 top: isPlaced ? position?.y : undefined,

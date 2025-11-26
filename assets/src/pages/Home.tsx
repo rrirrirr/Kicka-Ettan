@@ -17,7 +17,7 @@ const Home = () => {
 
     // Team Color State
     const [team1Color, setTeam1Color] = useState('#D22730'); // Default Red
-    const [team2Color, setTeam2Color] = useState('#185494'); // Default Blue
+    const [team2Color, setTeam2Color] = useState('#FFDD00'); // Default Yellow
     const [showColorPicker, setShowColorPicker] = useState<'team1' | 'team2' | null>(null);
 
     const PRESET_COLORS = [
@@ -125,7 +125,7 @@ const Home = () => {
                     Finally, a game your lead can't mess up.
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="w-6 h-6 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow hover:shadow-lg transition-all flex items-center justify-center group flex-shrink-0"
+                        className="w-6 h-6 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow animate-glow flex items-center justify-center group flex-shrink-0"
                         aria-label="About this project"
                     >
                         <Info size={14} className="text-gray-700 group-hover:text-[var(--bauhaus-blue)] transition-colors" />
@@ -163,7 +163,7 @@ const Home = () => {
                         <div className="flex gap-4">
                             <button
                                 onClick={() => setShowColorPicker('team1')}
-                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 transition-colors"
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 animate-glow"
                             >
                                 <div
                                     className="w-8 h-8 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
@@ -175,7 +175,7 @@ const Home = () => {
                             </button>
                             <button
                                 onClick={() => setShowColorPicker('team2')}
-                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 transition-colors"
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 animate-glow"
                             >
                                 <div
                                     className="w-8 h-8 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
@@ -208,9 +208,9 @@ const Home = () => {
                                                     else setTeam2Color(color);
                                                     setShowColorPicker(null);
                                                 }}
-                                                className={`w-12 h-12 rounded-full shadow-sm transition-all ring-2 ${isTaken
+                                                className={`w-12 h-12 rounded-full shadow-sm ring-2 animate-glow ${isTaken
                                                     ? 'ring-red-400 opacity-40 cursor-not-allowed'
-                                                    : 'ring-transparent hover:ring-gray-300 hover:scale-110'
+                                                    : 'ring-transparent hover:ring-gray-300'
                                                     }`}
                                                 style={{ backgroundColor: color }}
                                                 disabled={isTaken}
@@ -244,7 +244,7 @@ const Home = () => {
 
                         <button
                             onClick={() => navigate(`/game/${lastGame.gameId}`)}
-                            className="w-full bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between group transition-all mb-4"
+                            className="w-full bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between group animate-glow mb-4"
                         >
                             <div className="flex flex-col items-start">
                                 <span className="text-xs text-gray-500 uppercase tracking-wider">last played</span>
@@ -271,7 +271,7 @@ const Home = () => {
                                             <button
                                                 key={game.gameId}
                                                 onClick={() => navigate(`/game/${game.gameId}`)}
-                                                className="w-full bg-white/50 hover:bg-white text-left p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-all flex items-center justify-between group"
+                                                className="w-full bg-white/50 hover:bg-white text-left p-3 rounded-xl border border-gray-100 hover:border-gray-200 animate-glow flex items-center justify-between group"
                                             >
                                                 <span className="font-mono text-xs text-gray-600">#{game.gameId.slice(0, 8)}</span>
                                                 <span className="text-[10px] text-gray-400">

@@ -128,4 +128,14 @@ body {
   .card-gradient {
     background: radial-gradient(ellipse at top left, rgba(225, 242, 255, 0.95) 0%, rgba(230, 240, 255, 0.92) 25%, rgba(235, 245, 255, 0.88) 50%, rgba(215, 235, 250, 0.85) 75%, rgba(220, 238, 255, 0.82) 100%);
   }
+
+  /* Standard Animations */
+  .animate-glow {
+    @apply duration-200 ease-out hover:shadow-lg hover:brightness-110;
+    transition-property: transform, box-shadow, filter;
+  }
+
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-md border border-white/50 shadow-lg;
+  }
 }

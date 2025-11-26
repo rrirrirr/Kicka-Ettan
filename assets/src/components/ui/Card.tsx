@@ -9,7 +9,7 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, className = '', onClick }) => {
     return (
         <div
-            className={`card-gradient backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden relative ${className}`}
+            className={`card-gradient backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden relative ${onClick ? 'cursor-pointer animate-glow' : ''} ${className}`}
             onClick={onClick}
         >
             {children}
