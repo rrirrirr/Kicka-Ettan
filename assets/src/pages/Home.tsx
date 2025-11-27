@@ -116,6 +116,9 @@ const Home = () => {
             </Dialog>
 
             <div className="card-gradient backdrop-blur-md p-8 rounded-3xl shadow-2xl w-full max-w-md text-center relative overflow-hidden z-10">
+                <div className="absolute top-0 left-0 w-48 h-48 bg-[var(--icy-accent)] rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
+                <div className="absolute bottom-0 right-0 w-64 h-64 bg-[var(--icy-blue-medium)] rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
+
                 <GameTitle className="mb-4 relative z-10" />
                 <p className="mb-8 text-gray-600 font-medium text-center relative z-10 flex items-center justify-center gap-2">
                     Finally, a game your lead can't mess up.
