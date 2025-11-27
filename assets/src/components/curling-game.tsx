@@ -95,7 +95,7 @@ const resolveCollisions = (
 };
 
 
-import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler } from 'lucide-react';
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X } from 'lucide-react';
 
 // ... existing imports ...
 
@@ -629,8 +629,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                 </div>
               )}
 
-              {/* Combined/Playing Phase */}
-              {gameState.phase === 'combined' && (
+              {gameState.phase === 'combined' && !isHistoryMode && (
                 <div className="w-full flex gap-2">
                   <Button
                     onClick={() => setShowMeasurements(!showMeasurements)}
@@ -671,10 +670,10 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
                   <button
                     onClick={() => setSelectedHistoryRound(null)}
-                    className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--icy-button-bg)] hover:brightness-110 text-[var(--icy-button-text)] flex flex-col items-center justify-center leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
+                    className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--icy-button-bg)] hover:brightness-110 text-[var(--icy-button-text)] flex items-center justify-center gap-2 leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
                   >
-                    <span>return to game</span>
-                    <span className="text-xs font-normal opacity-90">viewing round {gameState.history[selectedHistoryRound!].round}</span>
+                    <X size={20} />
+                    <span>exit history</span>
                   </button>
 
                   <button
