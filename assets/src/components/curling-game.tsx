@@ -269,10 +269,9 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       // Let's stick to Radius for now, but ensure it's working.
       const minY = hogLineY + STONE_RADIUS;
 
-      // MaxY: Center on the back line means half the stone is out.
-      // Previous was backLineY + STONE_RADIUS (top edge on line).
-      // User said "too far below". Let's restrict center to backLineY.
-      const maxY = backLineY;
+      // MaxY: Allow stone to touch back line with its edge.
+      // Stone center can be at backLineY + STONE_RADIUS (bottom edge touches line).
+      const maxY = backLineY + STONE_RADIUS;
 
       const clampedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, rawX));
       const clampedY = Math.max(minY, Math.min(maxY, rawY));
@@ -308,7 +307,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
     const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
     const minY = hogLineY + STONE_RADIUS;
-    const maxY = backLineY;
+    const maxY = backLineY + STONE_RADIUS;
 
     const clampedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, rawX));
     const clampedY = Math.max(minY, Math.min(maxY, rawY));
@@ -395,50 +394,73 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
   // Helper to render stones
   const renderStones = (stones: any[], color: 'red' | 'yellow') => {
-    return stones.map((pos: any, i: number) => (
-      <div
-        key={`${color}-${i}`}
-        className={`absolute rounded-full border-2 border-white shadow-md flex items-center justify-center animate-glow ${(highlightedStone?.color === color && highlightedStone?.index === i) ? 'scale-105 ring-2 ring-white/50' : ''
-          } ${(gameState.phase === 'combined' || isHistoryMode) ? 'cursor-pointer' : 'cursor-default'
-          }`}
-        style={{
-          width: stonePixelSize,
-          height: stonePixelSize,
-          backgroundColor: gameState.team_colors ? gameState.team_colors[color] : (color === 'red' ? '#cc0000' : '#e6b800'),
-          left: pos.x * scale,
-          top: pos.y * scale,
-          marginLeft: -stonePixelSize / 2,
-          marginTop: -stonePixelSize / 2,
-        }}
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent sheet click
-          if (gameState.phase === 'combined' || isHistoryMode) {
-            setHighlightedStone(prev =>
-              prev?.color === color && prev?.index === i ? null : { color, index: i }
-            );
-          }
-        }}
-        onMouseEnter={() => {
-          if (gameState.phase === 'combined' || isHistoryMode) {
-            setHoveredStone({ color, index: i });
-          }
-        }}
-        onMouseLeave={() => {
-          if (gameState.phase === 'combined' || isHistoryMode) {
-            setHoveredStone(null);
-          }
-        }}
-      >
+    // Calculate a darker shade for handle and inner border
+    const getBorderColor = (hexColor: string) => {
+      const r = parseInt(hexColor.slice(1, 3), 16);
+      const g = parseInt(hexColor.slice(3, 5), 16);
+      const b = parseInt(hexColor.slice(5, 7), 16);
+      const darkerR = Math.floor(r * 0.7);
+      const darkerG = Math.floor(g * 0.7);
+      const darkerB = Math.floor(b * 0.7);
+      return `#${darkerR.toString(16).padStart(2, '0')}${darkerG.toString(16).padStart(2, '0')}${darkerB.toString(16).padStart(2, '0')}`;
+    };
+
+    return stones.map((pos: any, i: number) => {
+      const stoneColor = gameState.team_colors ? gameState.team_colors[color] : (color === 'red' ? '#cc0000' : '#e6b800');
+      const darkerShade = getBorderColor(stoneColor);
+
+      return (
         <div
-          className="rounded-full"
+          key={`${color}-${i}`}
+          className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${(highlightedStone?.color === color && highlightedStone?.index === i) ? 'scale-105 ring-2 ring-white/50' : ''
+            } ${(gameState.phase === 'combined' || isHistoryMode) ? 'cursor-pointer' : 'cursor-default'
+            }`}
           style={{
-            width: stonePixelSize * 0.5,
-            height: stonePixelSize * 0.25,
-            backgroundColor: color === 'red' ? '#ffcccc' : '#ffeb99'
+            width: stonePixelSize,
+            height: stonePixelSize,
+            backgroundColor: stoneColor,
+            border: `2px solid #777777`,
+            boxShadow: `inset 0 0 0 1px ${darkerShade}`,
+            left: pos.x * scale,
+            top: pos.y * scale,
+            marginLeft: -stonePixelSize / 2,
+            marginTop: -stonePixelSize / 2,
           }}
-        />
-      </div>
-    ));
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent sheet click
+            if (gameState.phase === 'combined' || isHistoryMode) {
+              setHighlightedStone(prev =>
+                prev?.color === color && prev?.index === i ? null : { color, index: i }
+              );
+            }
+          }}
+          onMouseEnter={() => {
+            if (gameState.phase === 'combined' || isHistoryMode) {
+              setHoveredStone({ color, index: i });
+            }
+          }}
+          onMouseLeave={() => {
+            if (gameState.phase === 'combined' || isHistoryMode) {
+              setHoveredStone(null);
+            }
+          }}
+        >
+          {/* Small handle */}
+          <div
+            style={{
+              width: stonePixelSize * 2 / 5,
+              height: stonePixelSize / 7,
+              backgroundColor: darkerShade,
+              borderRadius: stonePixelSize / 12,
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          />
+        </div>
+      );
+    });
   };
 
   return (

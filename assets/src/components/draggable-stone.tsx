@@ -23,7 +23,17 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
     onClick
 }) => {
     const stoneColor = customColor || (color === 'red' ? '#ff0000' : '#ffdd00');
-    const handleColor = color === 'red' ? '#ffcccc' : '#ffeb99';
+    // Calculate a darker shade for handle and inner border
+    const getBorderColor = (hexColor: string) => {
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+        const darkerR = Math.floor(r * 0.7);
+        const darkerG = Math.floor(g * 0.7);
+        const darkerB = Math.floor(b * 0.7);
+        return `#${darkerR.toString(16).padStart(2, '0')}${darkerG.toString(16).padStart(2, '0')}${darkerB.toString(16).padStart(2, '0')}`;
+    };
+    const darkerShade = getBorderColor(stoneColor);
 
     return (
         <motion.div
@@ -31,6 +41,7 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
             dragMomentum={false}
             dragElastic={0}
             whileDrag={{ scale: 1.1, zIndex: 100 }}
+            whileHover={{ filter: 'brightness(1.1)', boxShadow: `inset 0 0 0 1px ${darkerShade}` }}
             onDragEnd={(_event, info) => {
                 const x = info.point.x;
                 const y = info.point.y;
@@ -43,7 +54,8 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
                 height: size,
                 borderRadius: '50%',
                 backgroundColor: stoneColor,
-                border: '2px solid #fff',
+                border: `2px solid #777777`,
+                boxShadow: `inset 0 0 0 1px ${darkerShade}`,
                 position: isPlaced ? 'absolute' : 'relative',
                 left: isPlaced ? position?.x : undefined,
                 top: isPlaced ? position?.y : undefined,
@@ -55,13 +67,13 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
                 justifyContent: 'center'
             }}
         >
-            {/* Stone Handle */}
+            {/* Small handle */}
             <div
                 style={{
-                    width: size * 0.5,
-                    height: size * 0.25,
-                    backgroundColor: handleColor,
-                    borderRadius: 5
+                    width: size * 2 / 5,
+                    height: size / 7,
+                    backgroundColor: darkerShade,
+                    borderRadius: size / 12,
                 }}
             />
         </motion.div>

@@ -19,7 +19,7 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
     const unplacedStones = stones.filter(s => !s.placed);
 
     return (
-        <div className="w-full bg-gray-200 p-4 rounded-lg shadow-inner flex flex-wrap justify-center gap-4 items-center">
+        <div className="w-full bg-blue-100 p-4 rounded-lg shadow-inner flex flex-wrap justify-center gap-4 items-center">
             {unplacedStones.length === 0 ? (
                 <div className="text-gray-500 italic w-full text-center">All stones placed</div>
             ) : (

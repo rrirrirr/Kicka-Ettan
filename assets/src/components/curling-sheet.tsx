@@ -135,18 +135,34 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                 )}
 
                 {phase && (
-                    <text
-                        x={cx + 60} // Right of center
-                        y={teeY - HOG_LINE_OFFSET + 40} // Near Hog Line
-                        textAnchor="end"
-                        dominantBaseline="middle"
-                        fill="rgba(0,0,0,0.1)"
-                        fontSize="40"
-                        fontWeight="bold"
-                        transform={`rotate(-90, ${cx + 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
-                    >
-                        {phase.toUpperCase()}
-                    </text>
+                    <>
+                        {/* Phase value */}
+                        <text
+                            x={cx + 60} // Right of center
+                            y={teeY - HOG_LINE_OFFSET + 40} // Near Hog Line
+                            textAnchor="end"
+                            dominantBaseline="middle"
+                            fill="rgba(0,0,0,0.1)"
+                            fontSize="40"
+                            fontWeight="bold"
+                            transform={`rotate(-90, ${cx + 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
+                        >
+                            {phase.toUpperCase()}
+                        </text>
+                        {/* Phase label */}
+                        <text
+                            x={cx + 60} // Right of center
+                            y={teeY - HOG_LINE_OFFSET + 100} // Below phase value
+                            textAnchor="end"
+                            dominantBaseline="middle"
+                            fill="rgba(0,0,0,0.1)"
+                            fontSize="40"
+                            fontWeight="bold"
+                            transform={`rotate(-90, ${cx + 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
+                        >
+                            PHASE
+                        </text>
+                    </>
                 )}
             </svg>
         </div>

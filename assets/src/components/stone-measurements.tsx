@@ -83,12 +83,31 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     (isHighlighted ? '#a16207' : '#ca8a04');
 
                 // Determine which side of center line the stone is on
-                // Offset for vertical label: larger offset when highlighted to prevent overlap
-                const verticalLabelOffset = isLeftOfCenter
-                    ? (isHighlighted ? -35 : -10)
-                    : (isHighlighted ? 35 : 10);
-                // Offset for horizontal label: move further up when highlighted
-                const horizontalLabelOffset = isHighlighted ? -25 : -8;
+                // Edge detection: check if stone is too close to left/right edges
+                const edgeThreshold = 60; // pixels of margin to maintain
+                const isNearLeftEdge = stonePixelX < edgeThreshold;
+                const isNearRightEdge = stonePixelX > (SHEET_WIDTH * scale - edgeThreshold);
+
+                // Offset for vertical label: flip to opposite side if too close to edge
+                let verticalLabelOffset: number;
+                if (isNearLeftEdge) {
+                    // Force to right side
+                    verticalLabelOffset = isHighlighted ? 35 : 10;
+                } else if (isNearRightEdge) {
+                    // Force to left side
+                    verticalLabelOffset = isHighlighted ? -35 : -10;
+                } else {
+                    // Normal logic based on which side of center
+                    verticalLabelOffset = isLeftOfCenter
+                        ? (isHighlighted ? -35 : -10)
+                        : (isHighlighted ? 35 : 10);
+                }
+
+                // Offset for horizontal label: adjust if near top edge
+                const isNearTopEdge = stonePixelY < edgeThreshold;
+                const horizontalLabelOffset = isNearTopEdge
+                    ? (isHighlighted ? 25 : 8)  // Push down if near top
+                    : (isHighlighted ? -25 : -8); // Normal: push up
 
                 return (
                     <React.Fragment key={`${stone.color}-${stone.index}`}>
