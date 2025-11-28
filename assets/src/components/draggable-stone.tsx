@@ -127,4 +127,4 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
     );
 };
 
-export default DraggableStone;
+export default React.memo(DraggableStone);

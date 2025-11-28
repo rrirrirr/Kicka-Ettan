@@ -169,4 +169,4 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
     );
 };
 
-export default CurlingSheet;
+export default React.memo(CurlingSheet);

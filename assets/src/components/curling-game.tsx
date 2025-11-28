@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import CurlingSheet from './curling-sheet';
 import { Dialog } from './ui/Dialog';
 import { Button } from './ui/Button';
@@ -30,6 +30,11 @@ interface StonePosition {
   placed: boolean;
   resetCount?: number;
 }
+
+type GestureState =
+  | { type: 'IDLE' }
+  | { type: 'PENDING'; stoneIndex: number; startX: number; startY: number }
+  | { type: 'DRAGGING'; stoneIndex: number };
 
 // Helper function for collision resolution
 const resolveCollisions = (
@@ -121,6 +126,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     stoneIndex: null
   });
   const [dragMode, setDragMode] = useState<'follow' | 'stay'>('follow');
+  const gestureState = useRef<GestureState>({ type: 'IDLE' });
+  const isHistoryMode = selectedHistoryRound !== null;
 
   // Lock body scroll to prevent "double scroll" on mobile
   useEffect(() => {
@@ -216,7 +223,13 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     }
   }, [gameState, playerId]);
 
-  const handleStoneDragEnd = (index: number, dropPoint: { x: number; y: number }) => {
+  const updateStonePosition = useCallback((index: number, x: number, y: number, placed: boolean) => {
+    setMyStones(prev => prev.map(s =>
+      s.index === index ? { ...s, x, y, placed } : s
+    ));
+  }, []);
+
+  const handleStoneDragEnd = useCallback((index: number, dropPoint: { x: number; y: number }) => {
     if (!sheetRef.current || isReady) return;
 
     const sheetRect = sheetRef.current.getBoundingClientRect();
@@ -287,26 +300,100 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       ));
     }
     setDragState(prev => ({ ...prev, isDragging: false, stoneIndex: null }));
-  };
+  }, [isReady, scale, myStones, updateStonePosition]);
 
-  const handleStoneDrag = (index: number, position: { x: number; y: number }) => {
+  const handleStoneDrag = useCallback((index: number, position: { x: number; y: number }) => {
     setDragState({
       isDragging: true,
       x: position.x,
       y: position.y,
       stoneIndex: index
     });
-  };
+  }, []);
 
   // Global pointer up handler to stop dragging
   useEffect(() => {
     const handleGlobalPointerUp = (e: PointerEvent) => {
+      // Handle PENDING state (Click vs Drag decision)
+      if (gestureState.current.type === 'PENDING') {
+        const { stoneIndex, startX, startY } = gestureState.current;
+        const moveDist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
+
+        // If we didn't move much, it's a CLICK
+        if (moveDist < 5) {
+          // Check if click was ON the stone or in the HALO
+          // We need to recalculate the distance to the stone center in logical coordinates
+          if (sheetRef.current) {
+            const sheetRect = sheetRef.current.getBoundingClientRect();
+            const clickX = e.clientX - sheetRect.left;
+            const clickY = e.clientY - sheetRect.top;
+            const rawX = clickX / scale;
+            const rawY = clickY / scale;
+
+            const stone = myStones.find(s => s.index === stoneIndex);
+            if (stone) {
+              const distToCenter = Math.sqrt(Math.pow(rawX - stone.x, 2) + Math.pow(rawY - stone.y, 2));
+
+              // Visual radius is STONE_RADIUS (14.5). 
+              // If click is within visual radius -> Select/Highlight
+              // If click is outside visual radius (but inside target/halo) -> Place New Stone
+              if (distToCenter > STONE_RADIUS) {
+                // Clicked in Halo -> Place New Stone
+                const stoneToPlace = myStones.find(s => !s.placed);
+                if (stoneToPlace) {
+                  // Place at click location
+                  // Clamp to sheet boundaries
+                  const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+                  const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
+                  const minY = hogLineY + STONE_RADIUS;
+                  const maxY = backLineY + STONE_RADIUS;
+
+                  const clampedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, rawX));
+                  const clampedY = Math.max(minY, Math.min(maxY, rawY));
+
+                  const { x: resolvedX, y: resolvedY } = resolveCollisions(stoneToPlace.index, clampedX, clampedY, myStones);
+                  updateStonePosition(stoneToPlace.index, resolvedX, resolvedY, true);
+                }
+              } else {
+                // Clicked on Stone -> Highlight/Select (existing behavior)
+                if (gameState.phase === 'combined' || isHistoryMode) {
+                  setHighlightedStone(prev =>
+                    prev?.color === myColor && prev?.index === stoneIndex ? null : { color: myColor!, index: stoneIndex }
+                  );
+                }
+              }
+            }
+          }
+        }
+        // Reset gesture state
+        gestureState.current = { type: 'IDLE' };
+        return;
+      }
+
       if (dragState.isDragging) {
         handleStoneDragEnd(dragState.stoneIndex!, { x: e.clientX, y: e.clientY });
+        gestureState.current = { type: 'IDLE' };
       }
     };
 
     const handleGlobalPointerMove = (e: PointerEvent) => {
+      // Handle PENDING -> DRAGGING transition
+      if (gestureState.current.type === 'PENDING') {
+        const { startX, startY, stoneIndex } = gestureState.current;
+        const moveDist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
+
+        if (moveDist > 5) { // Drag threshold
+          gestureState.current = { type: 'DRAGGING', stoneIndex };
+          setDragState({
+            isDragging: true,
+            x: e.clientX,
+            y: e.clientY,
+            stoneIndex: stoneIndex
+          });
+        }
+        return;
+      }
+
       if (dragState.isDragging && dragState.stoneIndex !== null) {
         handleStoneDrag(dragState.stoneIndex, { x: e.clientX, y: e.clientY });
       }
@@ -319,9 +406,9 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       window.removeEventListener('pointerup', handleGlobalPointerUp);
       window.removeEventListener('pointermove', handleGlobalPointerMove);
     };
-  }, [dragState.isDragging, dragState.stoneIndex, myStones, scale]); // Dependencies for drag end logic
+  }, [dragState.isDragging, dragState.stoneIndex, myStones, scale, myColor, gameState.phase, isHistoryMode]);
 
-  const handleSheetPointerDown = (e: React.PointerEvent) => {
+  const handleSheetPointerDown = useCallback((e: React.PointerEvent) => {
     if (!sheetRef.current || isReady || gameState.phase !== 'placement' || isHistoryMode) return;
 
     const sheetRect = sheetRef.current.getBoundingClientRect();
@@ -351,13 +438,13 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     }
 
     if (closestStone !== null) {
-      // Start dragging this stone
-      setDragState({
-        isDragging: true,
-        x: e.clientX,
-        y: e.clientY,
-        stoneIndex: closestStone.index
-      });
+      // Start PENDING gesture (wait to see if click or drag)
+      gestureState.current = {
+        type: 'PENDING',
+        stoneIndex: closestStone.index,
+        startX: e.clientX,
+        startY: e.clientY
+      };
       return;
     }
 
@@ -379,13 +466,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     const { x: resolvedX, y: resolvedY } = resolveCollisions(stoneToPlace.index, clampedX, clampedY, myStones);
 
     updateStonePosition(stoneToPlace.index, resolvedX, resolvedY, true);
-  };
-
-  const updateStonePosition = (index: number, x: number, y: number, placed: boolean) => {
-    setMyStones(prev => prev.map(s =>
-      s.index === index ? { ...s, x, y, placed } : s
-    ));
-  };
+  }, [isReady, gameState.phase, isHistoryMode, scale, myStones, updateStonePosition]);
 
   const handleConfirmPlacement = () => {
     if (!channel) return;
@@ -440,7 +521,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   const stonePixelSize = STONE_RADIUS * 2 * scale;
 
   // Determine which stones to display (History vs Live)
-  const isHistoryMode = selectedHistoryRound !== null;
+  // Determine which stones to display (History vs Live)
+  // const isHistoryMode = selectedHistoryRound !== null; // Moved to top
   let displayRedStones: any[] = [];
   let displayYellowStones: any[] = [];
 
