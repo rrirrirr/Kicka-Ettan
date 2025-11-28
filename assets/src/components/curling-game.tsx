@@ -95,7 +95,7 @@ const resolveCollisions = (
 };
 
 
-import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X } from 'lucide-react';
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler } from 'lucide-react';
 import { Loupe } from './Loupe';
 
 // ... existing imports ...
@@ -229,7 +229,6 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       dropPoint.y <= sheetRect.bottom
     ) {
       // Find the stone to check if it was already placed
-      // const stone = myStones.find(s => s.index === index);
 
       // Convert drop point to logical coordinates (cm)
       // X: 0 to SHEET_WIDTH

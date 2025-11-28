@@ -72,10 +72,12 @@ export const Loupe: React.FC<LoupeProps> = ({
         <div
             className="fixed pointer-events-none z-[9999] overflow-hidden rounded-full border-4 border-white shadow-2xl bg-white"
             style={{
-                left: finalX - loupeRadius,
-                top: finalY - loupeRadius,
+                left: 0,
+                top: 0,
+                transform: `translate3d(${finalX - loupeRadius}px, ${finalY - loupeRadius}px, 0)`,
                 width: size,
                 height: size,
+                willChange: 'transform',
             }}
         >
             <div
