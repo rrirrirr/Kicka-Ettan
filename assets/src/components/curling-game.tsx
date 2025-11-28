@@ -335,11 +335,11 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     // 1. Check for stone pickup (Smart Targeting)
     // Find closest stone within threshold
     const PICKUP_THRESHOLD = 44 / scale; // 44px in logical units
-    let closestStone = null;
+    let closestStone: StonePosition | null = null;
     let minDistance = Infinity;
 
-    myStones.forEach(stone => {
-      if (!stone.placed) return;
+    for (const stone of myStones) {
+      if (!stone.placed) continue;
       const dx = rawX - stone.x;
       const dy = rawY - stone.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -348,9 +348,9 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         minDistance = distance;
         closestStone = stone;
       }
-    });
+    }
 
-    if (closestStone) {
+    if (closestStone !== null) {
       // Start dragging this stone
       setDragState({
         isDragging: true,
