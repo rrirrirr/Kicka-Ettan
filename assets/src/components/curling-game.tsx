@@ -96,6 +96,7 @@ const resolveCollisions = (
 
 
 import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X } from 'lucide-react';
+import { Loupe } from './Loupe';
 
 // ... existing imports ...
 
@@ -113,6 +114,13 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   const [highlightedStone, setHighlightedStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
   const [hoveredStone, setHoveredStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
   const [showMeasurements, setShowMeasurements] = useState(false);
+  const [dragState, setDragState] = useState<{ isDragging: boolean; x: number; y: number; stoneIndex: number | null }>({
+    isDragging: false,
+    x: 0,
+    y: 0,
+    stoneIndex: null
+  });
+  const [dragMode, setDragMode] = useState<'follow' | 'stay'>('follow');
 
   // Lock body scroll to prevent "double scroll" on mobile
   useEffect(() => {
@@ -208,7 +216,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     }
   }, [gameState, playerId]);
 
-  const handleStoneDragEnd = (index: number, dropPoint: { x: number; y: number }, offset: { x: number; y: number }) => {
+  const handleStoneDragEnd = (index: number, dropPoint: { x: number; y: number }) => {
     if (!sheetRef.current || isReady) return;
 
     const sheetRect = sheetRef.current.getBoundingClientRect();
@@ -221,7 +229,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       dropPoint.y <= sheetRect.bottom
     ) {
       // Find the stone to check if it was already placed
-      const stone = myStones.find(s => s.index === index);
+      // const stone = myStones.find(s => s.index === index);
 
       // Convert drop point to logical coordinates (cm)
       // X: 0 to SHEET_WIDTH
@@ -240,22 +248,15 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
       let rawX, rawY;
 
-      if (stone && stone.placed) {
-        // If already placed, use the offset to calculate new position relative to old position
-        // Offset is in pixels, need to convert to logical units
-        const logicalOffsetX = offset.x / scale;
-        const logicalOffsetY = offset.y / scale;
+      // Calculate relative position from drop point (pointer position)
+      // We use this for BOTH new stones and existing stones to ensure the stone
+      // lands exactly where the pointer/loupe center is.
+      // This matches the visual behavior of the Proxy stone which is centered on the pointer.
+      const relativeX = dropPoint.x - sheetRect.left;
+      const relativeY = dropPoint.y - sheetRect.top;
 
-        rawX = stone.x + logicalOffsetX;
-        rawY = stone.y + logicalOffsetY;
-      } else {
-        // If coming from bar, calculate relative position from drop point
-        const relativeX = dropPoint.x - sheetRect.left;
-        const relativeY = dropPoint.y - sheetRect.top;
-
-        rawX = relativeX / scale;
-        rawY = relativeY / scale;
-      }
+      rawX = relativeX / scale;
+      rawY = relativeY / scale;
 
       // Clamp to sheet boundaries (accounting for stone radius)
       // Valid Y range: Hog Line to Back Line
@@ -286,6 +287,16 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         s.index === index ? { ...s, placed: false, resetCount: (s.resetCount || 0) + 1 } : s
       ));
     }
+    setDragState(prev => ({ ...prev, isDragging: false, stoneIndex: null }));
+  };
+
+  const handleStoneDrag = (index: number, position: { x: number; y: number }) => {
+    setDragState({
+      isDragging: true,
+      x: position.x,
+      y: position.y,
+      stoneIndex: index
+    });
   };
 
   const handleSheetClick = (e: React.MouseEvent) => {
@@ -463,6 +474,107 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     });
   };
 
+  const renderGameBoard = (forLoupe = false) => (
+    <div
+      className="relative z-10 border-x border-gray-200 md:border-none"
+      style={{
+        width: sheetDimensions.width,
+        height: sheetDimensions.height,
+      }}
+    >
+      <div
+        ref={forLoupe ? undefined : sheetRef}
+        className="absolute inset-0"
+        onClick={forLoupe ? undefined : handleSheetClick}
+      >
+        <CurlingSheet
+          width="100%"
+          round={isHistoryMode && gameState.history[selectedHistoryRound] ? gameState.history[selectedHistoryRound].round : gameState.current_round}
+          phase={isHistoryMode ? 'combined' : gameState.phase}
+        />
+      </div>
+
+      {/* Render placed stones */}
+      {!isHistoryMode && !isReady && gameState.phase === 'placement' && myStones.map(stone => {
+        const isDraggingThisStone = dragState.isDragging && dragState.stoneIndex === stone.index;
+
+        return stone.placed && (
+          <div key={`stone-wrapper-${stone.index}`}>
+            {/* Ghost Stone (stays in place while dragging) */}
+            {isDraggingThisStone && (
+              <div
+                className="absolute rounded-full"
+                style={{
+                  width: stonePixelSize,
+                  height: stonePixelSize,
+                  backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
+                  border: `2px solid #777777`,
+                  boxShadow: `inset 0 0 0 1px #00000055`, // darker shade approximation
+                  left: stone.x * scale,
+                  top: stone.y * scale,
+                  marginLeft: -stonePixelSize / 2,
+                  marginTop: -stonePixelSize / 2,
+                  opacity: 0.3,
+                  zIndex: 5
+                }}
+              >
+                <div
+                  style={{
+                    width: stonePixelSize * 2 / 5,
+                    height: stonePixelSize / 7,
+                    backgroundColor: '#00000055',
+                    borderRadius: stonePixelSize / 12,
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                />
+              </div>
+            )}
+
+            <DraggableStone
+              key={`my-${stone.index}-${stone.x}-${stone.y}${forLoupe ? '-loupe' : ''}`}
+              color={myColor}
+              index={stone.index}
+              position={{
+                x: stone.x * scale,
+                y: stone.y * scale
+              }}
+              onDragEnd={forLoupe ? () => { } : handleStoneDragEnd}
+              onDrag={forLoupe ? undefined : handleStoneDrag}
+              isPlaced={true}
+              size={stonePixelSize}
+              customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
+              onClick={(e) => e.stopPropagation()}
+              // Hide the actual draggable stone while dragging to prevent jitter and use proxy instead
+              opacity={isDraggingThisStone ? 0 : 1}
+            />
+          </div>
+        );
+      })}
+
+
+
+      {/* Render Red and Yellow stones (Live or History) */}
+      {renderStones(displayRedStones, 'red')}
+      {renderStones(displayYellowStones, 'yellow')}
+
+      {/* Measurement lines in combined phase or history mode */}
+      {(gameState.phase === 'combined' || isHistoryMode) && (
+        <StoneMeasurements
+          stones={{
+            red: displayRedStones,
+            yellow: displayYellowStones
+          }}
+          scale={scale}
+          highlightedStone={highlightedStone || hoveredStone}
+          showMeasurements={showMeasurements}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[var(--icy-white)] backdrop-blur-md transition-all duration-300 overflow-hidden">
       {/* Full-height Sidelines (Mobile Only) */}
@@ -473,62 +585,108 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
       {/* Main Game Area - Flex grow to take available space */}
       <div ref={containerRef} className="flex-grow w-full relative flex flex-col items-center justify-end min-h-0">
+        {renderGameBoard()}
+      </div>
 
+      {/* Loupe */}
+      {dragState.isDragging && (
+        <Loupe
+          x={dragState.x}
+          y={dragState.y}
+          content={
+            <div
+              style={{
+                width: sheetDimensions.width,
+                height: sheetDimensions.height,
+                position: 'relative',
+              }}
+            >
+              <div style={{
+                position: 'absolute',
+                left: sheetRef.current?.getBoundingClientRect().left || 0,
+                top: sheetRef.current?.getBoundingClientRect().top || 0,
+              }}>
+                {renderGameBoard(true)}
+
+                {/* Also render the stone being dragged (proxy) */}
+                {dragState.stoneIndex !== null && myColor && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      zIndex: 50,
+                      left: (dragState.x - (sheetRef.current?.getBoundingClientRect().left || 0)) - stonePixelSize / 2,
+                      top: (dragState.y - (sheetRef.current?.getBoundingClientRect().top || 0)) - stonePixelSize / 2,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: stonePixelSize,
+                        height: stonePixelSize,
+                        borderRadius: '50%',
+                        backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
+                        border: `2px solid #777777`,
+                        boxShadow: `inset 0 0 0 1px #00000055`,
+                        opacity: 0.7,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: stonePixelSize * 2 / 5,
+                          height: stonePixelSize / 7,
+                          backgroundColor: '#00000055',
+                          borderRadius: stonePixelSize / 12,
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          }
+        />
+      )}
+
+      {/* Main Screen Proxy Stone (Fixed Position - Always on Top) */}
+      {dragState.isDragging && dragState.stoneIndex !== null && dragMode === 'follow' && myColor && (
         <div
-          className="relative z-10 border-x border-gray-200 md:border-none"
+          className="fixed pointer-events-none z-[9999]"
           style={{
-            width: sheetDimensions.width,
-            height: sheetDimensions.height,
-            // No margin auto here, we want it to start from top if scrolling
+            width: stonePixelSize,
+            height: stonePixelSize,
+            left: dragState.x - stonePixelSize / 2,
+            top: dragState.y - stonePixelSize / 2,
           }}
         >
-          <div ref={sheetRef} className="absolute inset-0" onClick={handleSheetClick}>
-            <CurlingSheet
-              width="100%"
-              round={isHistoryMode && gameState.history[selectedHistoryRound] ? gameState.history[selectedHistoryRound].round : gameState.current_round}
-              phase={isHistoryMode ? 'combined' : gameState.phase}
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
+              border: `2px solid #777777`,
+              boxShadow: `inset 0 0 0 1px #00000055`,
+              opacity: 0.5,
+            }}
+          >
+            <div
+              style={{
+                width: stonePixelSize * 2 / 5,
+                height: stonePixelSize / 7,
+                backgroundColor: '#00000055',
+                borderRadius: stonePixelSize / 12,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
             />
           </div>
-
-          {/* Render placed stones */}
-          {/* My local stones (during placement, ONLY if not in history mode) */}
-          {!isHistoryMode && !isReady && gameState.phase === 'placement' && myStones.map(stone => (
-            stone.placed && (
-              <DraggableStone
-                key={`my - ${stone.index} -${stone.x} -${stone.y} `}
-                color={myColor}
-                index={stone.index}
-                position={{
-                  x: stone.x * scale,
-                  y: stone.y * scale
-                }}
-                onDragEnd={handleStoneDragEnd}
-                isPlaced={true}
-                size={stonePixelSize}
-                customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
-                onClick={(e) => e.stopPropagation()}
-              />
-            )
-          ))}
-
-          {/* Render Red and Yellow stones (Live or History) */}
-          {renderStones(displayRedStones, 'red')}
-          {renderStones(displayYellowStones, 'yellow')}
-
-          {/* Measurement lines in combined phase or history mode */}
-          {(gameState.phase === 'combined' || isHistoryMode) && (
-            <StoneMeasurements
-              stones={{
-                red: displayRedStones,
-                yellow: displayYellowStones
-              }}
-              scale={scale}
-              highlightedStone={highlightedStone || hoveredStone}
-              showMeasurements={showMeasurements}
-            />
-          )}
         </div>
-      </div>
+      )}
 
       {/* Controls Area - Floating Card */}
       <div className="w-full px-3">
@@ -606,8 +764,10 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                           stones={myStones}
                           color={myColor}
                           onStoneDragEnd={handleStoneDragEnd}
+                          onStoneDrag={handleStoneDrag}
                           stoneSize={stonePixelSize}
                           customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
+                          draggedStoneIndex={dragState.isDragging ? dragState.stoneIndex : null}
                         />
                       )}
                     </div>
@@ -650,6 +810,14 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                     className="flex-grow h-12 text-base"
                   >
                     start new round
+                  </Button>
+                  <Button
+                    onClick={() => setDragMode(prev => prev === 'follow' ? 'stay' : 'follow')}
+                    variant="secondary"
+                    className="h-12 w-12 p-0 flex items-center justify-center"
+                    title={`Drag Mode: ${dragMode}`}
+                  >
+                    {dragMode === 'follow' ? 'Move' : 'Stay'}
                   </Button>
                 </div>
               )}

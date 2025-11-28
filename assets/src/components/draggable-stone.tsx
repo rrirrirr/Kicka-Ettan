@@ -6,10 +6,12 @@ interface DraggableStoneProps {
     customColor?: string;
     index: number;
     position?: { x: number; y: number };
-    onDragEnd: (index: number, position: { x: number; y: number }, offset: { x: number; y: number }) => void;
+    onDragEnd: (index: number, dropPoint: { x: number; y: number }) => void;
+    onDrag?: (index: number, position: { x: number; y: number }) => void;
     isPlaced?: boolean;
     size?: number;
     onClick?: (e: React.MouseEvent) => void;
+    opacity?: number;
 }
 
 const DraggableStone: React.FC<DraggableStoneProps> = ({
@@ -18,9 +20,11 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
     index,
     position,
     onDragEnd,
+    onDrag,
     isPlaced = false,
     size = 40,
-    onClick
+    onClick,
+    opacity = 1
 }) => {
     const stoneColor = customColor || (color === 'red' ? '#ff0000' : '#ffdd00');
     // Calculate a darker shade for handle and inner border
@@ -45,7 +49,12 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
             onDragEnd={(_event, info) => {
                 const x = info.point.x;
                 const y = info.point.y;
-                onDragEnd(index, { x, y }, { x: info.offset.x, y: info.offset.y });
+                onDragEnd(index, { x, y });
+            }}
+            onDrag={(_event, info) => {
+                if (onDrag) {
+                    onDrag(index, { x: info.point.x, y: info.point.y });
+                }
             }}
             onClick={onClick}
             className="animate-glow"
@@ -64,7 +73,8 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
                 cursor: 'grab',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                opacity: opacity
             }}
         >
             {/* Small handle */}

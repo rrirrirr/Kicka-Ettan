@@ -5,8 +5,10 @@ interface StoneSelectionBarProps {
     stones: Array<{ index: number; placed: boolean }>;
     color: 'red' | 'yellow';
     customColor?: string;
-    onStoneDragEnd: (index: number, position: { x: number; y: number }, offset: { x: number; y: number }) => void;
+    onStoneDragEnd: (index: number, position: { x: number; y: number }) => void;
+    onStoneDrag?: (index: number, position: { x: number; y: number }) => void;
     stoneSize?: number;
+    draggedStoneIndex?: number | null;
 }
 
 const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
@@ -14,7 +16,9 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
     color,
     customColor,
     onStoneDragEnd,
-    stoneSize = 40
+    onStoneDrag,
+    stoneSize = 40,
+    draggedStoneIndex = null
 }) => {
     const unplacedStones = stones.filter(s => !s.placed);
 
@@ -30,7 +34,9 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
                         customColor={customColor}
                         index={stone.index}
                         onDragEnd={onStoneDragEnd}
+                        onDrag={onStoneDrag}
                         size={stoneSize}
+                        opacity={draggedStoneIndex === stone.index ? 0 : 1}
                     />
                 ))
             )}
