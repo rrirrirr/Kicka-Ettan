@@ -12,6 +12,7 @@ interface DraggableStoneProps {
     size?: number;
     onClick?: (e: React.MouseEvent) => void;
     opacity?: number;
+    interactive?: boolean;
 }
 
 const DraggableStone: React.FC<DraggableStoneProps> = ({
@@ -24,7 +25,8 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
     isPlaced = false,
     size = 40,
     onClick,
-    opacity = 1
+    opacity = 1,
+    interactive = true
 }) => {
     const stoneColor = customColor || (color === 'red' ? '#ff0000' : '#ffdd00');
     // Calculate a darker shade for handle and inner border
@@ -38,6 +40,41 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
         return `#${darkerR.toString(16).padStart(2, '0')}${darkerG.toString(16).padStart(2, '0')}${darkerB.toString(16).padStart(2, '0')}`;
     };
     const darkerShade = getBorderColor(stoneColor);
+
+    if (!interactive) {
+        return (
+            <div
+                className="animate-glow"
+                style={{
+                    width: size,
+                    height: size,
+                    borderRadius: '50%',
+                    backgroundColor: stoneColor,
+                    border: `2px solid #777777`,
+                    boxShadow: `inset 0 0 0 1px ${darkerShade}`,
+                    position: isPlaced ? 'absolute' : 'relative',
+                    left: isPlaced ? position?.x : undefined,
+                    top: isPlaced ? position?.y : undefined,
+                    marginLeft: isPlaced ? -size / 2 : 0,
+                    marginTop: isPlaced ? -size / 2 : 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: opacity,
+                    pointerEvents: 'none' // Allow clicks to pass through to sheet
+                }}
+            >
+                <div
+                    style={{
+                        width: size * 2 / 5,
+                        height: size / 7,
+                        backgroundColor: darkerShade,
+                        borderRadius: size / 12,
+                    }}
+                />
+            </div>
+        );
+    }
 
     return (
         <motion.div

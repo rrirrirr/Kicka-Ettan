@@ -298,12 +298,31 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     });
   };
 
-  const handleSheetClick = (e: React.MouseEvent) => {
-    if (!sheetRef.current || isReady || gameState.phase !== 'placement' || isHistoryMode) return;
+  // Global pointer up handler to stop dragging
+  useEffect(() => {
+    const handleGlobalPointerUp = (e: PointerEvent) => {
+      if (dragState.isDragging) {
+        handleStoneDragEnd(dragState.stoneIndex!, { x: e.clientX, y: e.clientY });
+      }
+    };
 
-    // Find first unplaced stone
-    const stoneToPlace = myStones.find(s => !s.placed);
-    if (!stoneToPlace) return;
+    const handleGlobalPointerMove = (e: PointerEvent) => {
+      if (dragState.isDragging && dragState.stoneIndex !== null) {
+        handleStoneDrag(dragState.stoneIndex, { x: e.clientX, y: e.clientY });
+      }
+    };
+
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('pointermove', handleGlobalPointerMove);
+
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+    };
+  }, [dragState.isDragging, dragState.stoneIndex, myStones, scale]); // Dependencies for drag end logic
+
+  const handleSheetPointerDown = (e: React.PointerEvent) => {
+    if (!sheetRef.current || isReady || gameState.phase !== 'placement' || isHistoryMode) return;
 
     const sheetRect = sheetRef.current.getBoundingClientRect();
     const clickX = e.clientX - sheetRect.left;
@@ -312,6 +331,40 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     // Convert to logical coordinates
     const rawX = clickX / scale;
     const rawY = clickY / scale;
+
+    // 1. Check for stone pickup (Smart Targeting)
+    // Find closest stone within threshold
+    const PICKUP_THRESHOLD = 44 / scale; // 44px in logical units
+    let closestStone = null;
+    let minDistance = Infinity;
+
+    myStones.forEach(stone => {
+      if (!stone.placed) return;
+      const dx = rawX - stone.x;
+      const dy = rawY - stone.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < PICKUP_THRESHOLD && distance < minDistance) {
+        minDistance = distance;
+        closestStone = stone;
+      }
+    });
+
+    if (closestStone) {
+      // Start dragging this stone
+      setDragState({
+        isDragging: true,
+        x: e.clientX,
+        y: e.clientY,
+        stoneIndex: closestStone.index
+      });
+      return;
+    }
+
+    // 2. If no stone found, try to place a new one (existing click logic)
+    // Find first unplaced stone
+    const stoneToPlace = myStones.find(s => !s.placed);
+    if (!stoneToPlace) return;
 
     // Clamp to sheet boundaries
     const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
@@ -483,8 +536,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     >
       <div
         ref={forLoupe ? undefined : sheetRef}
-        className="absolute inset-0"
-        onClick={forLoupe ? undefined : handleSheetClick}
+        className="absolute inset-0 touch-none" // touch-none to prevent browser zooming/scrolling while dragging
+        onPointerDown={forLoupe ? undefined : handleSheetPointerDown}
       >
         <CurlingSheet
           width="100%"
@@ -548,6 +601,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
               onClick={(e) => e.stopPropagation()}
               // Hide the actual draggable stone while dragging to prevent jitter and use proxy instead
               opacity={isDraggingThisStone ? 0 : 1}
+              interactive={false} // Let sheet handle events for smart targeting
             />
           </div>
         );
