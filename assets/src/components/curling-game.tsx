@@ -95,7 +95,7 @@ const resolveCollisions = (
 };
 
 
-import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler } from 'lucide-react';
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X } from 'lucide-react';
 import { Loupe } from './Loupe';
 
 // ... existing imports ...
@@ -752,19 +752,19 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
             </div>
 
             {/* Contextual Controls */}
-            <div className="flex-grow flex items-center justify-center">
+            <div className="flex-grow flex items-center justify-center min-w-0">
               {/* Placement Phase - Active */}
               {gameState.phase === 'placement' && !isReady && !isHistoryMode && (
                 <div className="w-full flex items-center gap-2">
                   {!allStonesPlaced ? (
-                    <div className="flex-grow">
+                    <div className="flex-grow min-w-0">
                       {myColor && (
                         <StoneSelectionBar
                           stones={myStones}
                           color={myColor}
                           onStoneDragEnd={handleStoneDragEnd}
                           onStoneDrag={handleStoneDrag}
-                          stoneSize={stonePixelSize}
+                          stoneSize={Math.max(stonePixelSize * 1.8, 44)}
                           customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
                           draggedStoneIndex={dragState.isDragging ? dragState.stoneIndex : null}
                         />

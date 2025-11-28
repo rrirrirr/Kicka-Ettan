@@ -23,23 +23,31 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
     const unplacedStones = stones.filter(s => !s.placed);
 
     return (
-        <div className="w-full bg-blue-100 p-4 rounded-lg shadow-inner flex flex-wrap justify-center gap-4 items-center">
-            {unplacedStones.length === 0 ? (
-                <div className="text-gray-500 italic w-full text-center">All stones placed</div>
-            ) : (
-                unplacedStones.map(stone => (
-                    <DraggableStone
-                        key={`bar-${stone.index}-${(stone as any).resetCount || 0}`}
-                        color={color}
-                        customColor={customColor}
-                        index={stone.index}
-                        onDragEnd={onStoneDragEnd}
-                        onDrag={onStoneDrag}
-                        size={stoneSize}
-                        opacity={draggedStoneIndex === stone.index ? 0 : 1}
-                    />
-                ))
-            )}
+        <div className="relative w-full">
+            <div
+                className="w-full bg-blue-100 p-2 rounded-lg shadow-inner flex flex-nowrap justify-start gap-2 items-center overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
+            >
+                {unplacedStones.length === 0 ? (
+                    <div className="text-gray-500 italic w-full text-center">All stones placed</div>
+                ) : (
+                    unplacedStones.map(stone => (
+                        <div key={`wrapper-${stone.index}`} className="shrink-0">
+                            <DraggableStone
+                                key={`bar-${stone.index}-${(stone as any).resetCount || 0}`}
+                                color={color}
+                                customColor={customColor}
+                                index={stone.index}
+                                onDragEnd={onStoneDragEnd}
+                                onDrag={onStoneDrag}
+                                size={stoneSize}
+                                opacity={draggedStoneIndex === stone.index ? 0 : 1}
+                            />
+                        </div>
+                    ))
+                )}
+                {/* Spacer to ensure last item isn't cut off */}
+                <div className="w-4 shrink-0" />
+            </div>
         </div>
     );
 };
