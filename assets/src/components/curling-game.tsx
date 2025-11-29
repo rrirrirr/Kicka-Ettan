@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import CurlingSheet from './curling-sheet';
 import { Dialog } from './ui/Dialog';
 import { Button } from './ui/Button';
@@ -33,7 +34,7 @@ interface StonePosition {
 
 type GestureState =
   | { type: 'IDLE' }
-  | { type: 'PENDING'; stoneIndex: number; startX: number; startY: number }
+  | { type: 'PENDING'; stoneIndex: number; startX: number; startY: number; timerId: number; source: 'pickup' | 'placement' }
   | { type: 'DRAGGING'; stoneIndex: number };
 
 // Helper function for collision resolution
@@ -125,7 +126,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     y: 0,
     stoneIndex: null
   });
-  const [dragMode, setDragMode] = useState<'follow' | 'stay'>('follow');
+  // const [dragMode, setDragMode] = useState<'follow' | 'stay'>('follow'); // Removed unused dragMode
   const gestureState = useRef<GestureState>({ type: 'IDLE' });
   const isHistoryMode = selectedHistoryRound !== null;
 
@@ -316,11 +317,21 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     const handleGlobalPointerUp = (e: PointerEvent) => {
       // Handle PENDING state (Click vs Drag decision)
       if (gestureState.current.type === 'PENDING') {
-        const { stoneIndex, startX, startY } = gestureState.current;
+        // Clear the long-press timer
+        clearTimeout(gestureState.current.timerId);
+
+        const { stoneIndex, startX, startY, source } = gestureState.current;
         const moveDist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
 
         // If we didn't move much, it's a CLICK
         if (moveDist < 5) {
+          // If the source was 'placement', we have already placed the stone.
+          // We should NOT do anything else (like selecting it or placing another one).
+          if (source === 'placement') {
+            gestureState.current = { type: 'IDLE' };
+            return;
+          }
+
           // Check if click was ON the stone or in the HALO
           // We need to recalculate the distance to the stone center in logical coordinates
           if (sheetRef.current) {
@@ -379,10 +390,13 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     const handleGlobalPointerMove = (e: PointerEvent) => {
       // Handle PENDING -> DRAGGING transition
       if (gestureState.current.type === 'PENDING') {
-        const { startX, startY, stoneIndex } = gestureState.current;
+        const { startX, startY, stoneIndex, timerId } = gestureState.current;
         const moveDist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
 
         if (moveDist > 5) { // Drag threshold
+          // Clear the timer since we are now dragging manually
+          clearTimeout(timerId);
+
           gestureState.current = { type: 'DRAGGING', stoneIndex };
           setDragState({
             isDragging: true,
@@ -437,14 +451,34 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       }
     }
 
-    if (closestStone !== null) {
-      // Start PENDING gesture (wait to see if click or drag)
+    // Helper to start pending gesture
+    const startPendingGesture = (index: number, source: 'pickup' | 'placement') => {
+      const timerId = window.setTimeout(() => {
+        if (gestureState.current.type === 'PENDING' && gestureState.current.stoneIndex === index) {
+          // Promote to DRAGGING
+          const { startX, startY } = gestureState.current;
+          gestureState.current = { type: 'DRAGGING', stoneIndex: index };
+          setDragState({
+            isDragging: true,
+            x: startX,
+            y: startY,
+            stoneIndex: index
+          });
+        }
+      }, 300); // 500ms long press
+
       gestureState.current = {
         type: 'PENDING',
-        stoneIndex: closestStone.index,
+        stoneIndex: index,
         startX: e.clientX,
-        startY: e.clientY
+        startY: e.clientY,
+        timerId,
+        source
       };
+    };
+
+    if (closestStone !== null) {
+      startPendingGesture(closestStone.index, 'pickup');
       return;
     }
 
@@ -465,7 +499,11 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     // Resolve collisions
     const { x: resolvedX, y: resolvedY } = resolveCollisions(stoneToPlace.index, clampedX, clampedY, myStones);
 
+    // Place the stone
     updateStonePosition(stoneToPlace.index, resolvedX, resolvedY, true);
+
+    // Enter PENDING state to allow immediate dragging
+    startPendingGesture(stoneToPlace.index, 'placement');
   }, [isReady, gameState.phase, isHistoryMode, scale, myStones, updateStonePosition]);
 
   const handleConfirmPlacement = () => {
@@ -676,7 +714,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                 y: stone.y * scale
               }}
               onDragEnd={forLoupe ? () => { } : handleStoneDragEnd}
-              onDrag={forLoupe ? undefined : handleStoneDrag}
+              // onDrag={forLoupe ? undefined : handleStoneDrag} // Removed unused prop
               isPlaced={true}
               size={stonePixelSize}
               customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
@@ -786,7 +824,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
       )}
 
       {/* Main Screen Proxy Stone (Fixed Position - Always on Top) */}
-      {dragState.isDragging && dragState.stoneIndex !== null && dragMode === 'follow' && myColor && (
+      {dragState.isDragging && dragState.stoneIndex !== null && myColor && createPortal(
         <div
           className="fixed pointer-events-none z-[9999]"
           style={{
@@ -804,7 +842,9 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
               backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
               border: `2px solid #777777`,
               boxShadow: `inset 0 0 0 1px #00000055`,
-              opacity: 0.5,
+              opacity: 0.8,
+              transform: 'scale(1.1)',
+              transition: 'transform 0.1s ease-out',
             }}
           >
             <div
@@ -820,7 +860,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
               }}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Controls Area - Floating Card */}
@@ -945,14 +986,6 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                     className="flex-grow h-12 text-base"
                   >
                     start new round
-                  </Button>
-                  <Button
-                    onClick={() => setDragMode(prev => prev === 'follow' ? 'stay' : 'follow')}
-                    variant="secondary"
-                    className="h-12 w-12 p-0 flex items-center justify-center"
-                    title={`Drag Mode: ${dragMode}`}
-                  >
-                    {dragMode === 'follow' ? 'Move' : 'Stay'}
                   </Button>
                 </div>
               )}
