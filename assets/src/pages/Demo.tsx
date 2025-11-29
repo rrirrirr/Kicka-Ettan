@@ -6,14 +6,15 @@ const Demo = () => {
     // Mock Player ID
     const playerId = "demo-player-1";
 
-    // State to track phase
+    // State to track phase and round
     const [phase, setPhase] = useState<'placement' | 'combined'>('placement');
     const [redStones, setRedStones] = useState<Array<{ x: number; y: number }>>([]);
+    const [currentRound, setCurrentRound] = useState(1);
 
     // Mock Game State
     const mockGameState = {
         game_id: "demo-game-123",
-        current_round: 1,
+        current_round: currentRound,
         total_rounds: 3,
         stones_per_team: 5,
         phase: phase,
@@ -39,16 +40,51 @@ const Demo = () => {
     // Mock Channel
     const mockChannel = {
         push: (event: string, payload: any) => {
-            if (event === "confirm_placement") {
+            if (event === "place_stone") {
                 // Collect stone placements
                 setRedStones(prev => [...prev, payload.position]);
+                return {
+                    receive: (status: string, callback: (data?: any) => void) => {
+                        if (status === 'ok') setTimeout(() => callback(), 0);
+                        return { receive: () => ({ receive: () => ({}) }) };
+                    }
+                };
             }
 
             if (event === "confirm_placement") {
                 setTimeout(() => {
                     setPhase('combined');
-                }, 500);
+                }, 100);
+                return {
+                    receive: (status: string, callback: (data?: any) => void) => {
+                        if (status === 'ok') setTimeout(() => callback(), 0);
+                        return { receive: () => ({ receive: () => ({}) }) };
+                    }
+                };
             }
+
+            if (event === "ready_for_next_round") {
+                // Reset to placement phase and clear stones, increment round
+                setTimeout(() => {
+                    setPhase('placement');
+                    setRedStones([]);
+                    setCurrentRound(prev => prev + 1);
+                }, 100);
+                return {
+                    receive: (status: string, callback: (data?: any) => void) => {
+                        if (status === 'ok') setTimeout(() => callback(), 0);
+                        return { receive: () => ({ receive: () => ({}) }) };
+                    }
+                };
+            }
+
+            // Default return for other events
+            return {
+                receive: (status: string, callback: (data?: any) => void) => {
+                    if (status === 'ok') setTimeout(() => callback(), 0);
+                    return { receive: () => ({ receive: () => ({}) }) };
+                }
+            };
         },
         on: (_event: string, _callback: (data: any) => void) => {
         },
