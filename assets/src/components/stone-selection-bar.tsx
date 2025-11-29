@@ -68,6 +68,64 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
         );
     };
 
+    const gestureState = React.useRef<{
+        type: 'IDLE' | 'PENDING' | 'DRAGGING';
+        stoneIndex: number | null;
+        startX: number;
+        startY: number;
+        startTime: number;
+    }>({ type: 'IDLE', stoneIndex: null, startX: 0, startY: 0, startTime: 0 });
+
+    React.useEffect(() => {
+        const handleGlobalPointerMove = (e: PointerEvent) => {
+            if (gestureState.current.type === 'PENDING') {
+                const { startX, startY, stoneIndex, startTime } = gestureState.current;
+                const moveDist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
+                const timeElapsed = Date.now() - startTime;
+
+                if (moveDist > 5 && timeElapsed > 200) { // Drag threshold: >5px AND >200ms
+                    gestureState.current = { ...gestureState.current, type: 'DRAGGING' };
+                    if (onStoneDrag && stoneIndex !== null) {
+                        onStoneDrag(stoneIndex, { x: e.clientX, y: e.clientY });
+                    }
+                }
+            } else if (gestureState.current.type === 'DRAGGING') {
+                if (onStoneDrag && gestureState.current.stoneIndex !== null) {
+                    onStoneDrag(gestureState.current.stoneIndex, { x: e.clientX, y: e.clientY });
+                }
+            }
+        };
+
+        const handleGlobalPointerUp = (e: PointerEvent) => {
+            if (gestureState.current.type === 'DRAGGING') {
+                if (onStoneDragEnd && gestureState.current.stoneIndex !== null) {
+                    onStoneDragEnd(gestureState.current.stoneIndex, { x: e.clientX, y: e.clientY });
+                }
+            }
+            // If PENDING, it was just a click (no drag), so we do nothing but reset
+            gestureState.current = { type: 'IDLE', stoneIndex: null, startX: 0, startY: 0, startTime: 0 };
+        };
+
+        window.addEventListener('pointermove', handleGlobalPointerMove);
+        window.addEventListener('pointerup', handleGlobalPointerUp);
+
+        return () => {
+            window.removeEventListener('pointermove', handleGlobalPointerMove);
+            window.removeEventListener('pointerup', handleGlobalPointerUp);
+        };
+    }, [onStoneDrag, onStoneDragEnd]);
+
+    const handlePointerDown = (e: React.PointerEvent, index: number) => {
+        e.preventDefault(); // Prevent default touch actions
+        gestureState.current = {
+            type: 'PENDING',
+            stoneIndex: index,
+            startX: e.clientX,
+            startY: e.clientY,
+            startTime: Date.now()
+        };
+    };
+
     return (
         <div className="relative w-full">
             <div
@@ -77,7 +135,11 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
                     <div className="text-gray-500 italic w-full text-center">All stones placed</div>
                 ) : (
                     unplacedStones.map(stone => (
-                        <div key={`wrapper-${stone.index}`} className="shrink-0 relative">
+                        <div
+                            key={`wrapper-${stone.index}`}
+                            className="shrink-0 relative touch-none"
+                            onPointerDown={(e) => handlePointerDown(e, stone.index)}
+                        >
                             {draggedStoneIndex === stone.index && renderGhostStone()}
                             <DraggableStone
                                 key={`bar-${stone.index}-${(stone as any).resetCount || 0}`}
@@ -88,6 +150,7 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
                                 onDrag={onStoneDrag}
                                 size={stoneSize}
                                 opacity={draggedStoneIndex === stone.index ? 0 : 1}
+                                interactive={false} // Disable internal drag, handle externally
                             />
                         </div>
                     ))

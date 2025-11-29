@@ -34,7 +34,7 @@ interface StonePosition {
 
 type GestureState =
   | { type: 'IDLE' }
-  | { type: 'PENDING'; stoneIndex: number; startX: number; startY: number; timerId: number; source: 'pickup' | 'placement' }
+  | { type: 'PENDING'; stoneIndex: number; startX: number; startY: number; timerId: number; source: 'pickup' | 'placement'; startTime: number }
   | { type: 'DRAGGING'; stoneIndex: number };
 
 // Helper function for collision resolution
@@ -381,8 +381,11 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         return;
       }
 
-      if (dragState.isDragging) {
-        handleStoneDragEnd(dragState.stoneIndex!, { x: e.clientX, y: e.clientY });
+      if (dragState.isDragging || gestureState.current.type === 'DRAGGING') {
+        const index = dragState.stoneIndex ?? (gestureState.current.type === 'DRAGGING' ? gestureState.current.stoneIndex : null);
+        if (index !== null) {
+          handleStoneDragEnd(index, { x: e.clientX, y: e.clientY });
+        }
         gestureState.current = { type: 'IDLE' };
       }
     };
@@ -390,10 +393,16 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     const handleGlobalPointerMove = (e: PointerEvent) => {
       // Handle PENDING -> DRAGGING transition
       if (gestureState.current.type === 'PENDING') {
-        const { startX, startY, stoneIndex, timerId } = gestureState.current;
+        const { startX, startY, stoneIndex, timerId, source, startTime } = gestureState.current;
         const moveDist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
+        const timeElapsed = Date.now() - startTime;
 
-        if (moveDist > 5) { // Drag threshold
+        // Logic:
+        // - If source is 'pickup' (existing stone), drag immediately on move > 5px.
+        // - If source is 'placement' (new stone), drag ONLY if > 200ms has passed AND moved > 5px.
+        const shouldDrag = moveDist > 5 && (source === 'pickup' || timeElapsed > 200);
+
+        if (shouldDrag) { // Drag threshold
           // Clear the timer since we are now dragging manually
           clearTimeout(timerId);
 
@@ -473,7 +482,8 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         startX: e.clientX,
         startY: e.clientY,
         timerId,
-        source
+        source,
+        startTime: Date.now()
       };
     };
 
