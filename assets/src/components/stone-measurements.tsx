@@ -110,29 +110,24 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 // Determine which side of center line the stone is on
                 // Edge detection: check if stone is too close to left/right edges
                 const edgeThreshold = 60; // pixels of margin to maintain
-                const isNearLeftEdge = stonePixelX < edgeThreshold;
-                const isNearRightEdge = stonePixelX > (SHEET_WIDTH * scale - edgeThreshold);
-
-                // Offset for vertical label: flip to opposite side if too close to edge
-                let verticalLabelOffset: number;
-                if (isNearLeftEdge) {
-                    // Force to right side
-                    verticalLabelOffset = isHighlighted ? 35 : 10;
-                } else if (isNearRightEdge) {
-                    // Force to left side
-                    verticalLabelOffset = isHighlighted ? -35 : -10;
-                } else {
-                    // Normal logic based on which side of center
-                    verticalLabelOffset = isLeftOfCenter
-                        ? (isHighlighted ? -35 : -10)
-                        : (isHighlighted ? 35 : 10);
-                }
 
                 // Offset for horizontal label: adjust if near top edge
                 const isNearTopEdge = stonePixelY < edgeThreshold;
-                const horizontalLabelOffset = isNearTopEdge
-                    ? (isHighlighted ? 25 : 8)  // Push down if near top
-                    : (isHighlighted ? -25 : -8); // Normal: push up
+                const horizontalLabelOffset = isNearTopEdge ? 25 : -25;
+
+                // Horizontal offset for tee line label based on quadrant (0-25%: right, 25-50%: left, 50-75%: right, 75-100%: left)
+                const xPercent = (stone.pos.x / SHEET_WIDTH) * 100;
+                let teeLineLabelOnRight: boolean;
+                if (xPercent < 25) {
+                    teeLineLabelOnRight = true;
+                } else if (xPercent < 50) {
+                    teeLineLabelOnRight = false;
+                } else if (xPercent < 75) {
+                    teeLineLabelOnRight = true;
+                } else {
+                    teeLineLabelOnRight = false;
+                }
+                const teeLineLabelHorizontalOffset = teeLineLabelOnRight ? 50 : -50;
 
                 // Guard Zone Measurement
                 // Zone is between Top of House (Tee Line - 12ft radius) and Hog Line (Tee Line - HOG_LINE_OFFSET)
@@ -312,23 +307,29 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                     let percentage;
                                     const totalZoneDist = topOfHouseY - hogLineY;
 
+                                    // Calculate actual distance in cm for the brace segment
+                                    let braceDistanceCm;
                                     if (isCloserToHog) {
                                         // Distance from Hog Line to Top of House
                                         const distFromHog = stone.pos.y - hogLineY;
                                         percentage = Math.round((distFromHog / totalZoneDist) * 100);
+                                        braceDistanceCm = distFromHog;
                                     } else {
                                         // Distance from Top of House to Hog Line (original calculation)
                                         const distFromHouse = topOfHouseY - stone.pos.y;
                                         percentage = Math.round((distFromHouse / totalZoneDist) * 100);
+                                        braceDistanceCm = distFromHouse;
                                     }
 
                                     // Label Position (Brace)
                                     // At the "point" of the brace (midY of the brace segment)
                                     // Offset further by braceWidth
                                     const midY = (braceStartY + braceEndY) / 2;
+                                    // Adjust vertical position when brace is on right to align with left-side labels
+                                    const verticalAdjustment = pointRight ? 3 : 0;
                                     const labelX = pointRight
-                                        ? braceX + braceWidth + 10
-                                        : braceX - braceWidth - 10;
+                                        ? braceX + braceWidth + 20
+                                        : braceX - braceWidth - 20;
 
                                     // Label Position (Extension Line)
                                     // Now spans entire guard zone, so center it there
@@ -336,26 +337,15 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                     const extLineEndY = hogLineY * scale;
                                     const extMidY = (extLineStartY + extLineEndY) / 2;
                                     const extLabelX = placeBraceOnRight
-                                        ? stonePixelX + (STONE_RADIUS * scale) + 25
-                                        : stonePixelX - (STONE_RADIUS * scale) - 25;
+                                        ? stonePixelX + (STONE_RADIUS * scale) + 35
+                                        : stonePixelX - (STONE_RADIUS * scale) - 35;
 
                                     return (
                                         <>
-                                            {/* Brace Label */}
-                                            {isHighlighted && (
-                                                <rect
-                                                    x={labelX - 25}
-                                                    y={midY - 12}
-                                                    width="50"
-                                                    height="24"
-                                                    fill="white"
-                                                    opacity="0.8"
-                                                    rx="3"
-                                                />
-                                            )}
+                                            {/* Brace Label - Percentage */}
                                             <text
                                                 x={labelX}
-                                                y={midY}
+                                                y={midY + verticalAdjustment - (isHighlighted ? 8 : 6)}
                                                 fill="#7e22ce" // Purple-700
                                                 fontSize={fontSize}
                                                 fontWeight={fontWeight}
@@ -367,18 +357,22 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                 {percentage}%
                                             </text>
 
+                                            {/* Brace Label - Distance in cm */}
+                                            <text
+                                                x={labelX}
+                                                y={midY + verticalAdjustment + (isHighlighted ? 8 : 6)}
+                                                fill="#7e22ce" // Purple-700
+                                                fontSize={isHighlighted ? "12" : "10"}
+                                                fontWeight="600"
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                opacity={opacity}
+                                                style={{ transition: 'all 0.2s ease' }}
+                                            >
+                                                {braceDistanceCm.toFixed(1)}cm
+                                            </text>
+
                                             {/* Extension Line Label */}
-                                            {isHighlighted && (
-                                                <rect
-                                                    x={extLabelX - 25}
-                                                    y={extMidY - 12}
-                                                    width="50"
-                                                    height="24"
-                                                    fill="white"
-                                                    opacity="0.8"
-                                                    rx="3"
-                                                />
-                                            )}
                                             <text
                                                 x={extLabelX}
                                                 y={extMidY}
@@ -422,31 +416,18 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                 style={{ transition: 'all 0.2s ease' }}
                             />
                             {/* Distance label for Tee Line */}
-                            {isHighlighted && (
-                                <rect
-                                    x={stonePixelX + verticalLabelOffset - 30}
-                                    y={(stonePixelY + teeLinePixelY) / 2 - 12}
-                                    width="60"
-                                    height="24"
-                                    fill="white"
-                                    opacity="0.8"
-                                    rx="3"
-                                    transform={`rotate(-90, ${stonePixelX + verticalLabelOffset}, ${(stonePixelY + teeLinePixelY) / 2})`}
-                                />
-                            )}
                             <text
-                                x={stonePixelX + verticalLabelOffset}
+                                x={stonePixelX + teeLineLabelHorizontalOffset}
                                 y={(stonePixelY + teeLinePixelY) / 2}
                                 fill={textColor}
                                 fontSize={fontSize}
                                 fontWeight={fontWeight}
                                 textAnchor="middle"
                                 dominantBaseline="middle"
-                                transform={`rotate(-90, ${stonePixelX + verticalLabelOffset}, ${(stonePixelY + teeLinePixelY) / 2})`}
                                 style={{ transition: 'all 0.2s ease' }}
                                 opacity={opacity}
                             >
-                                {displayDistanceToTee.toFixed(1)}cm
+                                {displayDistanceToTee.toFixed(1)}cm {isAboveTee ? '↓' : '↑'}
                             </text>
                         </svg>
 
@@ -474,17 +455,6 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                 style={{ transition: 'all 0.2s ease' }}
                             />
                             {/* Distance label for Center Line */}
-                            {isHighlighted && (
-                                <rect
-                                    x={(horizontalLineStartX + centerLinePixelX) / 2 - 30}
-                                    y={stonePixelY + horizontalLabelOffset - 12}
-                                    width="60"
-                                    height="24"
-                                    fill="white"
-                                    opacity="0.8"
-                                    rx="3"
-                                />
-                            )}
                             <text
                                 x={(horizontalLineStartX + centerLinePixelX) / 2}
                                 y={stonePixelY + horizontalLabelOffset}
@@ -496,7 +466,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                 style={{ transition: 'all 0.2s ease' }}
                                 opacity={opacity}
                             >
-                                {displayDistanceToCenter.toFixed(1)}cm
+                                {isLeftOfCenter ? `${displayDistanceToCenter.toFixed(1)}cm →` : `← ${displayDistanceToCenter.toFixed(1)}cm`}
                             </text>
                         </svg>
                     </React.Fragment>
