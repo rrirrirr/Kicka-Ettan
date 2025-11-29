@@ -1,5 +1,5 @@
 import React from 'react';
-import { SHEET_WIDTH, VIEW_TOP_OFFSET, STONE_RADIUS } from '../utils/constants';
+import { SHEET_WIDTH, VIEW_TOP_OFFSET, STONE_RADIUS, HOUSE_RADIUS_12, HOG_LINE_OFFSET } from '../utils/constants';
 
 interface StonePosition {
     x: number;
@@ -12,6 +12,31 @@ interface StoneMeasurementsProps {
     highlightedStone?: { color: 'red' | 'yellow'; index: number } | null;
     showMeasurements?: boolean;
 }
+
+// Proper curly brace algorithm adapted from D3.js example
+// Creates a curly brace between (x1,y1) and (x2,y2), with width w and expressiveness q
+const getBracePath = (x1: number, y1: number, x2: number, y2: number, w: number, q: number) => {
+    // Calculate unit vector
+    let dx = x1 - x2;
+    let dy = y1 - y2;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    dx = dx / len;
+    dy = dy / len;
+
+    // Calculate Control Points of path
+    const qx1 = x1 + q * w * dy;
+    const qy1 = y1 - q * w * dx;
+    const qx2 = (x1 - 0.25 * len * dx) + (1 - q) * w * dy;
+    const qy2 = (y1 - 0.25 * len * dy) - (1 - q) * w * dx;
+    const tx1 = (x1 - 0.5 * len * dx) + w * dy;
+    const ty1 = (y1 - 0.5 * len * dy) - w * dx;
+    const qx3 = x2 + q * w * dy;
+    const qy3 = y2 - q * w * dx;
+    const qx4 = (x1 - 0.75 * len * dx) + (1 - q) * w * dy;
+    const qy4 = (y1 - 0.75 * len * dy) - (1 - q) * w * dx;
+
+    return `M ${x1} ${y1} Q ${qx1} ${qy1} ${qx2} ${qy2} T ${tx1} ${ty1} M ${x2} ${y2} Q ${qx3} ${qy3} ${qx4} ${qy4} T ${tx1} ${ty1}`;
+};
 
 const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, highlightedStone, showMeasurements = true }) => {
     const centerLineX = SHEET_WIDTH / 2;
@@ -109,8 +134,270 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     ? (isHighlighted ? 25 : 8)  // Push down if near top
                     : (isHighlighted ? -25 : -8); // Normal: push up
 
+                // Guard Zone Measurement
+                // Zone is between Top of House (Tee Line - 12ft radius) and Hog Line (Tee Line - HOG_LINE_OFFSET)
+                // Note: In our coordinate system:
+                // Tee Line Y = teeLineY
+                // Top of House Y = teeLineY - HOUSE_RADIUS_12
+                // Hog Line Y = teeLineY - HOG_LINE_OFFSET
+                // Since Y goes DOWN in SVG (0 at top), and we are looking at the area ABOVE the Tee Line (smaller Y values):
+                // Top of House is at Y = teeLineY - HOUSE_RADIUS_12
+                // Hog Line is at Y = teeLineY - HOG_LINE_OFFSET
+                // So the zone is Y values between [teeLineY - HOG_LINE_OFFSET, teeLineY - HOUSE_RADIUS_12]
+
+                const topOfHouseY = teeLineY - HOUSE_RADIUS_12;
+                const hogLineY = teeLineY - HOG_LINE_OFFSET;
+
+                // Check if stone center is in the guard zone
+                // We use stone.pos.y directly as it matches the logical coordinate system which is 1:1 with SVG Y here?
+                // Wait, in CurlingSheet:
+                // teeY = VIEW_TOP_OFFSET
+                // Hog Line Y = teeY - HOG_LINE_OFFSET
+                // So yes, Y decreases as we go UP the sheet.
+                // Guard zone is between Hog Line (smaller Y) and Top of House (larger Y).
+                // But wait, Hog Line is FURTHER from Tee Line than House.
+                // So Hog Line Y < Top of House Y.
+                const isInGuardZone = stonePixelY > (hogLineY * scale) && stonePixelY < (topOfHouseY * scale);
+
+                // Brace Logic
+                // const isLeftOfCenter = stone.pos.x < centerLineX; // Already defined above
+                const braceWidth = 20;
+                const braceXOffset = 40; // Distance from stone center
+
+                // Determine side based on position (avoid off-screen)
+                const isExtremeLeft = stone.pos.x < SHEET_WIDTH * 0.25;
+                const isExtremeRight = stone.pos.x > SHEET_WIDTH * 0.75;
+
+                let placeBraceOnRight;
+                if (isExtremeLeft) {
+                    placeBraceOnRight = true; // Force Right side
+                } else if (isExtremeRight) {
+                    placeBraceOnRight = false; // Force Left side
+                } else {
+                    placeBraceOnRight = !isLeftOfCenter; // Standard side
+                }
+
+                const braceX = placeBraceOnRight
+                    ? stonePixelX + braceXOffset
+                    : stonePixelX - braceXOffset;
+
+                // If brace is on right, it points right (bulges right).
+                // If brace is on left, it points left (bulges left).
+                const pointRight = placeBraceOnRight;
+
+                // Determine closest reference line
+                // Y increases downwards.
+                // Hog Line is at top (smaller Y).
+                // House is at bottom (larger Y).
+                // Stone is in between.
+
+                const distToHog = Math.abs(stonePixelY - (hogLineY * scale));
+                const distToHouse = Math.abs((topOfHouseY * scale) - stonePixelY);
+
+                const isCloserToHog = distToHog < distToHouse;
+
+                // Brace spans from reference line to stone.
+                // If closer to Hog: Start at Hog (top), End at Stone (bottom).
+                // If closer to House: Start at Stone (top), End at House (bottom).
+
+                let braceStartY, braceEndY;
+
+                if (isCloserToHog) {
+                    braceStartY = hogLineY * scale;
+                    braceEndY = stonePixelY;
+                } else {
+                    braceStartY = stonePixelY;
+                    braceEndY = topOfHouseY * scale;
+                }
+
                 return (
                     <React.Fragment key={`${stone.color}-${stone.index}`}>
+                        {/* Guard Zone Measurement (Brace) */}
+                        {isInGuardZone && (
+                            <svg
+                                style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    pointerEvents: 'none',
+                                    transition: 'opacity 0.2s ease',
+                                    overflow: 'visible'
+                                }}
+                            >
+                                {/* Hog Line Reference Line */}
+                                <line
+                                    x1={0}
+                                    y1={hogLineY * scale}
+                                    x2={SHEET_WIDTH * scale}
+                                    y2={hogLineY * scale}
+                                    stroke="#9333ea"
+                                    strokeWidth="1"
+                                    opacity={opacity}
+                                    style={{ transition: 'all 0.2s ease' }}
+                                />
+
+                                {/* Top of House Reference Line */}
+                                <line
+                                    x1={0}
+                                    y1={topOfHouseY * scale}
+                                    x2={SHEET_WIDTH * scale}
+                                    y2={topOfHouseY * scale}
+                                    stroke="#9333ea"
+                                    strokeWidth="1"
+                                    opacity={opacity}
+                                    style={{ transition: 'all 0.2s ease' }}
+                                />
+
+                                {/* Brace */}
+                                <path
+                                    d={getBracePath(
+                                        braceX,
+                                        braceStartY,
+                                        braceX,
+                                        braceEndY,
+                                        pointRight ? -braceWidth : braceWidth,
+                                        0.6
+                                    )}
+                                    stroke="#9333ea"
+                                    strokeWidth="2"
+                                    fill="none"
+                                    opacity={opacity}
+                                    style={{ transition: 'all 0.2s ease' }}
+                                />
+
+                                {/* Dashed connector line from brace to stone edge (Stone End) */}
+                                <line
+                                    x1={braceX}
+                                    y1={stonePixelY}
+                                    x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                    y2={stonePixelY}
+                                    stroke="#9333ea"
+                                    strokeWidth="2"
+                                    strokeDasharray="5,5"
+                                    opacity={opacity}
+                                    style={{ transition: 'all 0.2s ease' }}
+                                />
+
+                                {/* Dashed connector line from brace to stone edge (Reference End) */}
+                                <line
+                                    x1={braceX}
+                                    y1={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
+                                    x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                    y2={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
+                                    stroke="#9333ea"
+                                    strokeWidth="2"
+                                    strokeDasharray="5,5"
+                                    opacity={opacity}
+                                    style={{ transition: 'all 0.2s ease' }}
+                                />
+
+                                {/* Vertical extension line (from Top of House to Hog Line) */}
+                                <line
+                                    x1={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                    y1={topOfHouseY * scale}
+                                    x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                    y2={hogLineY * scale}
+                                    stroke="#9333ea"
+                                    strokeWidth="2"
+                                    strokeDasharray="5,5"
+                                    opacity={parseFloat(opacity) * 0.5} // Slightly more transparent
+                                    style={{ transition: 'all 0.2s ease' }}
+                                />
+
+                                {/* Percentage Label */}
+                                {(() => {
+                                    // Calculate percentage based on closest reference line
+                                    let percentage;
+                                    const totalZoneDist = topOfHouseY - hogLineY;
+
+                                    if (isCloserToHog) {
+                                        // Distance from Hog Line to Top of House
+                                        const distFromHog = stone.pos.y - hogLineY;
+                                        percentage = Math.round((distFromHog / totalZoneDist) * 100);
+                                    } else {
+                                        // Distance from Top of House to Hog Line (original calculation)
+                                        const distFromHouse = topOfHouseY - stone.pos.y;
+                                        percentage = Math.round((distFromHouse / totalZoneDist) * 100);
+                                    }
+
+                                    // Label Position (Brace)
+                                    // At the "point" of the brace (midY of the brace segment)
+                                    // Offset further by braceWidth
+                                    const midY = (braceStartY + braceEndY) / 2;
+                                    const labelX = pointRight
+                                        ? braceX + braceWidth + 10
+                                        : braceX - braceWidth - 10;
+
+                                    // Label Position (Extension Line)
+                                    // Now spans entire guard zone, so center it there
+                                    const extLineStartY = topOfHouseY * scale;
+                                    const extLineEndY = hogLineY * scale;
+                                    const extMidY = (extLineStartY + extLineEndY) / 2;
+                                    const extLabelX = placeBraceOnRight
+                                        ? stonePixelX + (STONE_RADIUS * scale) + 25
+                                        : stonePixelX - (STONE_RADIUS * scale) - 25;
+
+                                    return (
+                                        <>
+                                            {/* Brace Label */}
+                                            {isHighlighted && (
+                                                <rect
+                                                    x={labelX - 25}
+                                                    y={midY - 12}
+                                                    width="50"
+                                                    height="24"
+                                                    fill="white"
+                                                    opacity="0.8"
+                                                    rx="3"
+                                                />
+                                            )}
+                                            <text
+                                                x={labelX}
+                                                y={midY}
+                                                fill="#7e22ce" // Purple-700
+                                                fontSize={fontSize}
+                                                fontWeight={fontWeight}
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                opacity={opacity}
+                                                style={{ transition: 'all 0.2s ease' }}
+                                            >
+                                                {percentage}%
+                                            </text>
+
+                                            {/* Extension Line Label */}
+                                            {isHighlighted && (
+                                                <rect
+                                                    x={extLabelX - 25}
+                                                    y={extMidY - 12}
+                                                    width="50"
+                                                    height="24"
+                                                    fill="white"
+                                                    opacity="0.8"
+                                                    rx="3"
+                                                />
+                                            )}
+                                            <text
+                                                x={extLabelX}
+                                                y={extMidY}
+                                                fill="#7e22ce" // Purple-700
+                                                fontSize={fontSize}
+                                                fontWeight={fontWeight}
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                opacity={opacity}
+                                                style={{ transition: 'all 0.2s ease' }}
+                                            >
+                                                {100 - percentage}%
+                                            </text>
+                                        </>
+                                    );
+                                })()}
+                            </svg>
+                        )}
+
                         {/* Vertical line to Tee Line */}
                         <svg
                             style={{

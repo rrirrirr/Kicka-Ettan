@@ -431,7 +431,76 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
     };
   }, [dragState.isDragging, dragState.stoneIndex, myStones, scale, myColor, gameState.phase, isHistoryMode]);
 
+  // Determine which stones to display (History vs Live)
+  // MOVED BEFORE handleSheetPointerDown to avoid reference error
+  let displayRedStones: any[] = [];
+  let displayYellowStones: any[] = [];
+
+  if (isHistoryMode) {
+    const historyRound = gameState.history && gameState.history[selectedHistoryRound];
+    if (historyRound) {
+      displayRedStones = historyRound.stones?.red || [];
+      displayYellowStones = historyRound.stones?.yellow || [];
+    }
+  } else {
+    displayRedStones = gameState.stones.red || [];
+    displayYellowStones = gameState.stones.yellow || [];
+  }
+
   const handleSheetPointerDown = useCallback((e: React.PointerEvent) => {
+    // Handle measurement mode (combined phase or history mode)
+    if (gameState.phase === 'combined' || isHistoryMode) {
+      if (!sheetRef.current) return;
+
+      const sheetRect = sheetRef.current.getBoundingClientRect();
+      const clickX = e.clientX - sheetRect.left;
+      const clickY = e.clientY - sheetRect.top;
+
+      // Convert to logical coordinates
+      const rawX = clickX / scale;
+      const rawY = clickY / scale;
+
+      // Check if click is on any stone
+      const CLICK_THRESHOLD = 44 / scale; // 44px in logical units
+      let clickedOnStone = false;
+
+      // Check red stones
+      for (let i = 0; i < displayRedStones.length; i++) {
+        const stone = displayRedStones[i];
+        const dx = rawX - stone.x;
+        const dy = rawY - stone.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < CLICK_THRESHOLD) {
+          clickedOnStone = true;
+          break;
+        }
+      }
+
+      // Check yellow stones if not already clicked on red
+      if (!clickedOnStone) {
+        for (let i = 0; i < displayYellowStones.length; i++) {
+          const stone = displayYellowStones[i];
+          const dx = rawX - stone.x;
+          const dy = rawY - stone.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < CLICK_THRESHOLD) {
+            clickedOnStone = true;
+            break;
+          }
+        }
+      }
+
+      // If not clicked on any stone, deselect
+      if (!clickedOnStone) {
+        setHighlightedStone(null);
+      }
+
+      return;
+    }
+
+    // Original placement mode logic
     if (!sheetRef.current || isReady || gameState.phase !== 'placement' || isHistoryMode) return;
 
     const sheetRect = sheetRef.current.getBoundingClientRect();
@@ -514,7 +583,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
     // Enter PENDING state to allow immediate dragging
     startPendingGesture(stoneToPlace.index, 'placement');
-  }, [isReady, gameState.phase, isHistoryMode, scale, myStones, updateStonePosition]);
+  }, [isReady, gameState.phase, isHistoryMode, scale, myStones, updateStonePosition, displayRedStones, displayYellowStones]);
 
   const handleConfirmPlacement = () => {
     if (!channel) return;
@@ -563,27 +632,12 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
 
   const allStonesPlaced = myStones.every(s => s.placed);
 
-
-
   // Calculate pixel size for stones
   const stonePixelSize = STONE_RADIUS * 2 * scale;
 
-  // Determine which stones to display (History vs Live)
-  // Determine which stones to display (History vs Live)
-  // const isHistoryMode = selectedHistoryRound !== null; // Moved to top
-  let displayRedStones: any[] = [];
-  let displayYellowStones: any[] = [];
+  // Determine which stones to display (History vs Live) - MOVED TO TOP
 
-  if (isHistoryMode) {
-    const historyRound = gameState.history && gameState.history[selectedHistoryRound];
-    if (historyRound) {
-      displayRedStones = historyRound.stones?.red || [];
-      displayYellowStones = historyRound.stones?.yellow || [];
-    }
-  } else {
-    displayRedStones = gameState.stones.red || [];
-    displayYellowStones = gameState.stones.yellow || [];
-  }
+
 
   // Helper to render stones
   const renderStones = (stones: any[], color: 'red' | 'yellow') => {
