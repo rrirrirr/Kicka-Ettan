@@ -1,15 +1,17 @@
 import React from 'react';
-import { SHEET_WIDTH, VIEW_TOP_OFFSET, STONE_RADIUS, HOUSE_RADIUS_12, HOG_LINE_OFFSET } from '../utils/constants';
+import { SHEET_WIDTH, VIEW_TOP_OFFSET, STONE_RADIUS, HOUSE_RADIUS_12, HOUSE_RADIUS_8, HOUSE_RADIUS_4, BUTTON_RADIUS, HOG_LINE_OFFSET } from '../utils/constants';
 
 interface StonePosition {
     x: number;
     y: number;
 }
 
+import { MeasurementType, useSettings } from '../contexts/SettingsContext';
+
 interface StoneMeasurementsProps {
     stones: { red: StonePosition[]; yellow: StonePosition[] };
     scale: number;
-    highlightedStone?: { color: 'red' | 'yellow'; index: number } | null;
+    highlightedStone?: { color: 'red' | 'yellow'; index: number; activeTypes?: MeasurementType[] } | null;
     showMeasurements?: boolean;
 }
 
@@ -39,6 +41,7 @@ const getBracePath = (x1: number, y1: number, x2: number, y2: number, w: number,
 };
 
 const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, highlightedStone, showMeasurements = true }) => {
+    const { displaySettings, toggleModeSettings } = useSettings();
     const centerLineX = SHEET_WIDTH / 2;
     const teeLineY = VIEW_TOP_OFFSET;
 
@@ -143,33 +146,39 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 const topOfHouseY = teeLineY - HOUSE_RADIUS_12;
                 const hogLineY = teeLineY - HOG_LINE_OFFSET;
 
-                // Check if stone center is in the guard zone
-                // We use stone.pos.y directly as it matches the logical coordinate system which is 1:1 with SVG Y here?
-                // Wait, in CurlingSheet:
-                // teeY = VIEW_TOP_OFFSET
-                // Hog Line Y = teeY - HOG_LINE_OFFSET
-                // So yes, Y decreases as we go UP the sheet.
-                // Guard zone is between Hog Line (smaller Y) and Top of House (larger Y).
-                // But wait, Hog Line is FURTHER from Tee Line than House.
-                // So Hog Line Y < Top of House Y.
-                const isInGuardZone = stonePixelY > (hogLineY * scale) && stonePixelY < (topOfHouseY * scale);
+                // Check if the whole stone is in the guard zone
+                // A stone is a guard if its bottom edge (center + radius) is above (less than) the top of house line
+                // In our coordinate system, Y increases downwards, so "above" means smaller Y value
+                // Guard zone: between Hog Line and Top of House
+                // The stone's bottom edge should be above (less than) the top of house Y
+                const stoneBottomEdgeY = stone.pos.y + STONE_RADIUS;
+                const isInGuardZone = stoneBottomEdgeY < topOfHouseY && stone.pos.y > hogLineY;
+
+                // Determine which measurements should be shown based on toggle mode settings
+                const shouldShowGuardInToggle = isInGuardZone && toggleModeSettings.guardZone.showGuard;
+                const shouldShowTLineInToggle = isInGuardZone
+                    ? toggleModeSettings.guardZone.showTLine
+                    : toggleModeSettings.houseZone.showTLine;
+                const shouldShowCenterLineInToggle = isInGuardZone
+                    ? toggleModeSettings.guardZone.showCenterLine
+                    : toggleModeSettings.houseZone.showCenterLine;
 
                 // Brace Logic
                 // const isLeftOfCenter = stone.pos.x < centerLineX; // Already defined above
                 const braceWidth = 20;
                 const braceXOffset = 40; // Distance from stone center
 
-                // Determine side based on position (avoid off-screen)
-                const isExtremeLeft = stone.pos.x < SHEET_WIDTH * 0.25;
-                const isExtremeRight = stone.pos.x > SHEET_WIDTH * 0.75;
-
+                // Determine side based on position (reusing xPercent calculated above)
+                // First 25%: Face inward (right side, pointing toward center)
+                // 25-75%: Standard behavior (face away from center)
+                // Last 25% (75-100%): Face inward (left side, pointing toward center)
                 let placeBraceOnRight;
-                if (isExtremeLeft) {
-                    placeBraceOnRight = true; // Force Right side
-                } else if (isExtremeRight) {
-                    placeBraceOnRight = false; // Force Left side
+                if (xPercent < 25) {
+                    placeBraceOnRight = true; // Right side, facing inward (toward center)
+                } else if (xPercent > 75) {
+                    placeBraceOnRight = false; // Left side, facing inward (toward center)
                 } else {
-                    placeBraceOnRight = !isLeftOfCenter; // Standard side
+                    placeBraceOnRight = !isLeftOfCenter; // Standard: face away from center
                 }
 
                 const braceX = placeBraceOnRight
@@ -205,270 +214,432 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     braceEndY = topOfHouseY * scale;
                 }
 
+                // Closest Ring Measurement
+                const shouldShowClosestRingInToggle = !isInGuardZone && toggleModeSettings.houseZone.showClosestRing;
+
+                // Calculate distance to closest ring
+                // Rings are at (centerLineX, teeLineY) with radii:
+                // HOUSE_RADIUS_12 (183cm)
+                // HOUSE_RADIUS_8 (122cm)
+                // HOUSE_RADIUS_4 (61cm)
+                // BUTTON_RADIUS (15cm)
+
+                const distToCenterPoint = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+
+                // Define ring radii
+                const ringRadii = [HOUSE_RADIUS_12, HOUSE_RADIUS_8, HOUSE_RADIUS_4, BUTTON_RADIUS];
+
+                // Find closest ring edge
+                let minDistToRingEdge = Infinity;
+                let closestRingRadius = 0;
+
+                // Distance from stone center to ring edge is |distToCenterPoint - ringRadius|
+                // But we want distance from STONE EDGE to ring edge.
+                // Stone edge is at distToCenterPoint +/- STONE_RADIUS along the radial line.
+                // Actually, the simplest way is:
+                // Distance between stone center and ring center is distToCenterPoint.
+                // The ring edge is at distance R from ring center.
+                // The stone edge closest to the ring edge depends on whether the stone is inside or outside the ring.
+                // If stone is outside ring (distToCenterPoint > R): distance is distToCenterPoint - R - STONE_RADIUS
+                // If stone is inside ring (distToCenterPoint < R): distance is R - distToCenterPoint - STONE_RADIUS
+                // In both cases, it's |distToCenterPoint - R| - STONE_RADIUS.
+                // If result is negative, stone overlaps the ring edge.
+
+                for (const r of ringRadii) {
+                    const dist = Math.abs(distToCenterPoint - r) - STONE_RADIUS;
+                    if (Math.abs(dist) < Math.abs(minDistToRingEdge)) {
+                        minDistToRingEdge = dist;
+                        closestRingRadius = r;
+                    }
+                }
+
+                const displayDistanceToRing = minDistToRingEdge < 0 ? 0 : minDistToRingEdge;
+
+                // Calculate start and end points for the line
+                // Line goes from stone center to ring center, clipped to stone edge and ring edge.
+
+                // Handle case where stone is exactly at center to avoid division by zero
+                let ux = 0;
+                let uy = 0;
+                if (distToCenterPoint > 0.1) {
+                    ux = deltaX / distToCenterPoint;
+                    uy = deltaY / distToCenterPoint;
+                } else {
+                    ux = 1; // Default direction if at center
+                    uy = 0;
+                }
+
+                // Determine if stone is inside the target ring
+                const isInsideRing = distToCenterPoint < closestRingRadius;
+
+                // Stone edge point (start)
+                // ux points from Center to Stone.
+                // If outside: closest point is towards center (pos - u * R)
+                // If inside: closest point is away from center (pos + u * R)
+                const stoneEdgeX = stone.pos.x + (isInsideRing ? ux : -ux) * STONE_RADIUS;
+                const stoneEdgeY = stone.pos.y + (isInsideRing ? uy : -uy) * STONE_RADIUS;
+
+                // Ring edge point (end)
+                // Point on ring closest to stone.
+                // Vector Center->Stone is (ux, uy).
+                // Point on ring is Center + Unit * Radius (moving from center towards stone)
+                const ringEdgeX = centerLineX + ux * closestRingRadius;
+                const ringEdgeY = teeLineY + uy * closestRingRadius;
+
+                // Convert to pixels
+                const stoneEdgePixelX = stoneEdgeX * scale;
+                const stoneEdgePixelY = stoneEdgeY * scale;
+                const ringEdgePixelX = ringEdgeX * scale;
+                const ringEdgePixelY = ringEdgeY * scale;
+
+                // Text positioning logic
+                // If line goes upwards (dy < 0), place text further down (+Y)
+                // If line goes downwards (dy > 0), place text further up (-Y)
+                const lineDy = ringEdgePixelY - stoneEdgePixelY;
+                const textYOffset = lineDy < 0 ? 20 : -20;
+
                 return (
                     <React.Fragment key={`${stone.color}-${stone.index}`}>
                         {/* Guard Zone Measurement (Brace) */}
                         {isInGuardZone && (
-                            <svg
-                                style={{
-                                    position: 'absolute',
-                                    left: 0,
-                                    top: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    pointerEvents: 'none',
-                                    transition: 'opacity 0.2s ease',
-                                    overflow: 'visible'
-                                }}
-                            >
-                                {/* Hog Line Reference Line */}
-                                <line
-                                    x1={0}
-                                    y1={hogLineY * scale}
-                                    x2={SHEET_WIDTH * scale}
-                                    y2={hogLineY * scale}
-                                    stroke="#9333ea"
-                                    strokeWidth="1"
-                                    opacity={opacity}
-                                    style={{ transition: 'all 0.2s ease' }}
-                                />
+                            (isHighlighted && highlightedStone?.activeTypes?.includes('guard')) ||
+                            (!isHighlighted && shouldShowGuardInToggle)
+                        ) && (
+                                <svg
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease',
+                                        overflow: 'visible'
+                                    }}
+                                >
+                                    {/* Hog Line Reference Line */}
+                                    <line
+                                        x1={0}
+                                        y1={hogLineY * scale}
+                                        x2={SHEET_WIDTH * scale}
+                                        y2={hogLineY * scale}
+                                        stroke="#9333ea"
+                                        strokeWidth="1"
+                                        opacity={opacity}
+                                        style={{ transition: 'all 0.2s ease' }}
+                                    />
 
-                                {/* Top of House Reference Line */}
-                                <line
-                                    x1={0}
-                                    y1={topOfHouseY * scale}
-                                    x2={SHEET_WIDTH * scale}
-                                    y2={topOfHouseY * scale}
-                                    stroke="#9333ea"
-                                    strokeWidth="1"
-                                    opacity={opacity}
-                                    style={{ transition: 'all 0.2s ease' }}
-                                />
+                                    {/* Top of House Reference Line */}
+                                    <line
+                                        x1={0}
+                                        y1={topOfHouseY * scale}
+                                        x2={SHEET_WIDTH * scale}
+                                        y2={topOfHouseY * scale}
+                                        stroke="#9333ea"
+                                        strokeWidth="1"
+                                        opacity={opacity}
+                                        style={{ transition: 'all 0.2s ease' }}
+                                    />
 
-                                {/* Brace */}
-                                <path
-                                    d={getBracePath(
-                                        braceX,
-                                        braceStartY,
-                                        braceX,
-                                        braceEndY,
-                                        pointRight ? -braceWidth : braceWidth,
-                                        0.6
+                                    {/* Brace */}
+                                    {displaySettings.guard.showBraceLine && (
+                                        <path
+                                            d={getBracePath(
+                                                braceX,
+                                                braceStartY,
+                                                braceX,
+                                                braceEndY,
+                                                pointRight ? -braceWidth : braceWidth,
+                                                0.6
+                                            )}
+                                            stroke="#9333ea"
+                                            strokeWidth="2"
+                                            fill="none"
+                                            opacity={opacity}
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        />
                                     )}
-                                    stroke="#9333ea"
-                                    strokeWidth="2"
-                                    fill="none"
-                                    opacity={opacity}
-                                    style={{ transition: 'all 0.2s ease' }}
-                                />
 
-                                {/* Dashed connector line from brace to stone edge (Stone End) */}
-                                <line
-                                    x1={braceX}
-                                    y1={stonePixelY}
-                                    x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                    y2={stonePixelY}
-                                    stroke="#9333ea"
-                                    strokeWidth="2"
-                                    strokeDasharray="5,5"
-                                    opacity={opacity}
-                                    style={{ transition: 'all 0.2s ease' }}
-                                />
+                                    {/* Dashed connector line from brace to stone edge (Stone End) */}
+                                    <line
+                                        x1={braceX}
+                                        y1={stonePixelY}
+                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                        y2={stonePixelY}
+                                        stroke="#9333ea"
+                                        strokeWidth="2"
+                                        strokeDasharray="5,5"
+                                        opacity={opacity}
+                                        style={{ transition: 'all 0.2s ease' }}
+                                    />
 
-                                {/* Dashed connector line from brace to stone edge (Reference End) */}
-                                <line
-                                    x1={braceX}
-                                    y1={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
-                                    x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                    y2={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
-                                    stroke="#9333ea"
-                                    strokeWidth="2"
-                                    strokeDasharray="5,5"
-                                    opacity={opacity}
-                                    style={{ transition: 'all 0.2s ease' }}
-                                />
+                                    {/* Dashed connector line from brace to stone edge (Reference End) */}
+                                    <line
+                                        x1={braceX}
+                                        y1={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
+                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                        y2={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
+                                        stroke="#9333ea"
+                                        strokeWidth="2"
+                                        strokeDasharray="5,5"
+                                        opacity={opacity}
+                                        style={{ transition: 'all 0.2s ease' }}
+                                    />
 
-                                {/* Vertical extension line (from Top of House to Hog Line) */}
-                                <line
-                                    x1={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                    y1={topOfHouseY * scale}
-                                    x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                    y2={hogLineY * scale}
-                                    stroke="#9333ea"
-                                    strokeWidth="2"
-                                    strokeDasharray="5,5"
-                                    opacity={parseFloat(opacity) * 0.5} // Slightly more transparent
-                                    style={{ transition: 'all 0.2s ease' }}
-                                />
+                                    {/* Vertical extension line (from Top of House to Hog Line) */}
+                                    <line
+                                        x1={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                        y1={topOfHouseY * scale}
+                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                        y2={hogLineY * scale}
+                                        stroke="#9333ea"
+                                        strokeWidth="2"
+                                        strokeDasharray="5,5"
+                                        opacity={parseFloat(opacity) * 0.5} // Slightly more transparent
+                                        style={{ transition: 'all 0.2s ease' }}
+                                    />
 
-                                {/* Percentage Label */}
-                                {(() => {
-                                    // Calculate percentage based on closest reference line
-                                    let percentage;
-                                    const totalZoneDist = topOfHouseY - hogLineY;
+                                    {/* Percentage Label */}
+                                    {(() => {
+                                        // Calculate percentage based on closest reference line
+                                        let percentage;
+                                        const totalZoneDist = topOfHouseY - hogLineY;
 
-                                    // Calculate actual distance in cm for the brace segment
-                                    let braceDistanceCm;
-                                    if (isCloserToHog) {
-                                        // Distance from Hog Line to Top of House
-                                        const distFromHog = stone.pos.y - hogLineY;
-                                        percentage = Math.round((distFromHog / totalZoneDist) * 100);
-                                        braceDistanceCm = distFromHog;
-                                    } else {
-                                        // Distance from Top of House to Hog Line (original calculation)
-                                        const distFromHouse = topOfHouseY - stone.pos.y;
-                                        percentage = Math.round((distFromHouse / totalZoneDist) * 100);
-                                        braceDistanceCm = distFromHouse;
-                                    }
+                                        // Calculate actual distance in cm for the brace segment
+                                        let braceDistanceCm;
+                                        if (isCloserToHog) {
+                                            // Distance from Hog Line to Top of House
+                                            const distFromHog = stone.pos.y - hogLineY;
+                                            percentage = Math.round((distFromHog / totalZoneDist) * 100);
+                                            braceDistanceCm = distFromHog;
+                                        } else {
+                                            // Distance from Top of House to Hog Line (original calculation)
+                                            const distFromHouse = topOfHouseY - stone.pos.y;
+                                            percentage = Math.round((distFromHouse / totalZoneDist) * 100);
+                                            braceDistanceCm = distFromHouse;
+                                        }
 
-                                    // Label Position (Brace)
-                                    // At the "point" of the brace (midY of the brace segment)
-                                    // Offset further by braceWidth
-                                    const midY = (braceStartY + braceEndY) / 2;
-                                    // Adjust vertical position when brace is on right to align with left-side labels
-                                    const verticalAdjustment = pointRight ? 3 : 0;
-                                    const labelX = pointRight
-                                        ? braceX + braceWidth + 20
-                                        : braceX - braceWidth - 20;
+                                        // Label Position (Brace)
+                                        // At the "point" of the brace (midY of the brace segment)
+                                        // Offset further by braceWidth
+                                        const midY = (braceStartY + braceEndY) / 2;
+                                        // Adjust vertical position when brace is on right to align with left-side labels
+                                        const verticalAdjustment = pointRight ? 3 : 0;
+                                        const labelX = pointRight
+                                            ? braceX + braceWidth + 20
+                                            : braceX - braceWidth - 20;
 
-                                    // Label Position (Extension Line)
-                                    // Now spans entire guard zone, so center it there
-                                    const extLineStartY = topOfHouseY * scale;
-                                    const extLineEndY = hogLineY * scale;
-                                    const extMidY = (extLineStartY + extLineEndY) / 2;
-                                    const extLabelX = placeBraceOnRight
-                                        ? stonePixelX + (STONE_RADIUS * scale) + 35
-                                        : stonePixelX - (STONE_RADIUS * scale) - 35;
+                                        // Label Position (Extension Line)
+                                        // Now spans entire guard zone, so center it there
+                                        const extLineStartY = topOfHouseY * scale;
+                                        const extLineEndY = hogLineY * scale;
+                                        const extMidY = (extLineStartY + extLineEndY) / 2;
+                                        const extLabelX = placeBraceOnRight
+                                            ? stonePixelX + (STONE_RADIUS * scale) + 35
+                                            : stonePixelX - (STONE_RADIUS * scale) - 35;
 
-                                    return (
-                                        <>
-                                            {/* Brace Label - Percentage */}
-                                            <text
-                                                x={labelX}
-                                                y={midY + verticalAdjustment - (isHighlighted ? 8 : 6)}
-                                                fill="#7e22ce" // Purple-700
-                                                fontSize={fontSize}
-                                                fontWeight={fontWeight}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                                opacity={opacity}
-                                                style={{ transition: 'all 0.2s ease' }}
-                                            >
-                                                {percentage}%
-                                            </text>
+                                        return (
+                                            <>
+                                                {/* Brace Label - Percentage */}
+                                                {displaySettings.guard.showPercentage && (
+                                                    <text
+                                                        x={labelX}
+                                                        y={midY + verticalAdjustment - (isHighlighted ? 8 : 6)}
+                                                        fill="#7e22ce" // Purple-700
+                                                        fontSize={fontSize}
+                                                        fontWeight={fontWeight}
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                        opacity={opacity}
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    >
+                                                        {percentage}%
+                                                    </text>
+                                                )}
 
-                                            {/* Brace Label - Distance in cm */}
-                                            <text
-                                                x={labelX}
-                                                y={midY + verticalAdjustment + (isHighlighted ? 8 : 6)}
-                                                fill="#7e22ce" // Purple-700
-                                                fontSize={isHighlighted ? "12" : "10"}
-                                                fontWeight="600"
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                                opacity={opacity}
-                                                style={{ transition: 'all 0.2s ease' }}
-                                            >
-                                                {braceDistanceCm.toFixed(1)}cm
-                                            </text>
+                                                {/* Brace Label - Distance in cm */}
+                                                {displaySettings.guard.showDistance && (
+                                                    <text
+                                                        x={labelX}
+                                                        y={midY + verticalAdjustment + (isHighlighted ? 8 : 6)}
+                                                        fill="#7e22ce" // Purple-700
+                                                        fontSize={isHighlighted ? "12" : "10"}
+                                                        fontWeight="600"
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                        opacity={opacity}
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    >
+                                                        {braceDistanceCm.toFixed(1)}cm
+                                                    </text>
+                                                )}
 
-                                            {/* Extension Line Label */}
-                                            <text
-                                                x={extLabelX}
-                                                y={extMidY}
-                                                fill="#7e22ce" // Purple-700
-                                                fontSize={fontSize}
-                                                fontWeight={fontWeight}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                                opacity={opacity}
-                                                style={{ transition: 'all 0.2s ease' }}
-                                            >
-                                                {100 - percentage}%
-                                            </text>
-                                        </>
-                                    );
-                                })()}
-                            </svg>
-                        )}
+                                                {/* Extension Line Label */}
+                                                <text
+                                                    x={extLabelX}
+                                                    y={extMidY}
+                                                    fill="#7e22ce" // Purple-700
+                                                    fontSize={fontSize}
+                                                    fontWeight={fontWeight}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                    opacity={opacity}
+                                                    style={{ transition: 'all 0.2s ease' }}
+                                                >
+                                                    {100 - percentage}%
+                                                </text>
+                                            </>
+                                        );
+                                    })()}
+                                </svg>
+                            )}
 
                         {/* Vertical line to Tee Line */}
-                        <svg
-                            style={{
-                                position: 'absolute',
-                                left: 0,
-                                top: 0,
-                                width: '100%',
-                                height: '100%',
-                                pointerEvents: 'none',
-                                transition: 'opacity 0.2s ease'
-                            }}
-                        >
-                            <line
-                                x1={stonePixelX}
-                                y1={verticalLineStartY}
-                                x2={stonePixelX}
-                                y2={teeLinePixelY}
-                                stroke={strokeColor}
-                                strokeWidth={strokeWidth}
-                                strokeDasharray="5,5"
-                                opacity={opacity}
-                                style={{ transition: 'all 0.2s ease' }}
-                            />
-                            {/* Distance label for Tee Line */}
-                            <text
-                                x={stonePixelX + teeLineLabelHorizontalOffset}
-                                y={(stonePixelY + teeLinePixelY) / 2}
-                                fill={textColor}
-                                fontSize={fontSize}
-                                fontWeight={fontWeight}
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                                style={{ transition: 'all 0.2s ease' }}
-                                opacity={opacity}
-                            >
-                                {displayDistanceToTee.toFixed(1)}cm {isAboveTee ? '↓' : '↑'}
-                            </text>
-                        </svg>
+                        {(
+                            (isHighlighted && highlightedStone?.activeTypes?.includes('t-line')) ||
+                            (!isHighlighted && shouldShowTLineInToggle)
+                        ) && (displaySettings.tLine.showLine || displaySettings.tLine.showDistance) && (
+                                <svg
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease'
+                                    }}
+                                >
+                                    {displaySettings.tLine.showLine && (
+                                        <line
+                                            x1={stonePixelX}
+                                            y1={verticalLineStartY}
+                                            x2={stonePixelX}
+                                            y2={teeLinePixelY}
+                                            stroke={strokeColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeDasharray="5,5"
+                                            opacity={opacity}
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        />
+                                    )}
+                                    {/* Distance label for Tee Line */}
+                                    {displaySettings.tLine.showDistance && (
+                                        <text
+                                            x={stonePixelX + teeLineLabelHorizontalOffset}
+                                            y={(stonePixelY + teeLinePixelY) / 2}
+                                            fill={textColor}
+                                            fontSize={fontSize}
+                                            fontWeight={fontWeight}
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                            opacity={opacity}
+                                        >
+                                            {displayDistanceToTee.toFixed(1)}cm {isAboveTee ? '↓' : '↑'}
+                                        </text>
+                                    )}
+                                </svg>
+
+                            )}
 
                         {/* Horizontal line to Center Line */}
-                        <svg
-                            style={{
-                                position: 'absolute',
-                                left: 0,
-                                top: 0,
-                                width: '100%',
-                                height: '100%',
-                                pointerEvents: 'none',
-                                transition: 'opacity 0.2s ease'
-                            }}
-                        >
-                            <line
-                                x1={horizontalLineStartX}
-                                y1={stonePixelY}
-                                x2={centerLinePixelX}
-                                y2={stonePixelY}
-                                stroke={strokeColor}
-                                strokeWidth={strokeWidth}
-                                strokeDasharray="5,5"
-                                opacity={opacity}
-                                style={{ transition: 'all 0.2s ease' }}
-                            />
-                            {/* Distance label for Center Line */}
-                            <text
-                                x={(horizontalLineStartX + centerLinePixelX) / 2}
-                                y={stonePixelY + horizontalLabelOffset}
-                                fill={textColor}
-                                fontSize={fontSize}
-                                fontWeight={fontWeight}
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                                style={{ transition: 'all 0.2s ease' }}
-                                opacity={opacity}
-                            >
-                                {isLeftOfCenter ? `${displayDistanceToCenter.toFixed(1)}cm →` : `← ${displayDistanceToCenter.toFixed(1)}cm`}
-                            </text>
-                        </svg>
+                        {(
+                            (isHighlighted && highlightedStone?.activeTypes?.includes('center-line')) ||
+                            (!isHighlighted && shouldShowCenterLineInToggle)
+                        ) && (displaySettings.centerLine.showLine || displaySettings.centerLine.showDistance) && (
+                                <svg
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease'
+                                    }}
+                                >
+                                    {displaySettings.centerLine.showLine && (
+                                        <line
+                                            x1={horizontalLineStartX}
+                                            y1={stonePixelY}
+                                            x2={centerLinePixelX}
+                                            y2={stonePixelY}
+                                            stroke={strokeColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeDasharray="5,5"
+                                            opacity={opacity}
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        />
+                                    )}
+                                    {/* Distance label for Center Line */}
+                                    {displaySettings.centerLine.showDistance && (
+                                        <text
+                                            x={(horizontalLineStartX + centerLinePixelX) / 2}
+                                            y={stonePixelY + horizontalLabelOffset}
+                                            fill={textColor}
+                                            fontSize={fontSize}
+                                            fontWeight={fontWeight}
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                            opacity={opacity}
+                                        >
+                                            {isLeftOfCenter ? `${displayDistanceToCenter.toFixed(1)}cm →` : `← ${displayDistanceToCenter.toFixed(1)}cm`}
+                                        </text>
+                                    )}
+                                </svg>
+                            )}
+
+                        {/* Closest Ring Measurement */}
+                        {(
+                            (isHighlighted && highlightedStone?.activeTypes?.includes('closest-ring')) ||
+                            (!isHighlighted && shouldShowClosestRingInToggle)
+                        ) && (displaySettings.closestRing?.showLine || displaySettings.closestRing?.showDistance) && (
+                                <svg
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease'
+                                    }}
+                                >
+                                    {displaySettings.closestRing?.showLine && (
+                                        <line
+                                            x1={stoneEdgePixelX}
+                                            y1={stoneEdgePixelY}
+                                            x2={ringEdgePixelX}
+                                            y2={ringEdgePixelY}
+                                            stroke="#06b6d4" // Cyan-500
+                                            strokeWidth="3"
+                                            opacity={opacity}
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        />
+                                    )}
+                                    {/* Distance label for Closest Ring */}
+                                    {displaySettings.closestRing?.showDistance && (
+                                        <text
+                                            x={(stoneEdgePixelX + ringEdgePixelX) / 2}
+                                            y={((stoneEdgePixelY + ringEdgePixelY) / 2) + textYOffset}
+                                            fill="#0891b2" // Cyan-600
+                                            fontSize={fontSize}
+                                            fontWeight={fontWeight}
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            style={{
+                                                transition: 'all 0.2s ease',
+                                                textShadow: '0 0 4px white' // Add shadow for better visibility over rings
+                                            }}
+                                            opacity={opacity}
+                                        >
+                                            {displayDistanceToRing.toFixed(1)}cm
+                                        </text>
+                                    )}
+                                </svg>
+                            )}
                     </React.Fragment>
                 );
             })}

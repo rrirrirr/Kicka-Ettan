@@ -7,6 +7,8 @@ import { Button } from './ui/Button';
 import DraggableStone from './draggable-stone';
 import StoneSelectionBar from './stone-selection-bar';
 import StoneMeasurements from './stone-measurements';
+import { SettingsProvider, useSettings } from '../contexts/SettingsContext';
+import { SettingsDialog } from './SettingsDialog';
 import { Channel } from 'phoenix';
 import {
   SHEET_WIDTH,
@@ -14,7 +16,8 @@ import {
   VIEW_TOP_OFFSET,
   VIEW_BOTTOM_OFFSET,
   HOG_LINE_OFFSET,
-  BACK_LINE_OFFSET
+  BACK_LINE_OFFSET,
+  HOUSE_RADIUS_12
 } from '../utils/constants';
 
 interface CurlingGameProps {
@@ -101,12 +104,15 @@ const resolveCollisions = (
 };
 
 
-import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X } from 'lucide-react';
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X, Settings } from 'lucide-react';
 import { Loupe } from './Loupe';
+import { StoneInspector } from './StoneInspector';
+import { MeasurementType } from '../contexts/SettingsContext';
 
 // ... existing imports ...
 
-const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps) => {
+const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGameProps) => {
+  const { settings, openSettings } = useSettings();
   const [myStones, setMyStones] = useState<StonePosition[]>([]);
   const [myColor, setMyColor] = useState<'red' | 'yellow' | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -117,7 +123,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   const containerRef = useRef<HTMLDivElement>(null);
   const [sheetDimensions, setSheetDimensions] = useState({ width: 0, height: 0 });
   const [scale, setScale] = useState(1);
-  const [highlightedStone, setHighlightedStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
+  const [highlightedStone, setHighlightedStone] = useState<{ color: 'red' | 'yellow'; index: number; stepIndex: number; activeTypes?: MeasurementType[] } | null>(null);
   const [hoveredStone, setHoveredStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
   const [showMeasurements, setShowMeasurements] = useState(false);
   const [dragState, setDragState] = useState<{ isDragging: boolean; x: number; y: number; stoneIndex: number | null }>({
@@ -129,6 +135,23 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
   // const [dragMode, setDragMode] = useState<'follow' | 'stay'>('follow'); // Removed unused dragMode
   const gestureState = useRef<GestureState>({ type: 'IDLE' });
   const isHistoryMode = selectedHistoryRound !== null;
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   // Lock body scroll to prevent "double scroll" on mobile
   useEffect(() => {
@@ -368,9 +391,51 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
               } else {
                 // Clicked on Stone -> Highlight/Select (existing behavior)
                 if (gameState.phase === 'combined' || isHistoryMode) {
-                  setHighlightedStone(prev =>
-                    prev?.color === myColor && prev?.index === stoneIndex ? null : { color: myColor!, index: stoneIndex }
-                  );
+                  setHighlightedStone(prev => {
+                    // Check if stone is in guard zone
+                    const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+                    const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
+                    // Note: Y increases downwards. Hog Line (smaller Y) < Stone < Top of House (larger Y)
+                    // But wait, in our coordinate system for `stone.y`:
+                    // It seems `stone.y` is in logical coordinates where 0 is top-left?
+                    // Let's verify with `renderStones` which uses `pos.y * scale`.
+                    // Yes.
+                    // Hog Line Y = VIEW_TOP_OFFSET - HOG_LINE_OFFSET
+                    // Top of House Y = VIEW_TOP_OFFSET - HOUSE_RADIUS_12
+                    // Guard zone: Y is between Hog Line and Top of House.
+                    // Actually, Hog Line is further UP (smaller Y) than House if we consider Tee Line as reference?
+                    // Let's check constants.
+                    // VIEW_TOP_OFFSET is Tee Line Y.
+                    // HOG_LINE_OFFSET is distance from Tee to Hog.
+                    // So Hog Line Y = VIEW_TOP_OFFSET - HOG_LINE_OFFSET.
+                    // Top of House Y = VIEW_TOP_OFFSET - HOUSE_RADIUS_12.
+                    // Since HOG_LINE_OFFSET > HOUSE_RADIUS_12, Hog Line Y < Top of House Y.
+                    const distToCenter = Math.sqrt(Math.pow(stone.x - (SHEET_WIDTH / 2), 2) + Math.pow(stone.y - VIEW_TOP_OFFSET, 2));
+
+                    // House Stone: Touching the house
+                    const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
+
+                    // Near House Stone: Not touching house, but within 2ft (61cm)
+                    const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + 61);
+
+                    let steps;
+                    if (isHouseStone) {
+                      steps = settings.houseZone;
+                    } else if (isNearHouseStone) {
+                      steps = settings.nearHouseZone;
+                    } else {
+                      steps = settings.guardZone;
+                    }
+
+                    if (prev?.color === myColor && prev?.index === stoneIndex) {
+                      // Already selected - Cycle logic
+                      const nextStepIndex = (prev.stepIndex + 1) % steps.length;
+                      return { ...prev, stepIndex: nextStepIndex };
+                    } else {
+                      // New selection
+                      return { color: myColor!, index: stoneIndex, stepIndex: 0 };
+                    }
+                  });
                 }
               }
             }
@@ -676,9 +741,37 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
           onClick={(e) => {
             e.stopPropagation(); // Prevent sheet click
             if (gameState.phase === 'combined' || isHistoryMode) {
-              setHighlightedStone(prev =>
-                prev?.color === color && prev?.index === i ? null : { color, index: i }
-              );
+              setHighlightedStone(prev => {
+                // Determine zone
+                const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
+                const distToCenter = Math.sqrt(Math.pow(pos.x - (SHEET_WIDTH / 2), 2) + Math.pow(pos.y - VIEW_TOP_OFFSET, 2));
+
+                // House Stone: Touching the house (dist <= 12ft radius + stone radius)
+                const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
+
+                // Near House Stone: Not touching house, but within 2ft (61cm) of outer ring
+                // Distance from center <= 12ft radius + stone radius + 2ft (61cm)
+                const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + 61);
+
+                // Guard Stone: Anything else (typically above house)
+                let steps;
+                if (isHouseStone) {
+                  steps = settings.houseZone;
+                } else if (isNearHouseStone) {
+                  steps = settings.nearHouseZone;
+                } else {
+                  steps = settings.guardZone;
+                }
+
+                if (prev?.color === color && prev?.index === i) {
+                  // Already selected - Cycle logic
+                  const nextStepIndex = (prev.stepIndex + 1) % steps.length;
+                  return { ...prev, stepIndex: nextStepIndex };
+                } else {
+                  // New selection
+                  return { color, index: i, stepIndex: 0 };
+                }
+              });
             }
           }}
           onMouseEnter={() => {
@@ -805,7 +898,61 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
             yellow: displayYellowStones
           }}
           scale={scale}
-          highlightedStone={highlightedStone || hoveredStone}
+          highlightedStone={(() => {
+            const targetStone = highlightedStone || hoveredStone;
+
+            if (!targetStone) return null;
+
+            // Calculate active types based on stone position and step index
+            // We need to find the stone position again to check zone
+            let stone;
+            if (targetStone.color === 'red') {
+              stone = displayRedStones[targetStone.index];
+            } else {
+              stone = displayYellowStones[targetStone.index];
+            }
+
+            let initialActiveTypes: MeasurementType[] = [];
+            let steps: any[] = [];
+            if (stone) {
+              const distToCenter = Math.sqrt(Math.pow(stone.x - (SHEET_WIDTH / 2), 2) + Math.pow(stone.y - VIEW_TOP_OFFSET, 2));
+
+              // House Stone: Touching the house
+              const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
+
+              // Near House Stone: Not touching house, but within 2ft (61cm)
+              const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + 61);
+
+              if (isHouseStone) {
+                steps = settings.houseZone;
+              } else if (isNearHouseStone) {
+                steps = settings.nearHouseZone;
+              } else {
+                steps = settings.guardZone;
+              }
+
+              // Default to first step
+              initialActiveTypes = steps[0]?.types || [];
+            }
+
+            if (highlightedStone && targetStone === highlightedStone && highlightedStone.activeTypes) {
+              return {
+                ...targetStone,
+                activeTypes: highlightedStone.activeTypes
+              };
+            }
+
+            // Fallback for hover or if activeTypes missing (legacy/safety)
+            const stepIndex = 'stepIndex' in targetStone ? (targetStone as any).stepIndex : 0;
+
+            // Safety check for index
+            const step = steps[stepIndex] || steps[0];
+
+            return {
+              ...targetStone,
+              activeTypes: step.types
+            };
+          })()}
           showMeasurements={showMeasurements}
         />
       )}
@@ -825,7 +972,7 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         {renderGameBoard()}
       </div>
 
-      {/* Loupe */}
+      {/* Loupe for Dragging */}
       {dragState.isDragging && (
         <Loupe
           x={dragState.x}
@@ -887,6 +1034,84 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         />
       )}
 
+      {/* Loupe for Highlighted Stone (Combined Phase) */}
+      {(() => {
+        if (dragState.isDragging || !highlightedStone || gameState.phase !== 'combined') return null;
+
+        // Find the stone
+        let stone;
+        if (highlightedStone.color === 'red') {
+          stone = displayRedStones[highlightedStone.index];
+        } else {
+          stone = displayYellowStones[highlightedStone.index];
+        }
+
+        if (!stone) return null;
+
+        // Check if in house
+        const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
+        const stoneBottomEdgeY = stone.y + STONE_RADIUS;
+        const isInHouse = stoneBottomEdgeY >= topOfHouseY;
+
+        if (!isInHouse) return null;
+
+        // Calculate positions
+        const sheetRect = sheetRef.current?.getBoundingClientRect();
+        if (!sheetRect) return null;
+
+        const stonePixelX = stone.x * scale;
+        const stonePixelY = stone.y * scale;
+        const stoneGlobalX = sheetRect.left + stonePixelX;
+        const stoneGlobalY = sheetRect.top + stonePixelY;
+
+        // Fixed position: Up center, a bit above top of house
+        const topOfHousePixelY = (VIEW_TOP_OFFSET - HOUSE_RADIUS_12) * scale;
+        const fixedX = sheetRect.left + (sheetDimensions.width / 2);
+        // Position it 185px above the top of the house (adjustable) to maintain gap with larger size
+        const fixedY = sheetRect.top + topOfHousePixelY - 185;
+
+        const availableTypes: MeasurementType[] = ['closest-ring', 't-line', 'center-line'];
+
+        return (
+          <StoneInspector
+            x={stoneGlobalX}
+            y={stoneGlobalY}
+            fixedPosition={{ x: fixedX, y: fixedY }}
+            scale={1.8}
+            size={270}
+            activeTypes={highlightedStone.activeTypes || []}
+            availableTypes={availableTypes}
+            onToggleType={(type) => {
+              setHighlightedStone(prev => {
+                if (!prev) return null;
+                const currentTypes = prev.activeTypes || [];
+                const newTypes = currentTypes.includes(type)
+                  ? currentTypes.filter(t => t !== type)
+                  : [...currentTypes, type];
+                return { ...prev, activeTypes: newTypes };
+              });
+            }}
+            content={
+              <div
+                style={{
+                  width: sheetDimensions.width,
+                  height: sheetDimensions.height,
+                  position: 'relative',
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  left: sheetRect.left,
+                  top: sheetRect.top,
+                }}>
+                  {renderGameBoard(true)}
+                </div>
+              </div>
+            }
+          />
+        );
+      })()}
+
       {/* Main Screen Proxy Stone (Fixed Position - Always on Top) */}
       {dragState.isDragging && dragState.stoneIndex !== null && myColor && createPortal(
         <div
@@ -933,9 +1158,13 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
         <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 relative z-20 shadow-2xl border border-white/20 my-4 rounded-3xl mb-6">
           <div className="flex gap-2 min-h-[64px]">
             {/* Persistent Menu Button */}
-            <div className="relative shrink-0 flex items-center">
+            <div ref={menuRef} className="relative shrink-0 flex items-center">
               <button
-                onClick={() => setShowMenu(!showMenu)}
+                onClick={() => {
+                  setShowMenu(!showMenu);
+                  setHighlightedStone(null);
+                  setHoveredStone(null);
+                }}
                 className="w-12 h-12 rounded-full bg-[var(--icy-button-bg)] text-[var(--icy-button-text)] flex items-center justify-center hover:scale-105 hover:shadow-lg shadow-md transition-all active:scale-95"
                 aria-label="Menu"
               >
@@ -979,6 +1208,16 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
                   >
                     <Info size={16} />
                     Help
+                  </button>
+                  <button
+                    onClick={() => {
+                      openSettings();
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                  >
+                    <Settings size={16} />
+                    Settings
                   </button>
                   <div className="h-px bg-gray-200 my-1" />
                   <button
@@ -1106,8 +1345,16 @@ const CurlingGame = ({ gameState, playerId, channel, onShare }: CurlingGameProps
           <strong className="text-gray-900">2. Confirm:</strong> Once all stones are placed, tap "Finish Placement" to lock them in.
         </p>
       </Dialog>
+
+      <SettingsDialog />
     </div>
   );
 };
+
+const CurlingGame = (props: CurlingGameProps) => (
+  <SettingsProvider>
+    <CurlingGameContent {...props} />
+  </SettingsProvider>
+);
 
 export default CurlingGame;

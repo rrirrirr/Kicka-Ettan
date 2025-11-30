@@ -8,6 +8,7 @@ interface LoupeProps {
     size?: number;
     content: React.ReactNode;
     offsetY?: number;
+    fixedPosition?: { x: number; y: number };
 }
 
 export const Loupe: React.FC<LoupeProps> = ({
@@ -16,7 +17,8 @@ export const Loupe: React.FC<LoupeProps> = ({
     scale = 2,
     size = 120,
     content,
-    offsetY = 100
+    offsetY = 100,
+    fixedPosition
 }) => {
     // Calculate position synchronously to avoid render lag
     const padding = 10;
@@ -36,10 +38,10 @@ export const Loupe: React.FC<LoupeProps> = ({
     let finalX = x;
     let finalY = y - offsetY;
 
-    // Iterative Radial Sliding
-    // We start at -PI/2 (Top) and slide along the circle until we find a safe spot.
-    // Direction depends on X position relative to center.
-    if (!isSafe(finalX, finalY)) {
+    if (fixedPosition) {
+        finalX = fixedPosition.x;
+        finalY = fixedPosition.y;
+    } else if (!isSafe(finalX, finalY)) {
         const startAngle = -Math.PI / 2;
         const step = 0.1; // ~5.7 degrees
         const maxAngle = Math.PI; // Max rotation (180 degrees)
