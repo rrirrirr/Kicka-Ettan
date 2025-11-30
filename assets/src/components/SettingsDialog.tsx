@@ -17,10 +17,10 @@ export const SettingsDialog: React.FC = () => {
         }
     };
 
-    const handleAddStep = (zone: 'guardZone' | 'houseZone') => {
+    const handleAddStep = (zone: 'guardZone' | 'houseZone' | 'nearHouseZone') => {
         const newStep: MeasurementStep = {
             id: Math.random().toString(36).substr(2, 9),
-            types: zone === 'guardZone' ? ['guard'] : ['t-line', 'center-line']
+            types: zone === 'guardZone' ? ['guard'] : (zone === 'nearHouseZone' ? ['closest-ring'] : ['t-line', 'center-line'])
         };
         updateSettings({
             ...settings,
@@ -28,7 +28,7 @@ export const SettingsDialog: React.FC = () => {
         });
     };
 
-    const handleRemoveStep = (zone: 'guardZone' | 'houseZone', index: number) => {
+    const handleRemoveStep = (zone: 'guardZone' | 'houseZone' | 'nearHouseZone', index: number) => {
         if (settings[zone].length <= 1) return;
         const newZoneSteps = [...settings[zone]];
         newZoneSteps.splice(index, 1);
@@ -38,7 +38,7 @@ export const SettingsDialog: React.FC = () => {
         });
     };
 
-    const handleToggleType = (zone: 'guardZone' | 'houseZone', stepIndex: number, type: MeasurementType) => {
+    const handleToggleType = (zone: 'guardZone' | 'houseZone' | 'nearHouseZone', stepIndex: number, type: MeasurementType) => {
         const newZoneSteps = [...settings[zone]];
         const step = { ...newZoneSteps[stepIndex] };
 
@@ -120,7 +120,7 @@ export const SettingsDialog: React.FC = () => {
                         </button>
 
                         {/* Closest Ring Measurements Button */}
-                        {zone === 'houseZone' && (
+                        {(zone === 'houseZone' || zone === 'nearHouseZone') && (
                             <button
                                 onClick={() => handleToggleType(zone, index, 'closest-ring')}
                                 className={`
@@ -456,6 +456,18 @@ export const SettingsDialog: React.FC = () => {
                                     className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                                 />
                                 <span className="text-sm text-gray-700">Show Distance (cm)</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={displaySettings.guard.showBroomLength}
+                                    onChange={(e) => updateDisplaySettings({
+                                        ...displaySettings,
+                                        guard: { ...displaySettings.guard, showBroomLength: e.target.checked }
+                                    })}
+                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                />
+                                <span className="text-sm text-gray-700">Show Broom Length (for distances &gt; 2ft)</span>
                             </label>
                         </div>
                     </div>

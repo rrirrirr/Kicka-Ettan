@@ -300,7 +300,56 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
 
                 return (
                     <React.Fragment key={`${stone.color}-${stone.index}`}>
-                        {/* Guard Zone Measurement (Brace) */}
+                        {/* Vertical line to Tee Line - Rendered first so guard brace appears on top */}
+                        {(
+                            (isHighlighted && highlightedStone?.activeTypes?.includes('t-line')) ||
+                            (!isHighlighted && shouldShowTLineInToggle)
+                        ) && (displaySettings.tLine.showLine || displaySettings.tLine.showDistance) && (
+                                <svg
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease'
+                                    }}
+                                >
+                                    {displaySettings.tLine.showLine && (
+                                        <line
+                                            x1={stonePixelX}
+                                            y1={verticalLineStartY}
+                                            x2={stonePixelX}
+                                            y2={teeLinePixelY}
+                                            stroke={strokeColor}
+                                            strokeWidth={strokeWidth}
+                                            strokeDasharray="5,5"
+                                            opacity={opacity}
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        />
+                                    )}
+                                    {/* Distance label for Tee Line */}
+                                    {displaySettings.tLine.showDistance && (
+                                        <text
+                                            x={stonePixelX + teeLineLabelHorizontalOffset}
+                                            y={(stonePixelY + teeLinePixelY) / 2}
+                                            fill={textColor}
+                                            fontSize={fontSize}
+                                            fontWeight={fontWeight}
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                            opacity={opacity}
+                                        >
+                                            {displayDistanceToTee.toFixed(1)}cm {isAboveTee ? '↓' : '↑'}
+                                        </text>
+                                    )}
+                                </svg>
+
+                            )}
+
+                        {/* Guard Zone Measurement (Brace) - Rendered after t-line so it appears on top */}
                         {isInGuardZone && (
                             (isHighlighted && highlightedStone?.activeTypes?.includes('guard')) ||
                             (!isHighlighted && shouldShowGuardInToggle)
@@ -459,19 +508,64 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
 
                                                 {/* Brace Label - Distance in cm */}
                                                 {displaySettings.guard.showDistance && (
-                                                    <text
-                                                        x={labelX}
-                                                        y={midY + verticalAdjustment + (isHighlighted ? 8 : 6)}
-                                                        fill="#7e22ce" // Purple-700
-                                                        fontSize={isHighlighted ? "12" : "10"}
-                                                        fontWeight="600"
-                                                        textAnchor="middle"
-                                                        dominantBaseline="middle"
-                                                        opacity={opacity}
-                                                        style={{ transition: 'all 0.2s ease' }}
-                                                    >
-                                                        {braceDistanceCm.toFixed(1)}cm
-                                                    </text>
+                                                    <>
+                                                        <text
+                                                            x={labelX}
+                                                            y={midY + verticalAdjustment + (isHighlighted ? 8 : 6)}
+                                                            fill="#7e22ce" // Purple-700
+                                                            fontSize={isHighlighted ? "12" : "10"}
+                                                            fontWeight="600"
+                                                            textAnchor="middle"
+                                                            dominantBaseline="middle"
+                                                            opacity={opacity}
+                                                            style={{ transition: 'all 0.2s ease' }}
+                                                        >
+                                                            {braceDistanceCm.toFixed(1)}cm
+                                                        </text>
+                                                        {/* Broom/Rock Length Label */}
+                                                        {displaySettings.guard.showBroomLength && (
+                                                            braceDistanceCm < STONE_RADIUS * 2 * 2 ? (
+                                                                // Rock lengths (< 2 stone diameters)
+                                                                <g>
+                                                                    <text
+                                                                        x={labelX - (isHighlighted ? 8 : 6)}
+                                                                        y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
+                                                                        fill="#7e22ce"
+                                                                        fontSize={isHighlighted ? "10" : "8"}
+                                                                        fontWeight="500"
+                                                                        textAnchor="end"
+                                                                        dominantBaseline="middle"
+                                                                        opacity={opacity}
+                                                                        style={{ transition: 'all 0.2s ease' }}
+                                                                    >
+                                                                        {(braceDistanceCm / (STONE_RADIUS * 2)).toFixed(2)}
+                                                                    </text>
+                                                                    {/* Curling stone icon */}
+                                                                    <g transform={`translate(${labelX + (isHighlighted ? 3 : 2)}, ${midY + verticalAdjustment + (isHighlighted ? 20 : 16)})`} opacity={opacity}>
+                                                                        {/* Stone body (circle) */}
+                                                                        <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke="#7e22ce" strokeWidth="0.8" />
+                                                                        {/* Handle */}
+                                                                        <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill="#7e22ce" />
+                                                                    </g>
+                                                                </g>
+                                                            ) : (
+                                                                // Broom lengths (>= 2 stone diameters)
+                                                                <text
+                                                                    x={labelX}
+                                                                    y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
+                                                                    fill="#7e22ce"
+                                                                    fontSize={isHighlighted ? "10" : "8"}
+                                                                    fontWeight="500"
+                                                                    textAnchor="middle"
+                                                                    dominantBaseline="middle"
+                                                                    opacity={opacity}
+                                                                    style={{ transition: 'all 0.2s ease' }}
+                                                                >
+                                                                    {(braceDistanceCm / 155).toFixed(2)} 🧹
+                                                                </text>
+                                                            )
+                                                        )}
+                                                    </>
                                                 )}
 
                                                 {/* Extension Line Label */}
@@ -494,60 +588,64 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                 </svg>
                             )}
 
-                        {/* Vertical line to Tee Line */}
-                        {(
-                            (isHighlighted && highlightedStone?.activeTypes?.includes('t-line')) ||
-                            (!isHighlighted && shouldShowTLineInToggle)
-                        ) && (displaySettings.tLine.showLine || displaySettings.tLine.showDistance) && (
-                                <svg
-                                    style={{
-                                        position: 'absolute',
-                                        left: 0,
-                                        top: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        pointerEvents: 'none',
-                                        transition: 'opacity 0.2s ease'
-                                    }}
-                                >
-                                    {displaySettings.tLine.showLine && (
-                                        <line
-                                            x1={stonePixelX}
-                                            y1={verticalLineStartY}
-                                            x2={stonePixelX}
-                                            y2={teeLinePixelY}
-                                            stroke={strokeColor}
-                                            strokeWidth={strokeWidth}
-                                            strokeDasharray="5,5"
-                                            opacity={opacity}
-                                            style={{ transition: 'all 0.2s ease' }}
-                                        />
-                                    )}
-                                    {/* Distance label for Tee Line */}
-                                    {displaySettings.tLine.showDistance && (
-                                        <text
-                                            x={stonePixelX + teeLineLabelHorizontalOffset}
-                                            y={(stonePixelY + teeLinePixelY) / 2}
-                                            fill={textColor}
-                                            fontSize={fontSize}
-                                            fontWeight={fontWeight}
-                                            textAnchor="middle"
-                                            dominantBaseline="middle"
-                                            style={{ transition: 'all 0.2s ease' }}
-                                            opacity={opacity}
-                                        >
-                                            {displayDistanceToTee.toFixed(1)}cm {isAboveTee ? '↓' : '↑'}
-                                        </text>
-                                    )}
-                                </svg>
-
-                            )}
-
                         {/* Horizontal line to Center Line */}
                         {(
                             (isHighlighted && highlightedStone?.activeTypes?.includes('center-line')) ||
                             (!isHighlighted && shouldShowCenterLineInToggle)
-                        ) && (displaySettings.centerLine.showLine || displaySettings.centerLine.showDistance) && (
+                        ) && (displaySettings.centerLine.showLine || displaySettings.centerLine.showDistance) && (() => {
+                            // Check if guard measurement is also active
+                            const isGuardActive = isInGuardZone && (
+                                (isHighlighted && highlightedStone?.activeTypes?.includes('guard')) ||
+                                (!isHighlighted && shouldShowGuardInToggle)
+                            );
+
+                            // Calculate adjusted line endpoints to avoid overlap with brace
+                            let adjustedStartX = horizontalLineStartX;
+                            let adjustedEndX = centerLinePixelX;
+
+                            if (isGuardActive && displaySettings.guard.showBraceLine) {
+                                // Recalculate brace position (same logic as earlier in the code)
+                                const braceWidthLocal = 20;
+                                const braceXOffsetLocal = 40;
+
+                                // Determine which side the brace is on
+                                let placeBraceOnRightLocal;
+                                if (xPercent < 25) {
+                                    placeBraceOnRightLocal = true;
+                                } else if (xPercent > 75) {
+                                    placeBraceOnRightLocal = false;
+                                } else {
+                                    placeBraceOnRightLocal = !isLeftOfCenter;
+                                }
+
+                                const braceXLocal = placeBraceOnRightLocal
+                                    ? stonePixelX + braceXOffsetLocal
+                                    : stonePixelX - braceXOffsetLocal;
+
+                                const pointRightLocal = placeBraceOnRightLocal;
+
+                                // Calculate brace boundaries (accounting for bulge direction)
+                                const braceLeft = pointRightLocal ? braceXLocal : braceXLocal - braceWidthLocal;
+                                const braceRight = pointRightLocal ? braceXLocal + braceWidthLocal : braceXLocal;
+
+                                const gapSize = 10;
+
+                                if (isLeftOfCenter) {
+                                    // Line goes from stone (left) to center (right)
+                                    // If brace is on the right side of stone, start the line after the brace
+                                    if (placeBraceOnRightLocal) {
+                                        adjustedStartX = braceRight + gapSize;
+                                    }
+                                } else {
+                                    // Line goes from stone (right) to center (left)
+                                    // If brace is on the left side of stone, start the line after the brace
+                                    if (!placeBraceOnRightLocal) {
+                                        adjustedStartX = braceLeft - gapSize;
+                                    }
+                                }
+                            }
+
+                            return (
                                 <svg
                                     style={{
                                         position: 'absolute',
@@ -561,9 +659,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                 >
                                     {displaySettings.centerLine.showLine && (
                                         <line
-                                            x1={horizontalLineStartX}
+                                            x1={adjustedStartX}
                                             y1={stonePixelY}
-                                            x2={centerLinePixelX}
+                                            x2={adjustedEndX}
                                             y2={stonePixelY}
                                             stroke={strokeColor}
                                             strokeWidth={strokeWidth}
@@ -574,22 +672,68 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                     )}
                                     {/* Distance label for Center Line */}
                                     {displaySettings.centerLine.showDistance && (
-                                        <text
-                                            x={(horizontalLineStartX + centerLinePixelX) / 2}
-                                            y={stonePixelY + horizontalLabelOffset}
-                                            fill={textColor}
-                                            fontSize={fontSize}
-                                            fontWeight={fontWeight}
-                                            textAnchor="middle"
-                                            dominantBaseline="middle"
-                                            style={{ transition: 'all 0.2s ease' }}
-                                            opacity={opacity}
-                                        >
-                                            {isLeftOfCenter ? `${displayDistanceToCenter.toFixed(1)}cm →` : `← ${displayDistanceToCenter.toFixed(1)}cm`}
-                                        </text>
+                                        <>
+                                            <text
+                                                x={(horizontalLineStartX + centerLinePixelX) / 2}
+                                                y={stonePixelY + horizontalLabelOffset}
+                                                fill={textColor}
+                                                fontSize={fontSize}
+                                                fontWeight={fontWeight}
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                style={{ transition: 'all 0.2s ease' }}
+                                                opacity={opacity}
+                                            >
+                                                {isLeftOfCenter ? `${displayDistanceToCenter.toFixed(1)}cm →` : `← ${displayDistanceToCenter.toFixed(1)}cm`}
+                                            </text>
+                                            {/* Broom/Stone Length Label for Guard Zone */}
+                                            {isInGuardZone && displaySettings.guard.showBroomLength && (
+                                                displayDistanceToCenter < STONE_RADIUS * 2 * 2 ? (
+                                                    // Rock lengths (< 2 stone diameters)
+                                                    <g>
+                                                        <text
+                                                            x={(horizontalLineStartX + centerLinePixelX) / 2 - (isHighlighted ? 8 : 6)}
+                                                            y={stonePixelY + horizontalLabelOffset + (isHighlighted ? 14 : 12)}
+                                                            fill={textColor}
+                                                            fontSize={isHighlighted ? "10" : "8"}
+                                                            fontWeight="500"
+                                                            textAnchor="end"
+                                                            dominantBaseline="middle"
+                                                            opacity={opacity}
+                                                            style={{ transition: 'all 0.2s ease' }}
+                                                        >
+                                                            {(displayDistanceToCenter / (STONE_RADIUS * 2)).toFixed(2)}
+                                                        </text>
+                                                        {/* Curling stone icon */}
+                                                        <g transform={`translate(${(horizontalLineStartX + centerLinePixelX) / 2 + (isHighlighted ? 3 : 2)}, ${stonePixelY + horizontalLabelOffset + (isHighlighted ? 14 : 12)})`} opacity={opacity}>
+                                                            {/* Stone body (circle) */}
+                                                            <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke={textColor} strokeWidth="0.8" />
+                                                            {/* Handle */}
+                                                            <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill={textColor} />
+                                                        </g>
+                                                    </g>
+                                                ) : (
+                                                    // Broom lengths (>= 2 stone diameters)
+                                                    <text
+                                                        x={(horizontalLineStartX + centerLinePixelX) / 2}
+                                                        y={stonePixelY + horizontalLabelOffset + (isHighlighted ? 14 : 12)}
+                                                        fill={textColor}
+                                                        fontSize={isHighlighted ? "10" : "8"}
+                                                        fontWeight="500"
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                        opacity={opacity}
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    >
+                                                        {(displayDistanceToCenter / 155).toFixed(2)} 🧹
+                                                    </text>
+                                                )
+                                            )}
+                                        </>
                                     )}
                                 </svg>
-                            )}
+                            );
+                        })()}
 
                         {/* Closest Ring Measurement */}
                         {(

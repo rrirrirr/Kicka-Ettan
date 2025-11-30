@@ -429,7 +429,12 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
                     if (prev?.color === myColor && prev?.index === stoneIndex) {
                       // Already selected - Cycle logic
-                      const nextStepIndex = (prev.stepIndex + 1) % steps.length;
+                      const nextStepIndex = prev.stepIndex + 1;
+                      if (nextStepIndex >= steps.length) {
+                        // Reached the end of steps, deselect stone
+                        setHoveredStone(null);
+                        return null;
+                      }
                       return { ...prev, stepIndex: nextStepIndex };
                     } else {
                       // New selection
@@ -765,7 +770,12 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
                 if (prev?.color === color && prev?.index === i) {
                   // Already selected - Cycle logic
-                  const nextStepIndex = (prev.stepIndex + 1) % steps.length;
+                  const nextStepIndex = prev.stepIndex + 1;
+                  if (nextStepIndex >= steps.length) {
+                    // Reached the end of steps, deselect stone
+                    setHoveredStone(null);
+                    return null;
+                  }
                   return { ...prev, stepIndex: nextStepIndex };
                 } else {
                   // New selection

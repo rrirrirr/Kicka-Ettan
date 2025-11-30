@@ -18,6 +18,7 @@ export interface MeasurementDisplaySettings {
         showBraceLine: boolean;
         showPercentage: boolean;
         showDistance: boolean;
+        showBroomLength: boolean;
     };
     tLine: {
         showLine: boolean;
@@ -86,7 +87,8 @@ const defaultDisplaySettings: MeasurementDisplaySettings = {
     guard: {
         showBraceLine: true,
         showPercentage: true,
-        showDistance: true
+        showDistance: true,
+        showBroomLength: true
     },
     tLine: {
         showLine: true,
