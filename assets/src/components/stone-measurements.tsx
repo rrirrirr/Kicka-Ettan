@@ -41,8 +41,15 @@ const getBracePath = (x1: number, y1: number, x2: number, y2: number, w: number,
 };
 
 const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, highlightedStone, showMeasurements = true }) => {
-    const { displaySettings, toggleModeSettings } = useSettings();
+    const { displaySettings, toggleModeSettings, unitSystem } = useSettings();
     const centerLineX = SHEET_WIDTH / 2;
+
+    const formatDistance = (cm: number) => {
+        if (unitSystem === 'imperial') {
+            return `${(cm / 2.54).toFixed(1)}"`;
+        }
+        return `${cm.toFixed(1)}cm`;
+    };
     const teeLineY = VIEW_TOP_OFFSET;
 
     const allStones: Array<{ pos: StonePosition; color: 'red' | 'yellow'; index: number }> = [
@@ -342,14 +349,14 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                             style={{ transition: 'all 0.2s ease' }}
                                             opacity={opacity}
                                         >
-                                            {displayDistanceToTee.toFixed(1)}cm {isAboveTee ? '↓' : '↑'}
+                                            {formatDistance(displayDistanceToTee)} {isAboveTee ? '↓' : '↑'}
                                         </text>
                                     )}
                                 </svg>
 
                             )}
 
-                        {/* Guard Zone Measurement (Brace) - Rendered after t-line so it appears on top */}
+                        {/* Guard Zone Measurement (Brace or Direct Line) - Rendered after t-line so it appears on top */}
                         {isInGuardZone && (
                             (isHighlighted && highlightedStone?.activeTypes?.includes('guard')) ||
                             (!isHighlighted && shouldShowGuardInToggle)
@@ -390,110 +397,314 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                         style={{ transition: 'all 0.2s ease' }}
                                     />
 
-                                    {/* Brace */}
-                                    {displaySettings.guard.showBraceLine && (
-                                        <path
-                                            d={getBracePath(
-                                                braceX,
-                                                braceStartY,
-                                                braceX,
-                                                braceEndY,
-                                                pointRight ? -braceWidth : braceWidth,
-                                                0.6
-                                            )}
-                                            stroke="#9333ea"
-                                            strokeWidth="2"
-                                            fill="none"
-                                            opacity={opacity}
-                                            style={{ transition: 'all 0.2s ease' }}
-                                        />
-                                    )}
-
-                                    {/* Dashed connector line from brace to stone edge (Stone End) */}
-                                    <line
-                                        x1={braceX}
-                                        y1={stonePixelY}
-                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                        y2={stonePixelY}
-                                        stroke="#9333ea"
-                                        strokeWidth="2"
-                                        strokeDasharray="5,5"
-                                        opacity={opacity}
-                                        style={{ transition: 'all 0.2s ease' }}
-                                    />
-
-                                    {/* Dashed connector line from brace to stone edge (Reference End) */}
-                                    <line
-                                        x1={braceX}
-                                        y1={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
-                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                        y2={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
-                                        stroke="#9333ea"
-                                        strokeWidth="2"
-                                        strokeDasharray="5,5"
-                                        opacity={opacity}
-                                        style={{ transition: 'all 0.2s ease' }}
-                                    />
-
-                                    {/* Vertical extension line (from Top of House to Hog Line) */}
-                                    <line
-                                        x1={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                        y1={topOfHouseY * scale}
-                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
-                                        y2={hogLineY * scale}
-                                        stroke="#9333ea"
-                                        strokeWidth="2"
-                                        strokeDasharray="5,5"
-                                        opacity={parseFloat(opacity) * 0.5} // Slightly more transparent
-                                        style={{ transition: 'all 0.2s ease' }}
-                                    />
-
-                                    {/* Percentage Label */}
                                     {(() => {
                                         // Calculate percentage based on closest reference line
-                                        let percentage;
                                         const totalZoneDist = topOfHouseY - hogLineY;
+                                        const distFromHog = stone.pos.y - hogLineY;
+                                        const percentageFromHog = distFromHog / totalZoneDist;
+                                        const isTop20Percent = percentageFromHog < 0.2;
 
-                                        // Calculate actual distance in cm for the brace segment
-                                        let braceDistanceCm;
-                                        if (isCloserToHog) {
-                                            // Distance from Hog Line to Top of House
-                                            const distFromHog = stone.pos.y - hogLineY;
-                                            percentage = Math.round((distFromHog / totalZoneDist) * 100);
-                                            braceDistanceCm = distFromHog;
-                                        } else {
-                                            // Distance from Top of House to Hog Line (original calculation)
-                                            const distFromHouse = topOfHouseY - stone.pos.y;
-                                            percentage = Math.round((distFromHouse / totalZoneDist) * 100);
-                                            braceDistanceCm = distFromHouse;
-                                        }
+                                        if (isTop20Percent) {
+                                            // --- Top 20% Logic: Direct Line to Hog Line ---
+                                            const lineStartX = stonePixelX;
+                                            const lineStartY = stonePixelY - (STONE_RADIUS * scale); // Top of stone
+                                            const lineEndY = hogLineY * scale;
+                                            const distanceCm = distFromHog - STONE_RADIUS; // Distance from stone top to hog line
 
-                                        // Label Position (Brace)
-                                        // At the "point" of the brace (midY of the brace segment)
-                                        // Offset further by braceWidth
-                                        const midY = (braceStartY + braceEndY) / 2;
-                                        // Adjust vertical position when brace is on right to align with left-side labels
-                                        const verticalAdjustment = pointRight ? 3 : 0;
-                                        const labelX = pointRight
-                                            ? braceX + braceWidth + 20
-                                            : braceX - braceWidth - 20;
+                                            // Label Position (midpoint of line)
+                                            const labelX = lineStartX + 15; // Offset to right
+                                            const labelY = (lineStartY + lineEndY) / 2;
 
-                                        // Label Position (Extension Line)
-                                        // Now spans entire guard zone, so center it there
-                                        const extLineStartY = topOfHouseY * scale;
-                                        const extLineEndY = hogLineY * scale;
-                                        const extMidY = (extLineStartY + extLineEndY) / 2;
-                                        const extLabelX = placeBraceOnRight
-                                            ? stonePixelX + (STONE_RADIUS * scale) + 35
-                                            : stonePixelX - (STONE_RADIUS * scale) - 35;
+                                            return (
+                                                <>
+                                                    {/* Dashed Line to Hog Line */}
+                                                    <line
+                                                        x1={lineStartX}
+                                                        y1={lineStartY}
+                                                        x2={lineStartX}
+                                                        y2={lineEndY}
+                                                        stroke="#9333ea"
+                                                        strokeWidth="2"
+                                                        strokeDasharray="5,5"
+                                                        opacity={opacity}
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    />
 
-                                        return (
-                                            <>
-                                                {/* Brace Label - Percentage */}
-                                                {displaySettings.guard.showPercentage && (
+                                                    {/* Distance Label (cm) */}
                                                     <text
                                                         x={labelX}
-                                                        y={midY + verticalAdjustment - (isHighlighted ? 8 : 6)}
+                                                        y={labelY - 6}
+                                                        fill="#7e22ce"
+                                                        fontSize={isHighlighted ? "12" : "10"}
+                                                        fontWeight="600"
+                                                        textAnchor="start"
+                                                        dominantBaseline="middle"
+                                                        opacity={opacity}
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    >
+                                                        {formatDistance(distanceCm)}
+                                                    </text>
+
+                                                    {/* Unit Label (Stone/Brush Lengths) */}
+                                                    {(() => {
+                                                        const stoneDiameter = STONE_RADIUS * 2;
+                                                        const stoneLengths = distanceCm / stoneDiameter;
+
+                                                        if (stoneLengths <= 2) {
+                                                            // Show Stone Lengths
+                                                            return (
+                                                                <g opacity={opacity} style={{ transition: 'all 0.2s ease' }}>
+                                                                    <text
+                                                                        x={labelX}
+                                                                        y={labelY + 8}
+                                                                        fill="#7e22ce"
+                                                                        fontSize={isHighlighted ? "10" : "8"}
+                                                                        fontWeight="500"
+                                                                        textAnchor="start"
+                                                                        dominantBaseline="middle"
+                                                                    >
+                                                                        {stoneLengths.toFixed(2)}
+                                                                    </text>
+                                                                    {/* Stone Icon */}
+                                                                    <g transform={`translate(${labelX + (isHighlighted ? 28 : 24)}, ${labelY + 8})`}>
+                                                                        <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke="#7e22ce" strokeWidth="0.8" />
+                                                                        <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill="#7e22ce" />
+                                                                    </g>
+                                                                </g>
+                                                            );
+                                                        } else {
+                                                            // Show Brush Lengths
+                                                            const brushLengthCm = 155; // Approx brush length? Using 155 from previous code
+                                                            const brushLengths = distanceCm / brushLengthCm;
+                                                            return (
+                                                                <text
+                                                                    x={labelX}
+                                                                    y={labelY + 8}
+                                                                    fill="#7e22ce"
+                                                                    fontSize={isHighlighted ? "10" : "8"}
+                                                                    fontWeight="500"
+                                                                    textAnchor="start"
+                                                                    dominantBaseline="middle"
+                                                                    opacity={opacity}
+                                                                    style={{ transition: 'all 0.2s ease' }}
+                                                                >
+                                                                    {brushLengths.toFixed(2)} 🧹
+                                                                </text>
+                                                            );
+                                                        }
+                                                    })()}
+                                                </>
+                                            );
+                                        } else {
+                                            // --- Standard Logic: Brace and Percentage ---
+
+                                            // Brace Logic
+                                            // const isLeftOfCenter = stone.pos.x < centerLineX; // Already defined above
+                                            // const braceWidth = 20; // Defined above but not in scope here? No, it was defined in render function scope.
+                                            // Let's redefine or use values.
+                                            const braceWidth = 20;
+                                            const braceXOffset = 40;
+
+                                            // Determine side based on position (reusing xPercent calculated above)
+                                            let placeBraceOnRight;
+                                            if (xPercent < 25) {
+                                                placeBraceOnRight = true;
+                                            } else if (xPercent > 75) {
+                                                placeBraceOnRight = false;
+                                            } else {
+                                                placeBraceOnRight = !isLeftOfCenter;
+                                            }
+
+                                            const braceX = placeBraceOnRight
+                                                ? stonePixelX + braceXOffset
+                                                : stonePixelX - braceXOffset;
+
+                                            const pointRight = placeBraceOnRight;
+
+                                            // Determine closest reference line
+                                            const distToHog = Math.abs(stonePixelY - (hogLineY * scale));
+                                            const distToHouse = Math.abs((topOfHouseY * scale) - stonePixelY);
+                                            const isCloserToHog = distToHog < distToHouse;
+
+                                            let braceStartY, braceEndY;
+                                            if (isCloserToHog) {
+                                                braceStartY = hogLineY * scale;
+                                                braceEndY = stonePixelY;
+                                            } else {
+                                                braceStartY = stonePixelY;
+                                                braceEndY = topOfHouseY * scale;
+                                            }
+
+                                            // Calculate percentage
+                                            let percentage;
+                                            let braceDistanceCm;
+                                            if (isCloserToHog) {
+                                                percentage = Math.round((distFromHog / totalZoneDist) * 100);
+                                                braceDistanceCm = distFromHog;
+                                            } else {
+                                                const distFromHouse = topOfHouseY - stone.pos.y;
+                                                percentage = Math.round((distFromHouse / totalZoneDist) * 100);
+                                                braceDistanceCm = distFromHouse;
+                                            }
+
+                                            // Label Position (Brace)
+                                            const midY = (braceStartY + braceEndY) / 2;
+                                            const verticalAdjustment = pointRight ? 3 : 0;
+                                            const labelX = pointRight
+                                                ? braceX + braceWidth + 20
+                                                : braceX - braceWidth - 20;
+
+                                            // Label Position (Extension Line)
+                                            const extLineStartY = topOfHouseY * scale;
+                                            const extLineEndY = hogLineY * scale;
+                                            const extMidY = (extLineStartY + extLineEndY) / 2;
+                                            const extLabelX = placeBraceOnRight
+                                                ? stonePixelX + (STONE_RADIUS * scale) + 35
+                                                : stonePixelX - (STONE_RADIUS * scale) - 35;
+
+                                            return (
+                                                <>
+                                                    {/* Brace */}
+                                                    {displaySettings.guard.showBraceLine && (
+                                                        <path
+                                                            d={getBracePath(
+                                                                braceX,
+                                                                braceStartY,
+                                                                braceX,
+                                                                braceEndY,
+                                                                pointRight ? -braceWidth : braceWidth,
+                                                                0.6
+                                                            )}
+                                                            stroke="#9333ea"
+                                                            strokeWidth="2"
+                                                            fill="none"
+                                                            opacity={opacity}
+                                                            style={{ transition: 'all 0.2s ease' }}
+                                                        />
+                                                    )}
+
+                                                    {/* Dashed connector line from brace to stone edge (Stone End) */}
+                                                    <line
+                                                        x1={braceX}
+                                                        y1={stonePixelY}
+                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        y2={stonePixelY}
+                                                        stroke="#9333ea"
+                                                        strokeWidth="2"
+                                                        strokeDasharray="5,5"
+                                                        opacity={opacity}
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    />
+
+                                                    {/* Dashed connector line from brace to stone edge (Reference End) */}
+                                                    <line
+                                                        x1={braceX}
+                                                        y1={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
+                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        y2={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
+                                                        stroke="#9333ea"
+                                                        strokeWidth="2"
+                                                        strokeDasharray="5,5"
+                                                        opacity={opacity}
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    />
+
+                                                    {/* Vertical extension line (from Top of House to Hog Line) */}
+                                                    <line
+                                                        x1={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        y1={topOfHouseY * scale}
+                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        y2={hogLineY * scale}
+                                                        stroke="#9333ea"
+                                                        strokeWidth="2"
+                                                        strokeDasharray="5,5"
+                                                        opacity={parseFloat(opacity) * 0.5} // Slightly more transparent
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    />
+
+                                                    {/* Brace Label - Percentage */}
+                                                    {displaySettings.guard.showPercentage && (
+                                                        <text
+                                                            x={labelX}
+                                                            y={midY + verticalAdjustment - (isHighlighted ? 8 : 6)}
+                                                            fill="#7e22ce" // Purple-700
+                                                            fontSize={fontSize}
+                                                            fontWeight={fontWeight}
+                                                            textAnchor="middle"
+                                                            dominantBaseline="middle"
+                                                            opacity={opacity}
+                                                            style={{ transition: 'all 0.2s ease' }}
+                                                        >
+                                                            {percentage}%
+                                                        </text>
+                                                    )}
+
+                                                    {/* Brace Label - Distance in cm */}
+                                                    {displaySettings.guard.showDistance && (
+                                                        <>
+                                                            <text
+                                                                x={labelX}
+                                                                y={midY + verticalAdjustment + (isHighlighted ? 8 : 6)}
+                                                                fill="#7e22ce" // Purple-700
+                                                                fontSize={isHighlighted ? "12" : "10"}
+                                                                fontWeight="600"
+                                                                textAnchor="middle"
+                                                                dominantBaseline="middle"
+                                                                opacity={opacity}
+                                                                style={{ transition: 'all 0.2s ease' }}
+                                                            >
+                                                                {formatDistance(braceDistanceCm)}
+                                                            </text>
+                                                            {/* Broom/Rock Length Label */}
+                                                            {displaySettings.guard.showBroomLength && (
+                                                                braceDistanceCm < STONE_RADIUS * 2 * 2 ? (
+                                                                    // Rock lengths (< 2 stone diameters)
+                                                                    <g>
+                                                                        <text
+                                                                            x={labelX - (isHighlighted ? 8 : 6)}
+                                                                            y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
+                                                                            fill="#7e22ce"
+                                                                            fontSize={isHighlighted ? "10" : "8"}
+                                                                            fontWeight="500"
+                                                                            textAnchor="end"
+                                                                            dominantBaseline="middle"
+                                                                            opacity={opacity}
+                                                                            style={{ transition: 'all 0.2s ease' }}
+                                                                        >
+                                                                            {(braceDistanceCm / (STONE_RADIUS * 2)).toFixed(2)}
+                                                                        </text>
+                                                                        {/* Curling stone icon */}
+                                                                        <g transform={`translate(${labelX + (isHighlighted ? 3 : 2)}, ${midY + verticalAdjustment + (isHighlighted ? 20 : 16)})`} opacity={opacity}>
+                                                                            {/* Stone body (circle) */}
+                                                                            <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke="#7e22ce" strokeWidth="0.8" />
+                                                                            {/* Handle */}
+                                                                            <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill="#7e22ce" />
+                                                                        </g>
+                                                                    </g>
+                                                                ) : (
+                                                                    // Broom lengths (>= 2 stone diameters)
+                                                                    <text
+                                                                        x={labelX}
+                                                                        y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
+                                                                        fill="#7e22ce"
+                                                                        fontSize={isHighlighted ? "10" : "8"}
+                                                                        fontWeight="500"
+                                                                        textAnchor="middle"
+                                                                        dominantBaseline="middle"
+                                                                        opacity={opacity}
+                                                                        style={{ transition: 'all 0.2s ease' }}
+                                                                    >
+                                                                        {(braceDistanceCm / 155).toFixed(2)} 🧹
+                                                                    </text>
+                                                                )
+                                                            )}
+                                                        </>
+                                                    )}
+
+                                                    {/* Extension Line Label */}
+                                                    <text
+                                                        x={extLabelX}
+                                                        y={extMidY}
                                                         fill="#7e22ce" // Purple-700
                                                         fontSize={fontSize}
                                                         fontWeight={fontWeight}
@@ -502,88 +713,11 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                         opacity={opacity}
                                                         style={{ transition: 'all 0.2s ease' }}
                                                     >
-                                                        {percentage}%
+                                                        {100 - percentage}%
                                                     </text>
-                                                )}
-
-                                                {/* Brace Label - Distance in cm */}
-                                                {displaySettings.guard.showDistance && (
-                                                    <>
-                                                        <text
-                                                            x={labelX}
-                                                            y={midY + verticalAdjustment + (isHighlighted ? 8 : 6)}
-                                                            fill="#7e22ce" // Purple-700
-                                                            fontSize={isHighlighted ? "12" : "10"}
-                                                            fontWeight="600"
-                                                            textAnchor="middle"
-                                                            dominantBaseline="middle"
-                                                            opacity={opacity}
-                                                            style={{ transition: 'all 0.2s ease' }}
-                                                        >
-                                                            {braceDistanceCm.toFixed(1)}cm
-                                                        </text>
-                                                        {/* Broom/Rock Length Label */}
-                                                        {displaySettings.guard.showBroomLength && (
-                                                            braceDistanceCm < STONE_RADIUS * 2 * 2 ? (
-                                                                // Rock lengths (< 2 stone diameters)
-                                                                <g>
-                                                                    <text
-                                                                        x={labelX - (isHighlighted ? 8 : 6)}
-                                                                        y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
-                                                                        fill="#7e22ce"
-                                                                        fontSize={isHighlighted ? "10" : "8"}
-                                                                        fontWeight="500"
-                                                                        textAnchor="end"
-                                                                        dominantBaseline="middle"
-                                                                        opacity={opacity}
-                                                                        style={{ transition: 'all 0.2s ease' }}
-                                                                    >
-                                                                        {(braceDistanceCm / (STONE_RADIUS * 2)).toFixed(2)}
-                                                                    </text>
-                                                                    {/* Curling stone icon */}
-                                                                    <g transform={`translate(${labelX + (isHighlighted ? 3 : 2)}, ${midY + verticalAdjustment + (isHighlighted ? 20 : 16)})`} opacity={opacity}>
-                                                                        {/* Stone body (circle) */}
-                                                                        <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke="#7e22ce" strokeWidth="0.8" />
-                                                                        {/* Handle */}
-                                                                        <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill="#7e22ce" />
-                                                                    </g>
-                                                                </g>
-                                                            ) : (
-                                                                // Broom lengths (>= 2 stone diameters)
-                                                                <text
-                                                                    x={labelX}
-                                                                    y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
-                                                                    fill="#7e22ce"
-                                                                    fontSize={isHighlighted ? "10" : "8"}
-                                                                    fontWeight="500"
-                                                                    textAnchor="middle"
-                                                                    dominantBaseline="middle"
-                                                                    opacity={opacity}
-                                                                    style={{ transition: 'all 0.2s ease' }}
-                                                                >
-                                                                    {(braceDistanceCm / 155).toFixed(2)} 🧹
-                                                                </text>
-                                                            )
-                                                        )}
-                                                    </>
-                                                )}
-
-                                                {/* Extension Line Label */}
-                                                <text
-                                                    x={extLabelX}
-                                                    y={extMidY}
-                                                    fill="#7e22ce" // Purple-700
-                                                    fontSize={fontSize}
-                                                    fontWeight={fontWeight}
-                                                    textAnchor="middle"
-                                                    dominantBaseline="middle"
-                                                    opacity={opacity}
-                                                    style={{ transition: 'all 0.2s ease' }}
-                                                >
-                                                    {100 - percentage}%
-                                                </text>
-                                            </>
-                                        );
+                                                </>
+                                            );
+                                        }
                                     })()}
                                 </svg>
                             )}
@@ -599,11 +733,19 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                 (!isHighlighted && shouldShowGuardInToggle)
                             );
 
+                            // Calculate if stone is in top 20% (closest to hog line)
+                            // Re-using logic from Guard Zone block
+                            const totalZoneDist = topOfHouseY - hogLineY;
+                            const distFromHog = stone.pos.y - hogLineY;
+                            const percentageFromHog = distFromHog / totalZoneDist;
+                            const isTop20Percent = percentageFromHog < 0.2;
+
                             // Calculate adjusted line endpoints to avoid overlap with brace
                             let adjustedStartX = horizontalLineStartX;
                             let adjustedEndX = centerLinePixelX;
 
-                            if (isGuardActive && displaySettings.guard.showBraceLine) {
+                            // Only shorten the line if the brace is actually visible (not top 20%)
+                            if (isGuardActive && displaySettings.guard.showBraceLine && !isTop20Percent) {
                                 // Recalculate brace position (same logic as earlier in the code)
                                 const braceWidthLocal = 20;
                                 const braceXOffsetLocal = 40;
@@ -739,7 +881,10 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                         {(
                             (isHighlighted && highlightedStone?.activeTypes?.includes('closest-ring')) ||
                             (!isHighlighted && shouldShowClosestRingInToggle)
-                        ) && (displaySettings.closestRing?.showLine || displaySettings.closestRing?.showDistance) && (
+                        ) && (displaySettings.closestRing?.showLine || displaySettings.closestRing?.showDistance) && (() => {
+                            const isOverlapping = minDistToRingEdge <= 0;
+
+                            return (
                                 <svg
                                     style={{
                                         position: 'absolute',
@@ -751,7 +896,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                         transition: 'opacity 0.2s ease'
                                     }}
                                 >
-                                    {displaySettings.closestRing?.showLine && (
+                                    {/* Only show line if NOT overlapping */}
+                                    {!isOverlapping && displaySettings.closestRing?.showLine && (
                                         <line
                                             x1={stoneEdgePixelX}
                                             y1={stoneEdgePixelY}
@@ -763,27 +909,99 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                             style={{ transition: 'all 0.2s ease' }}
                                         />
                                     )}
-                                    {/* Distance label for Closest Ring */}
+
+                                    {/* Distance label or Percentage label */}
                                     {displaySettings.closestRing?.showDistance && (
-                                        <text
-                                            x={(stoneEdgePixelX + ringEdgePixelX) / 2}
-                                            y={((stoneEdgePixelY + ringEdgePixelY) / 2) + textYOffset}
-                                            fill="#0891b2" // Cyan-600
-                                            fontSize={fontSize}
-                                            fontWeight={fontWeight}
-                                            textAnchor="middle"
-                                            dominantBaseline="middle"
-                                            style={{
-                                                transition: 'all 0.2s ease',
-                                                textShadow: '0 0 4px white' // Add shadow for better visibility over rings
-                                            }}
+                                        <g
+                                            transform={`translate(${(stoneEdgePixelX + ringEdgePixelX) / 2}, ${((stoneEdgePixelY + ringEdgePixelY) / 2) + textYOffset})`}
+                                            style={{ transition: 'all 0.2s ease' }}
                                             opacity={opacity}
                                         >
-                                            {displayDistanceToRing.toFixed(1)}cm
-                                        </text>
+                                            {(() => {
+                                                // Special handling for Button (closestRingRadius === BUTTON_RADIUS)
+                                                // If touching/overlapping the button (distToCenterPoint < BUTTON_RADIUS + STONE_RADIUS)
+                                                if (closestRingRadius === BUTTON_RADIUS && distToCenterPoint < (BUTTON_RADIUS + STONE_RADIUS)) {
+                                                    // Calculate percentage on button
+                                                    // 100% if distToCenterPoint is 0
+                                                    // 0% if distToCenterPoint is BUTTON_RADIUS + STONE_RADIUS (just touching edge)
+                                                    const maxDist = BUTTON_RADIUS + STONE_RADIUS;
+                                                    const buttonPercentage = Math.max(0, Math.min(100, Math.round((1 - (distToCenterPoint / maxDist)) * 100)));
+
+                                                    return (
+                                                        <>
+                                                            {/* Overlap Icon (Two intersecting circles) - Optional, maybe just text is cleaner for button */}
+                                                            {/* Percentage Text */}
+                                                            <text
+                                                                x="0"
+                                                                y="0"
+                                                                fill="#0891b2" // Cyan-600
+                                                                fontSize={fontSize}
+                                                                fontWeight={fontWeight}
+                                                                textAnchor="middle"
+                                                                dominantBaseline="middle"
+                                                                style={{
+                                                                    textShadow: '0 0 4px white'
+                                                                }}
+                                                            >
+                                                                {buttonPercentage}%
+                                                            </text>
+                                                        </>
+                                                    );
+                                                }
+
+                                                // Standard logic for other rings or if not touching button
+                                                if (isOverlapping) {
+                                                    return (
+                                                        <>
+                                                            {/* Overlap Icon (Two intersecting circles) */}
+                                                            <g transform="translate(-16, 0)">
+                                                                <circle cx="-3" cy="0" r="4.5" fill="none" stroke="#0891b2" strokeWidth="1.5" />
+                                                                <circle cx="3" cy="0" r="4.5" fill="none" stroke="#0891b2" strokeWidth="1.5" />
+                                                                {/* Intersection highlight (optional, maybe just the outlines are enough) */}
+                                                                <path d="M 0,-3.3 A 4.5,4.5 0 0,0 0,3.3 A 4.5,4.5 0 0,0 0,-3.3" fill="#0891b2" fillOpacity="0.3" stroke="none" />
+                                                            </g>
+
+                                                            {/* Percentage Text */}
+                                                            <text
+                                                                x="10"
+                                                                y="0"
+                                                                fill="#0891b2" // Cyan-600
+                                                                fontSize={fontSize}
+                                                                fontWeight={fontWeight}
+                                                                textAnchor="middle"
+                                                                dominantBaseline="middle"
+                                                                style={{
+                                                                    textShadow: '0 0 4px white'
+                                                                }}
+                                                            >
+                                                                {Math.round((Math.abs(minDistToRingEdge) / (2 * STONE_RADIUS)) * 100)}%
+                                                            </text>
+                                                        </>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <text
+                                                            x="0"
+                                                            y="0"
+                                                            fill="#0891b2" // Cyan-600
+                                                            fontSize={fontSize}
+                                                            fontWeight={fontWeight}
+                                                            textAnchor="middle"
+                                                            dominantBaseline="middle"
+                                                            style={{
+                                                                textShadow: '0 0 4px white'
+                                                            }}
+                                                        >
+                                                            {formatDistance(displayDistanceToRing)}
+                                                        </text>
+                                                    );
+                                                }
+                                            })()}
+                                        </g>
                                     )}
                                 </svg>
-                            )}
+                            );
+                        })()}
                     </React.Fragment>
                 );
             })}

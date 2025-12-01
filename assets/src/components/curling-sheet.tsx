@@ -15,14 +15,31 @@ import {
     COLOR_WHITE,
     COLOR_BLACK
 } from '../utils/constants';
+import { SheetStyle } from '../contexts/SettingsContext';
 
 interface CurlingSheetProps {
     width?: string | number;
     round?: number;
     phase?: string;
+    style?: SheetStyle;
+    children?: React.ReactNode;
 }
 
-const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phase }) => {
+const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phase, style, children }) => {
+    // Use style colors if provided, otherwise fall back to constants
+    const colors = style ? style.colors : {
+        ice: COLOR_ICE,
+        lines: COLOR_BLACK,
+        hogLine: COLOR_RED,
+        house: {
+            ring12: COLOR_BLUE,
+            ring8: COLOR_WHITE,
+            ring4: COLOR_RED,
+            button: COLOR_WHITE,
+            stroke: COLOR_BLACK
+        },
+        text: 'rgba(0,0,0,0.1)'
+    };
     // Coordinate system:
     // Origin (0,0) is the Tee Center
     // Y goes UP towards the start (so Hog Line is positive Y)
@@ -54,15 +71,15 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                 preserveAspectRatio="xMidYMid meet"
             >
                 {/* Ice Background */}
-                <rect x="0" y="0" width={SHEET_WIDTH} height={viewHeight} fill={COLOR_ICE} />
+                <rect x="0" y="0" width={SHEET_WIDTH} height={viewHeight} fill={colors.ice} />
 
                 {/* Sidelines */}
 
                 {/* House Rings */}
-                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_12} fill={COLOR_BLUE} stroke={COLOR_BLACK} strokeWidth="1" />
-                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_8} fill={COLOR_WHITE} stroke={COLOR_BLACK} strokeWidth="1" />
-                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_4} fill={COLOR_RED} stroke={COLOR_BLACK} strokeWidth="1" />
-                <circle cx={cx} cy={teeY} r={BUTTON_RADIUS} fill={COLOR_WHITE} stroke={COLOR_BLACK} strokeWidth="1" />
+                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_12} fill={colors.house.ring12} stroke={colors.house.stroke} strokeWidth="1" />
+                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_8} fill={colors.house.ring8} stroke={colors.house.stroke} strokeWidth="1" />
+                <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_4} fill={colors.house.ring4} stroke={colors.house.stroke} strokeWidth="1" />
+                <circle cx={cx} cy={teeY} r={BUTTON_RADIUS} fill={colors.house.button} stroke={colors.house.stroke} strokeWidth="1" />
 
                 {/* Center Line - stops at back line */}
                 <line
@@ -70,7 +87,7 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                     y1={0}
                     x2={cx}
                     y2={teeY + BACK_LINE_OFFSET}
-                    stroke={COLOR_BLACK}
+                    stroke={colors.lines}
                     strokeWidth="2"
                 />
 
@@ -80,7 +97,7 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                     y1={teeY - HOG_LINE_OFFSET}
                     x2={SHEET_WIDTH}
                     y2={teeY - HOG_LINE_OFFSET}
-                    stroke={COLOR_RED}
+                    stroke={colors.hogLine}
                     strokeWidth="10" // Hog line is wide
                 />
 
@@ -90,7 +107,7 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                     y1={teeY}
                     x2={SHEET_WIDTH}
                     y2={teeY}
-                    stroke={COLOR_BLACK}
+                    stroke={colors.lines}
                     strokeWidth="2"
                 />
 
@@ -100,9 +117,21 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                     y1={teeY + BACK_LINE_OFFSET}
                     x2={SHEET_WIDTH}
                     y2={teeY + BACK_LINE_OFFSET}
-                    stroke={COLOR_BLACK}
+                    stroke={colors.lines}
                     strokeWidth="2"
                 />
+
+                {/* Mixed Doubles Markings */}
+                {style?.markings?.map((marking, idx) => (
+                    <circle
+                        key={`marking-${idx}`}
+                        cx={marking.x}
+                        cy={marking.y}
+                        r={3}
+                        fill={colors.hogLine}
+                        opacity={0.8}
+                    />
+                ))}
 
                 {/* Status Text */}
                 {round !== undefined && (
@@ -125,7 +154,7 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                         // So it will extend downwards (towards Tee Line).
                         // This seems correct.
                         dominantBaseline="middle"
-                        fill="rgba(0,0,0,0.1)"
+                        fill={colors.text}
                         fontSize="80"
                         fontWeight="bold"
                         transform={`rotate(-90, ${cx - 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
@@ -142,7 +171,7 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                             y={teeY - HOG_LINE_OFFSET + 40} // Near Hog Line
                             textAnchor="end"
                             dominantBaseline="middle"
-                            fill="rgba(0,0,0,0.1)"
+                            fill={colors.text}
                             fontSize="40"
                             fontWeight="bold"
                             transform={`rotate(-90, ${cx + 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
@@ -155,7 +184,7 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                             y={teeY - HOG_LINE_OFFSET + 100} // Below phase value
                             textAnchor="end"
                             dominantBaseline="middle"
-                            fill="rgba(0,0,0,0.1)"
+                            fill={colors.text}
                             fontSize="40"
                             fontWeight="bold"
                             transform={`rotate(-90, ${cx + 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
@@ -164,6 +193,9 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                         </text>
                     </>
                 )}
+
+                {/* Overlays */}
+                {children}
             </svg>
         </div>
     );

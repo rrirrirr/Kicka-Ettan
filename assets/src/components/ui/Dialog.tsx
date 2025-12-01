@@ -7,9 +7,11 @@ interface DialogProps {
     title: string;
     children: React.ReactNode;
     className?: string;
+    headerClassName?: string;
+    backButton?: React.ReactNode;
 }
 
-export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, children, className = '' }) => {
+export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, children, className = '', headerClassName = '', backButton }) => {
     if (!isOpen) return null;
 
     return (
@@ -21,8 +23,11 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, children
                 className={`card-gradient rounded-3xl shadow-2xl p-8 max-w-lg w-full animate-in fade-in zoom-in duration-200 ${className}`}
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex justify-between items-start mb-6">
-                    <h2 className="text-3xl font-black lowercase tracking-tighter text-gray-900">{title}</h2>
+                <div className={`flex justify-between items-center mb-6 ${headerClassName}`}>
+                    <div className="flex items-center gap-2">
+                        {backButton}
+                        <h2 className="text-3xl font-black lowercase tracking-tighter text-gray-900">{title}</h2>
+                    </div>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -32,7 +37,7 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, children
                     </button>
                 </div>
 
-                <div className="space-y-4 text-gray-700 text-sm leading-relaxed">
+                <div className="flex-1 min-h-0 flex flex-col space-y-4 text-gray-700 text-sm leading-relaxed">
                     {children}
                 </div>
             </div>

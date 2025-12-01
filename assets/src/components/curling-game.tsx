@@ -7,7 +7,7 @@ import { Button } from './ui/Button';
 import DraggableStone from './draggable-stone';
 import StoneSelectionBar from './stone-selection-bar';
 import StoneMeasurements from './stone-measurements';
-import { SettingsProvider, useSettings } from '../contexts/SettingsContext';
+import { SettingsProvider, useSettings, SHEET_STYLES } from '../contexts/SettingsContext';
 import { SettingsDialog } from './SettingsDialog';
 import { Channel } from 'phoenix';
 import {
@@ -112,7 +112,7 @@ import { MeasurementType } from '../contexts/SettingsContext';
 // ... existing imports ...
 
 const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGameProps) => {
-  const { settings, openSettings } = useSettings();
+  const { settings, openSettings, sheetSettings } = useSettings();
   const [myStones, setMyStones] = useState<StonePosition[]>([]);
   const [myColor, setMyColor] = useState<'red' | 'yellow' | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -830,6 +830,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
           width="100%"
           round={isHistoryMode && gameState.history[selectedHistoryRound] ? gameState.history[selectedHistoryRound].round : gameState.current_round}
           phase={isHistoryMode ? 'combined' : gameState.phase}
+          style={SHEET_STYLES.find(s => s.id === sheetSettings.styleId)}
         />
       </div>
 
