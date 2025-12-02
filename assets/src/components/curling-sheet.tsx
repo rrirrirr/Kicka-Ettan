@@ -136,62 +136,36 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                 {/* Status Text */}
                 {round !== undefined && (
                     <text
-                        x={cx - 60} // Left of center
-                        y={teeY - HOG_LINE_OFFSET} // Near Hog Line
-                        textAnchor="end" // End at the Y coordinate (which is top because of rotation?)
-                        // Wait, rotation is -90.
-                        // Normal: X is horizontal, Y is vertical.
-                        // Rotated -90: X becomes Up, Y becomes Right?
-                        // Let's visualize.
-                        // transform={`rotate(-90, ${x}, ${y})`}
-                        // If I draw at (x, y) and rotate around (x, y):
-                        // The text baseline starts at (x, y) and goes UP.
-                        // "textAnchor=end" means the END of the string is at (x, y).
-                        // So the text will extend DOWN from (x, y).
-                        // We want it to end at the Hog Line (Top).
-                        // So (x, y) should be near the Hog Line.
-                        // And textAnchor="end" means the text ends there.
-                        // So it will extend downwards (towards Tee Line).
-                        // This seems correct.
-                        dominantBaseline="middle"
+                        x="20" // Upper left corner
+                        y="15" // Above phase text
+                        textAnchor="start"
+                        dominantBaseline="hanging"
                         fill={colors.text}
-                        fontSize="80"
-                        fontWeight="bold"
-                        transform={`rotate(-90, ${cx - 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
+                        fontSize="48"
+                        fontWeight="900"
+                        fontFamily="Outfit"
+                        letterSpacing="-0.05em"
+                        style={{ textTransform: 'lowercase' }}
                     >
-                        ROUND {round}
+                        round {round}
                     </text>
                 )}
 
                 {phase && (
-                    <>
-                        {/* Phase value */}
-                        <text
-                            x={cx + 60} // Right of center
-                            y={teeY - HOG_LINE_OFFSET + 40} // Near Hog Line
-                            textAnchor="end"
-                            dominantBaseline="middle"
-                            fill={colors.text}
-                            fontSize="40"
-                            fontWeight="bold"
-                            transform={`rotate(-90, ${cx + 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
-                        >
-                            {phase.toUpperCase()}
-                        </text>
-                        {/* Phase label */}
-                        <text
-                            x={cx + 60} // Right of center
-                            y={teeY - HOG_LINE_OFFSET + 100} // Below phase value
-                            textAnchor="end"
-                            dominantBaseline="middle"
-                            fill={colors.text}
-                            fontSize="40"
-                            fontWeight="bold"
-                            transform={`rotate(-90, ${cx + 60}, ${teeY - HOG_LINE_OFFSET + 20})`}
-                        >
-                            PHASE
-                        </text>
-                    </>
+                    <text
+                        x="20" // Upper left corner
+                        y="70" // Below round text
+                        textAnchor="start"
+                        dominantBaseline="hanging"
+                        fill={colors.text}
+                        fontSize="32"
+                        fontWeight="900"
+                        fontFamily="Outfit"
+                        letterSpacing="-0.05em"
+                        style={{ textTransform: 'lowercase' }}
+                    >
+                        {phase.toLowerCase()}
+                    </text>
                 )}
 
                 {/* Overlays */}
