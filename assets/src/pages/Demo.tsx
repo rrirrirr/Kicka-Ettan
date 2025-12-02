@@ -24,11 +24,7 @@ const Demo = () => {
         ],
         stones: {
             red: redStones,
-            yellow: [
-                // Add some dummy opponent stones for visual testing
-                { x: 220, y: 680 },
-                { x: 250, y: 720 }
-            ]
+            yellow: []
         },
         player_ready: {
             "demo-player-1": phase === 'combined',

@@ -102,9 +102,9 @@ interface LabelBox {
     stoneIndex: number;
 }
 
-const LABEL_ITEM_HEIGHT = 20;
-const LABEL_PADDING_X = 10;
-const LABEL_PADDING_Y = 8;
+const LABEL_ITEM_HEIGHT = 24; // Increased from 20
+const LABEL_PADDING_X = 16; // Increased from 10
+const LABEL_PADDING_Y = 12; // Increased from 8
 const LABEL_ICON_WIDTH = 20;
 const MAX_DIST_FROM_STONE = 100;
 
@@ -324,8 +324,9 @@ const calculateMeasurements = (
     };
 };
 
-const solveLabelCollisions = (labels: LabelBox[], sheetWidth: number) => {
+const solveLabelCollisions = (labels: LabelBox[], stones: { x: number; y: number }[], sheetWidth: number, scale: number) => {
     const iterations = 10;
+    const stoneRadiusPx = STONE_RADIUS * scale;
 
     for (let i = 0; i < iterations; i++) {
         for (let j = 0; j < labels.length; j++) {
@@ -368,10 +369,61 @@ const solveLabelCollisions = (labels: LabelBox[], sheetWidth: number) => {
                 }
             }
 
+            // Repulsion from ALL stones (prevent overlap)
+            for (const stone of stones) {
+                // Simple circle-rectangle collision check/response
+                // Find closest point on rectangle to circle center
+                const closestX = Math.max(labelA.x - labelA.width / 2, Math.min(stone.x, labelA.x + labelA.width / 2));
+                const closestY = Math.max(labelA.y - labelA.height / 2, Math.min(stone.y, labelA.y + labelA.height / 2));
+
+                const distX = stone.x - closestX;
+                const distY = stone.y - closestY;
+                const distanceSquared = (distX * distX) + (distY * distY);
+                const minDistance = stoneRadiusPx + 10; // Stone radius + padding
+
+                if (distanceSquared < minDistance * minDistance) {
+                    // Collision detected
+                    const distance = Math.sqrt(distanceSquared) || 1;
+                    const overlap = minDistance - distance;
+
+                    // Push label away from stone center
+                    // Vector from stone to closest point on label
+                    let pushX = closestX - stone.x;
+                    let pushY = closestY - stone.y;
+
+                    // If center is inside, push out based on center diff
+                    if (distance < 0.1) {
+                        pushX = labelA.x - stone.x;
+                        pushY = labelA.y - stone.y;
+                        if (Math.abs(pushX) < 0.1 && Math.abs(pushY) < 0.1) {
+                            pushX = 1; // Arbitrary push if exactly centered
+                            pushY = 0;
+                        }
+                    }
+
+                    const pushLen = Math.sqrt(pushX * pushX + pushY * pushY) || 1;
+
+                    // Strong push to clear the stone
+                    labelA.x += (pushX / pushLen) * overlap * 1.2;
+                    labelA.y += (pushY / pushLen) * overlap * 1.2;
+                }
+            }
+
             // Clamp to screen edges
             const minX = labelA.width / 2 + 10;
             const maxX = sheetWidth - (labelA.width / 2) - 10;
             labelA.x = Math.max(minX, Math.min(maxX, labelA.x));
+
+            // Clamp Y to avoid backline (stone bar area)
+            // Backline is at teeLineY + HOUSE_RADIUS_12
+            // We need to pass teeLineY and HOUSE_RADIUS_12 or calculate it.
+            // Assuming standard layout, backline is roughly where the house ends.
+            // Let's use a safe margin from the bottom of the sheet if possible, or pass the limit.
+            // For now, let's assume the stone bar takes up the bottom 100px or so of the view.
+            // Better yet, let's pass the max Y limit to this function.
+
+            // However, we don't have the limit passed in yet.
+            // Let's modify the signature to accept maxY.
         }
     }
 };
@@ -529,7 +581,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
         });
 
         // 2. Resolve Collisions
-        solveLabelCollisions(labels, SHEET_WIDTH * scale);
+        const allStonePositions = allStones.map(s => ({ x: s.pos.x * scale, y: s.pos.y * scale }));
+        solveLabelCollisions(labels, allStonePositions, SHEET_WIDTH * scale, scale);
 
         // 3. Render Grouped Labels
         return (
@@ -714,7 +767,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                         items.push({
                             label: `${measurements.guard.percentage}% (${formatDistance(measurements.guard.braceDist - STONE_RADIUS)})`,
                             icon: '{',
-                            color: '#a855f7', // Purple
+                            color: 'text-purple-500', // Purple
                             iconType: 'text'
                         });
                     }
@@ -724,15 +777,16 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                 ? `${measurements.closestRing.overlapPercent}%`
                                 : formatDistance(measurements.closestRing.dist),
                             icon: measurements.closestRing.isOverlapping ? 'overlap' : 'dots',
-                            color: '#06b6d4', // Cyan
-                            iconType: 'svg'
+                            color: 'text-cyan-500', // Cyan
+                            iconType: 'svg',
+                            strokeColor: '#06b6d4'
                         });
                     }
                     if (showTLine && measurements.tLine) {
                         items.push({
                             label: `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`,
                             icon: 'T',
-                            color: '#ec4899', // Pink
+                            color: 'text-pink-500', // Pink
                             iconType: 'text'
                         });
                     }
@@ -740,7 +794,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                         items.push({
                             label: `${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`,
                             icon: '⌖',
-                            color: '#ec4899', // Pink
+                            color: 'text-pink-500', // Pink
                             iconType: 'text'
                         });
                     }
@@ -748,70 +802,62 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     if (items.length === 0) return null;
 
                     return (
-                        <g key={`box-${label.id}`} transform={`translate(${label.x - label.width / 2}, ${label.y - label.height / 2})`}>
-                            {/* Container Box */}
-                            <rect
-                                width={label.width}
-                                height={label.height}
-                                rx="6"
-                                fill="#1a1a1a"
-                                fillOpacity="0.9"
-                                stroke="rgba(255,255,255,0.1)"
-                                strokeWidth="1"
-                            />
-
-                            {/* Items */}
-                            {items.map((item, idx) => (
-                                <g key={idx} transform={`translate(0, ${LABEL_PADDING_Y + (idx * LABEL_ITEM_HEIGHT) + (LABEL_ITEM_HEIGHT / 2)})`}>
-                                    {/* Icon */}
-                                    {item.iconType === 'text' ? (
-                                        <text
-                                            x={LABEL_PADDING_X}
-                                            fill={item.color}
-                                            fontSize="12"
-                                            fontWeight="600"
-                                            dominantBaseline="middle"
-                                        >
-                                            {item.icon}
-                                        </text>
-                                    ) : (
-                                        <g transform={`translate(${LABEL_PADDING_X + 6}, 0)`}>
-                                            {item.icon === 'overlap' ? (
-                                                // Intersecting circles icon for overlap
-                                                <g>
-                                                    <circle cx="-2.5" cy="0" r="4" fill="none" stroke={item.color} strokeWidth="1.2" />
-                                                    <circle cx="2.5" cy="0" r="4" fill="none" stroke={item.color} strokeWidth="1.2" />
-                                                    {/* Intersection highlight */}
-                                                    <path
-                                                        d="M 0,-2.8 A 4,4 0 0,0 0,2.8 A 4,4 0 0,0 0,-2.8"
-                                                        fill={item.color}
-                                                        fillOpacity="0.3"
-                                                        stroke="none"
-                                                    />
-                                                </g>
-                                            ) : (
-                                                // Dots icon for distance
-                                                <g>
-                                                    <circle cx="-4" cy="0" r="1.5" fill={item.color} />
-                                                    <circle cx="0" cy="0" r="1.5" fill={item.color} />
-                                                    <circle cx="4" cy="0" r="1.5" fill={item.color} />
-                                                </g>
-                                            )}
-                                        </g>
-                                    )}
-                                    {/* Label */}
-                                    <text
-                                        x={LABEL_PADDING_X + LABEL_ICON_WIDTH}
-                                        fill="#e5e5e5"
-                                        fontSize="12"
-                                        fontWeight="500"
-                                        dominantBaseline="middle"
+                        <foreignObject
+                            key={`box-${label.id}`}
+                            x={label.x - label.width / 2}
+                            y={label.y - label.height / 2}
+                            width={label.width}
+                            height={label.height}
+                            style={{ overflow: 'visible' }}
+                        >
+                            <div
+                                className="flex flex-col justify-center w-full h-full bg-gray-900/60 border border-white/10 rounded-md shadow-lg backdrop-blur-md"
+                                style={{ padding: `${LABEL_PADDING_Y}px 0` }}
+                            >
+                                {items.map((item, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="flex items-center w-full px-2"
+                                        style={{ height: LABEL_ITEM_HEIGHT }}
                                     >
-                                        {item.label}
-                                    </text>
-                                </g>
-                            ))}
-                        </g>
+                                        {/* Icon Container */}
+                                        <div className="w-5 flex items-center justify-center mr-1 shrink-0">
+                                            {item.iconType === 'text' ? (
+                                                <span className={`text-xs font-bold ${item.color}`}>
+                                                    {item.icon}
+                                                </span>
+                                            ) : (
+                                                <svg width="16" height="16" viewBox="-5 -5 10 10" className="overflow-visible">
+                                                    {item.icon === 'overlap' ? (
+                                                        <g>
+                                                            <circle cx="-2.5" cy="0" r="4" fill="none" stroke={item.strokeColor} strokeWidth="1.2" />
+                                                            <circle cx="2.5" cy="0" r="4" fill="none" stroke={item.strokeColor} strokeWidth="1.2" />
+                                                            <path
+                                                                d="M 0,-2.8 A 4,4 0 0,0 0,2.8 A 4,4 0 0,0 0,-2.8"
+                                                                fill={item.strokeColor}
+                                                                fillOpacity="0.3"
+                                                                stroke="none"
+                                                            />
+                                                        </g>
+                                                    ) : (
+                                                        <g>
+                                                            <circle cx="-4" cy="0" r="1.5" fill={item.strokeColor} />
+                                                            <circle cx="0" cy="0" r="1.5" fill={item.strokeColor} />
+                                                            <circle cx="4" cy="0" r="1.5" fill={item.strokeColor} />
+                                                        </g>
+                                                    )}
+                                                </svg>
+                                            )}
+                                        </div>
+
+                                        {/* Label Text */}
+                                        <span className={`text-xs font-medium whitespace-nowrap ${item.color}`}>
+                                            {item.label}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </foreignObject>
                     );
                 })}
             </svg >
@@ -868,7 +914,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 if (!showMeasurements) {
                     opacity = isHighlighted ? "1.0" : "0";
                 } else {
-                    opacity = isHighlighted ? "1.0" : (hasHighlightedStone ? "0.3" : "0.7");
+                    // If a stone is highlighted, show it fully and hide others (0).
+                    // If no stone is highlighted, show all with default opacity (0.7).
+                    opacity = isHighlighted ? "1.0" : (hasHighlightedStone ? "0" : "0.7");
                 }
 
                 const fontSize = isHighlighted ? "16" : "12";

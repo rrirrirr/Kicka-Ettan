@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type MeasurementType = 'guard' | 't-line' | 'center-line' | 'closest-ring';
-export type UnitSystem = 'metric' | 'imperial';
+export type UnitSystem = 'metric' | 'imperial' | 'smart';
+
+export interface SmartUnitRule {
+    maxDistance: number; // in cm
+    unit: 'metric' | 'imperial' | 'stone' | 'broom';
+}
 
 export interface MeasurementStep {
     id: string;
@@ -158,6 +163,8 @@ interface SettingsContextType {
     closeSettings: () => void;
     unitSystem: UnitSystem;
     updateUnitSystem: (system: UnitSystem) => void;
+    smartUnits: SmartUnitRule[];
+    updateSmartUnits: (rules: SmartUnitRule[]) => void;
 }
 
 const defaultSettings: MeasurementSettings = {
@@ -218,6 +225,14 @@ const defaultToggleModeSettings: ToggleModeSettings = {
     }
 };
 
+const defaultSmartUnits: SmartUnitRule[] = [
+    { maxDistance: 30.48, unit: 'imperial' }, // 0-1 ft -> Imperial
+    { maxDistance: 60.96, unit: 'stone' },    // 1-2 ft -> Stone
+    { maxDistance: 150, unit: 'imperial' },   // 2ft - ~5ft -> Imperial
+    { maxDistance: 300, unit: 'broom' },      // ~5ft - ~10ft -> Broom
+    { maxDistance: Infinity, unit: 'metric' } // > ~10ft -> Metric
+];
+
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
@@ -225,7 +240,8 @@ const STORAGE_KEYS = {
     DISPLAY_SETTINGS: 'curling_display_settings',
     TOGGLE_MODE_SETTINGS: 'curling_toggle_mode_settings',
     SHEET_SETTINGS: 'curling_sheet_settings',
-    UNIT_SYSTEM: 'curling_unit_system'
+    UNIT_SYSTEM: 'curling_unit_system',
+    SMART_UNITS: 'curling_smart_units'
 };
 
 // Helper to safely load from localStorage
@@ -279,7 +295,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         return {
             ...defaultToggleModeSettings,
             ...stored,
-            houseZone: { ...defaultToggleModeSettings.houseZone, ...stored.houseZone }
+            guardZone: { ...defaultToggleModeSettings.guardZone, ...stored.guardZone },
+            houseZone: { ...defaultToggleModeSettings.houseZone, ...stored.houseZone },
+            nearHouseZone: { ...defaultToggleModeSettings.nearHouseZone, ...stored.nearHouseZone }
         };
     });
     const [sheetSettings, setSheetSettings] = useState<SheetSettings>(() => {
@@ -287,6 +305,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
     const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
         return loadFromStorage(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
+    });
+    const [smartUnits, setSmartUnits] = useState<SmartUnitRule[]>(() => {
+        return loadFromStorage(STORAGE_KEYS.SMART_UNITS, defaultSmartUnits);
     });
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -311,6 +332,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     useEffect(() => {
         saveToStorage(STORAGE_KEYS.UNIT_SYSTEM, unitSystem);
     }, [unitSystem]);
+
+    useEffect(() => {
+        saveToStorage(STORAGE_KEYS.SMART_UNITS, smartUnits);
+    }, [smartUnits]);
 
     const updateSettings = (newSettings: MeasurementSettings) => {
         setSettings(newSettings);
@@ -338,11 +363,15 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         setUnitSystem(system);
     };
 
+    const updateSmartUnits = (rules: SmartUnitRule[]) => {
+        setSmartUnits(rules);
+    };
+
     const openSettings = () => setIsSettingsOpen(true);
     const closeSettings = () => setIsSettingsOpen(false);
 
     return (
-        <SettingsContext.Provider value={{ settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, isSettingsOpen, openSettings, closeSettings, unitSystem, updateUnitSystem }}>
+        <SettingsContext.Provider value={{ settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, isSettingsOpen, openSettings, closeSettings, unitSystem, updateUnitSystem, smartUnits, updateSmartUnits }}>
             {children}
         </SettingsContext.Provider>
     );
