@@ -40,11 +40,385 @@ const getBracePath = (x1: number, y1: number, x2: number, y2: number, w: number,
     return `M ${x1} ${y1} Q ${qx1} ${qy1} ${qx2} ${qy2} T ${tx1} ${ty1} M ${x2} ${y2} Q ${qx3} ${qy3} ${qx4} ${qy4} T ${tx1} ${ty1}`;
 };
 
+// --- New Types and Helpers for Grouped Labels ---
+
+interface MeasurementValues {
+    tLine?: {
+        dist: number;
+        isAbove: boolean;
+        lineStart: { x: number; y: number };
+        lineEnd: { x: number; y: number };
+    };
+    centerLine?: {
+        dist: number;
+        isLeft: boolean;
+        lineStart: { x: number; y: number };
+        lineEnd: { x: number; y: number };
+    };
+    guard?: {
+        distToHog: number;
+        distToHouse: number;
+        isCloserToHog: boolean;
+        percentage: number;
+        braceDist: number;
+        // Geometry
+        top20Line?: { start: { x: number; y: number }; end: { x: number; y: number } };
+        brace?: {
+            x: number;
+            startY: number;
+            endY: number;
+            width: number;
+            pointRight: boolean;
+            stoneEdgeX: number;
+            refLineY: number; // Y position of the reference line (Hog or House)
+            verticalExtX: number; // X position for the vertical extension line
+        };
+        hogLineY: number;
+        topOfHouseY: number;
+    };
+    closestRing?: {
+        dist: number;
+        radius: number;
+        isOverlapping: boolean;
+        overlapPercent: number;
+        lineStart: { x: number; y: number };
+        lineEnd: { x: number; y: number };
+    };
+    isInGuardZone: boolean;
+    isInNearHouseZone: boolean;
+    isTop20Percent: boolean;
+}
+
+interface LabelBox {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    stoneX: number;
+    stoneY: number;
+    measurements: MeasurementValues;
+    stoneColor: 'red' | 'yellow';
+    stoneIndex: number;
+}
+
+const LABEL_ITEM_HEIGHT = 20;
+const LABEL_PADDING_X = 10;
+const LABEL_PADDING_Y = 8;
+const LABEL_ICON_WIDTH = 20;
+const MAX_DIST_FROM_STONE = 100;
+
+// Estimate text width for label sizing (rough approximation: 7px per char for 12px font)
+const estimateTextWidth = (text: string, fontSize: number = 12): number => {
+    return text.length * (fontSize * 0.58);
+};
+
+const calculateMeasurements = (
+    stone: StonePosition,
+    scale: number,
+    centerLineX: number,
+    teeLineY: number,
+    topOfHouseY: number,
+    hogLineY: number
+): MeasurementValues => {
+    const stonePixelX = stone.x * scale;
+    const stonePixelY = stone.y * scale;
+
+    // T-Line
+    const deltaY = stone.y - teeLineY;
+    const rawDistTee = Math.abs(deltaY) - STONE_RADIUS;
+    const distTee = rawDistTee < 0 ? 0 : rawDistTee;
+    const isAboveTee = stone.y < teeLineY;
+
+    const tLineStartY = isAboveTee
+        ? stonePixelY + (STONE_RADIUS * scale) + 2
+        : stonePixelY - (STONE_RADIUS * scale) - 2;
+    const tLineEndY = teeLineY * scale;
+
+    // Center Line
+    const deltaX = stone.x - centerLineX;
+    const rawDistCenter = Math.abs(deltaX) - STONE_RADIUS;
+    const distCenter = rawDistCenter < 0 ? 0 : rawDistCenter;
+    const isLeftOfCenter = stone.x < centerLineX;
+
+    const cLineStartX = isLeftOfCenter
+        ? stonePixelX + (STONE_RADIUS * scale) + 2
+        : stonePixelX - (STONE_RADIUS * scale) - 2;
+    const cLineEndX = centerLineX * scale;
+
+    // Zone Classification using radial distance from house center
+    const nearHouseThreshold = 150; // 1.5 meters
+
+    // Calculate distance from stone center to house center
+    const distToCenter = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+
+    // Determine zone based on radial distance
+    const isTouchingHouse = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
+    const isInNearHouseZone = !isTouchingHouse && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + nearHouseThreshold) && stone.y > hogLineY;
+    const isInGuardZone = !isTouchingHouse && !isInNearHouseZone && stone.y > hogLineY;
+
+    let guard: MeasurementValues['guard'];
+    let isTop20Percent = false;
+
+    if (isInGuardZone) {
+        const totalZoneDist = topOfHouseY - hogLineY;
+        const distFromHog = stone.y - hogLineY;
+        const percentageFromHog = distFromHog / totalZoneDist;
+        isTop20Percent = percentageFromHog < 0.2;
+
+        const distToHog = Math.abs(stonePixelY - (hogLineY * scale));
+        const distToHouse = Math.abs((topOfHouseY * scale) - stonePixelY);
+        const isCloserToHog = distToHog < distToHouse;
+
+        // Calculate percentage
+        let percentage;
+        let braceDistanceCm;
+        if (isCloserToHog) {
+            percentage = Math.round((distFromHog / totalZoneDist) * 100);
+            braceDistanceCm = distFromHog;
+        } else {
+            const distFromHouse = topOfHouseY - stone.y;
+            percentage = Math.round((distFromHouse / totalZoneDist) * 100);
+            braceDistanceCm = distFromHouse;
+        }
+
+        let top20Line;
+        let brace;
+
+        if (isTop20Percent) {
+            top20Line = {
+                start: { x: stonePixelX, y: stonePixelY - (STONE_RADIUS * scale) - 2 },
+                end: { x: stonePixelX, y: hogLineY * scale }
+            };
+        } else {
+            // Brace Geometry
+            const braceWidth = 20;
+            const braceXOffset = 40;
+            const xPercent = (stone.x / SHEET_WIDTH) * 100;
+
+            let placeBraceOnRight;
+            if (xPercent < 25) {
+                placeBraceOnRight = true;
+            } else if (xPercent > 75) {
+                placeBraceOnRight = false;
+            } else {
+                placeBraceOnRight = !isLeftOfCenter;
+            }
+
+            const braceX = placeBraceOnRight
+                ? stonePixelX + braceXOffset
+                : stonePixelX - braceXOffset;
+
+            const pointRight = placeBraceOnRight;
+
+            let braceStartY, braceEndY;
+            if (isCloserToHog) {
+                braceStartY = hogLineY * scale;
+                braceEndY = stonePixelY;
+            } else {
+                braceStartY = stonePixelY;
+                braceEndY = topOfHouseY * scale;
+            }
+
+            brace = {
+                x: braceX,
+                startY: braceStartY,
+                endY: braceEndY,
+                width: pointRight ? -braceWidth : braceWidth,
+                pointRight,
+                stoneEdgeX: placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) + 2 : stonePixelX - (STONE_RADIUS * scale) - 2,
+                refLineY: isCloserToHog ? hogLineY * scale : topOfHouseY * scale,
+                verticalExtX: placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) + 2 : stonePixelX - (STONE_RADIUS * scale) - 2
+            };
+        }
+
+        guard = {
+            distToHog,
+            distToHouse,
+            isCloserToHog,
+            percentage,
+            braceDist: braceDistanceCm,
+            top20Line,
+            brace,
+            hogLineY: hogLineY * scale,
+            topOfHouseY: topOfHouseY * scale
+        };
+    }
+
+    // Closest Ring
+    let closestRing: MeasurementValues['closestRing'];
+    if (!isInGuardZone) {
+        const distToCenterPoint = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+        const ringRadii = [HOUSE_RADIUS_12, HOUSE_RADIUS_8, HOUSE_RADIUS_4, BUTTON_RADIUS];
+        let minDistToRingEdge = Infinity;
+        let closestRingRadius = 0;
+
+        for (const r of ringRadii) {
+            const dist = Math.abs(distToCenterPoint - r) - STONE_RADIUS;
+            if (Math.abs(dist) < Math.abs(minDistToRingEdge)) {
+                minDistToRingEdge = dist;
+                closestRingRadius = r;
+            }
+        }
+
+        const isOverlapping = minDistToRingEdge <= 0;
+        const overlapDistance = Math.abs(minDistToRingEdge);
+        const maxOverlap = STONE_RADIUS;
+        const overlapPercent = Math.min(100, Math.round((overlapDistance / maxOverlap) * 100));
+
+        // Geometry
+        let ux = 0;
+        let uy = 0;
+        if (distToCenterPoint > 0.1) {
+            ux = deltaX / distToCenterPoint;
+            uy = deltaY / distToCenterPoint;
+        } else {
+            ux = 1;
+            uy = 0;
+        }
+
+        const isStoneOutsideRing = distToCenterPoint > closestRingRadius;
+        const stoneEdgeX = isStoneOutsideRing
+            ? stone.x - ux * STONE_RADIUS
+            : stone.x + ux * STONE_RADIUS;
+        const stoneEdgeY = isStoneOutsideRing
+            ? stone.y - uy * STONE_RADIUS
+            : stone.y + uy * STONE_RADIUS;
+
+        const ringEdgeX = centerLineX + ux * closestRingRadius;
+        const ringEdgeY = teeLineY + uy * closestRingRadius;
+
+        const stoneEdgePixelX = stoneEdgeX * scale + (isStoneOutsideRing ? -ux * 2 : ux * 2);
+        const stoneEdgePixelY = stoneEdgeY * scale + (isStoneOutsideRing ? -uy * 2 : uy * 2);
+        const ringEdgePixelX = ringEdgeX * scale;
+        const ringEdgePixelY = ringEdgeY * scale;
+
+        closestRing = {
+            dist: isOverlapping ? 0 : minDistToRingEdge,
+            radius: closestRingRadius,
+            isOverlapping,
+            overlapPercent,
+            lineStart: { x: stoneEdgePixelX, y: stoneEdgePixelY },
+            lineEnd: { x: ringEdgePixelX, y: ringEdgePixelY }
+        };
+    }
+
+    return {
+        tLine: {
+            dist: distTee,
+            isAbove: isAboveTee,
+            lineStart: { x: stonePixelX, y: tLineStartY },
+            lineEnd: { x: stonePixelX, y: tLineEndY }
+        },
+        centerLine: {
+            dist: distCenter,
+            isLeft: isLeftOfCenter,
+            lineStart: { x: cLineStartX, y: stonePixelY },
+            lineEnd: { x: cLineEndX, y: stonePixelY }
+        },
+        guard,
+        closestRing,
+        isInGuardZone,
+        isInNearHouseZone,
+        isTop20Percent
+    };
+};
+
+const solveLabelCollisions = (labels: LabelBox[], sheetWidth: number) => {
+    const iterations = 10;
+
+    for (let i = 0; i < iterations; i++) {
+        for (let j = 0; j < labels.length; j++) {
+            const labelA = labels[j];
+
+            // Attraction to stone (keep it close)
+            const dx = labelA.stoneX - labelA.x;
+            const dy = labelA.stoneY - labelA.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > MAX_DIST_FROM_STONE) {
+                const angle = Math.atan2(dy, dx);
+                labelA.x = labelA.stoneX - Math.cos(angle) * MAX_DIST_FROM_STONE;
+                labelA.y = labelA.stoneY - Math.sin(angle) * MAX_DIST_FROM_STONE;
+            } else if (dist > 50) {
+                // Gentle pull towards stone if getting far
+                labelA.x += dx * 0.05;
+                labelA.y += dy * 0.05;
+            }
+
+            // Repulsion from other labels
+            for (let k = 0; k < labels.length; k++) {
+                if (j === k) continue;
+                const labelB = labels[k];
+
+                const overlapX = Math.min(labelA.x + labelA.width / 2, labelB.x + labelB.width / 2) - Math.max(labelA.x - labelA.width / 2, labelB.x - labelB.width / 2);
+                const overlapY = Math.min(labelA.y + labelA.height / 2, labelB.y + labelB.height / 2) - Math.max(labelA.y - labelA.height / 2, labelB.y - labelB.height / 2);
+
+                if (overlapX > -10 && overlapY > -10) { // Add some padding
+                    // Push apart
+                    const diffX = labelA.x - labelB.x;
+                    const diffY = labelA.y - labelB.y;
+                    const len = Math.sqrt(diffX * diffX + diffY * diffY) || 1;
+
+                    const pushX = (diffX / len) * 5;
+                    const pushY = (diffY / len) * 5;
+
+                    labelA.x += pushX;
+                    labelA.y += pushY;
+                }
+            }
+
+            // Clamp to screen edges
+            const minX = labelA.width / 2 + 10;
+            const maxX = sheetWidth - (labelA.width / 2) - 10;
+            labelA.x = Math.max(minX, Math.min(maxX, labelA.x));
+        }
+    }
+};
+
+const getWavyPath = (x1: number, y1: number, x2: number, y2: number) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 5) return `M ${x1} ${y1} L ${x2} ${y2}`;
+
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+
+    // Perpendicular vector
+    const normalX = -dy / dist;
+    const normalY = dx / dist;
+
+    const amp = 10; // Amplitude of the wave
+
+    // Control point for first half
+    const cp1x = x1 + (dx * 0.25) + normalX * amp;
+    const cp1y = y1 + (dy * 0.25) + normalY * amp;
+
+    return `M ${x1} ${y1} Q ${cp1x} ${cp1y} ${midX} ${midY} T ${x2} ${y2}`;
+};
+
 const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, highlightedStone, showMeasurements = true }) => {
-    const { displaySettings, toggleModeSettings, unitSystem } = useSettings();
+    const { displaySettings, toggleModeSettings, unitSystem, smartUnits } = useSettings();
+
     const centerLineX = SHEET_WIDTH / 2;
 
     const formatDistance = (cm: number) => {
+        if (unitSystem === 'smart') {
+            const rule = smartUnits.find(r => cm <= r.maxDistance) || { unit: 'metric' };
+            switch (rule.unit) {
+                case 'imperial':
+                    return `${(cm / 2.54).toFixed(1)}"`;
+                case 'stone':
+                    return `${(cm / (STONE_RADIUS * 2)).toFixed(1)} 🥌`;
+                case 'broom':
+                    return `${(cm / 155).toFixed(1)} 🧹`;
+                case 'metric':
+                default:
+                    return `${cm.toFixed(1)}cm`;
+            }
+        }
         if (unitSystem === 'imperial') {
             return `${(cm / 2.54).toFixed(1)}"`;
         }
@@ -56,6 +430,393 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
         ...stones.red.map((pos, idx) => ({ pos, color: 'red' as const, index: idx })),
         ...stones.yellow.map((pos, idx) => ({ pos, color: 'yellow' as const, index: idx }))
     ];
+
+    // --- New Toggle Mode Logic ---
+    const isToggleMode = !highlightedStone && showMeasurements;
+
+    if (isToggleMode) {
+        const topOfHouseY = teeLineY - HOUSE_RADIUS_12;
+        const hogLineY = teeLineY - HOG_LINE_OFFSET;
+
+        // 1. Calculate measurements for all stones
+        const labels: LabelBox[] = allStones.map(stone => {
+            const measurements = calculateMeasurements(stone.pos, scale, centerLineX, teeLineY, topOfHouseY, hogLineY);
+
+            // Debug output for first stone only (to avoid spam)
+            if (stone.color === 'red' && stone.index === 0) {
+                console.log(`=== TOGGLE MODE DEBUG (${stone.color} #${stone.index}) ===`);
+                console.log(`isInGuardZone: ${measurements.isInGuardZone}`);
+                console.log(`isInNearHouseZone: ${measurements.isInNearHouseZone}`);
+                console.log(`nearHouseZone settings:`, toggleModeSettings.nearHouseZone);
+            }
+
+            // Calculate which items will be displayed to determine width
+            const items = [];
+            if (measurements.isInGuardZone) {
+                if (toggleModeSettings.guardZone.showGuard && measurements.guard) {
+                    items.push(`${measurements.guard.percentage}% (${formatDistance(measurements.guard.braceDist - STONE_RADIUS)})`);
+                }
+                if (toggleModeSettings.guardZone.showTLine && measurements.tLine) {
+                    items.push(`${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`);
+                }
+                if (toggleModeSettings.guardZone.showCenterLine && measurements.centerLine) {
+                    items.push(`${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`);
+                }
+            } else if (measurements.isInNearHouseZone) {
+                if (toggleModeSettings.nearHouseZone.showClosestRing && measurements.closestRing) {
+                    items.push(measurements.closestRing.isOverlapping
+                        ? `${measurements.closestRing.overlapPercent}%`
+                        : formatDistance(measurements.closestRing.dist));
+                }
+                if (toggleModeSettings.nearHouseZone.showTLine && measurements.tLine) {
+                    items.push(`${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`);
+                }
+                if (toggleModeSettings.nearHouseZone.showCenterLine && measurements.centerLine) {
+                    items.push(`${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`);
+                }
+            } else {
+                if (toggleModeSettings.houseZone.showClosestRing && measurements.closestRing) {
+                    items.push(measurements.closestRing.isOverlapping
+                        ? `${measurements.closestRing.overlapPercent}%`
+                        : formatDistance(measurements.closestRing.dist));
+                }
+                if (toggleModeSettings.houseZone.showTLine && measurements.tLine) {
+                    items.push(`${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`);
+                }
+                if (toggleModeSettings.houseZone.showCenterLine && measurements.centerLine) {
+                    items.push(`${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`);
+                }
+            }
+
+            // Calculate width based on longest text
+            let maxTextWidth = 0;
+            for (const itemText of items) {
+                const textWidth = estimateTextWidth(itemText, 12);
+                maxTextWidth = Math.max(maxTextWidth, textWidth);
+            }
+            // Width = left padding + icon width + right padding + text width + right padding
+            const width = Math.max(80, LABEL_PADDING_X + LABEL_ICON_WIDTH + maxTextWidth + LABEL_PADDING_X);
+
+            const height = (items.length * LABEL_ITEM_HEIGHT) + (LABEL_PADDING_Y * 2);
+
+            // Positioning Logic
+            const isLeftOfCenter = stone.pos.x < centerLineX;
+            const isBelowTeeLine = stone.pos.y > teeLineY;
+
+            const xOffset = isLeftOfCenter ? -70 : 70;
+            const yOffset = isBelowTeeLine ? 90 : -90;
+
+            let initialX = (stone.pos.x * scale) + xOffset;
+            let initialY = (stone.pos.y * scale) + yOffset;
+
+            // Clamp to screen edges
+            const minX = width / 2 + 10;
+            const maxX = (SHEET_WIDTH * scale) - (width / 2) - 10;
+            initialX = Math.max(minX, Math.min(maxX, initialX));
+
+            return {
+                id: `${stone.color}-${stone.index}`,
+                x: initialX,
+                y: initialY,
+                width: width,
+                height: height,
+                stoneX: stone.pos.x * scale,
+                stoneY: stone.pos.y * scale,
+                measurements,
+                stoneColor: stone.color,
+                stoneIndex: stone.index
+            };
+        });
+
+        // 2. Resolve Collisions
+        solveLabelCollisions(labels, SHEET_WIDTH * scale);
+
+        // 3. Render Grouped Labels
+        return (
+            <svg
+                style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    overflow: 'visible',
+                    zIndex: 10
+                }}
+            >
+                {/* Pass 1: Render all lines (Measurement lines and Leader lines) */}
+                {labels.map(label => {
+                    const { measurements } = label;
+                    const showTLine = measurements.isInGuardZone ? toggleModeSettings.guardZone.showTLine : toggleModeSettings.houseZone.showTLine;
+                    const showCenterLine = measurements.isInGuardZone ? toggleModeSettings.guardZone.showCenterLine : toggleModeSettings.houseZone.showCenterLine;
+                    const showGuard = measurements.isInGuardZone && toggleModeSettings.guardZone.showGuard;
+                    const showClosestRing = !measurements.isInGuardZone && toggleModeSettings.houseZone.showClosestRing;
+
+                    return (
+                        <React.Fragment key={`lines-${label.id}`}>
+                            {/* Measurement Lines */}
+                            {showTLine && measurements.tLine && displaySettings.tLine.showLine && (
+                                <line
+                                    x1={measurements.tLine.lineStart.x}
+                                    y1={measurements.tLine.lineStart.y}
+                                    x2={measurements.tLine.lineEnd.x}
+                                    y2={measurements.tLine.lineEnd.y}
+                                    stroke="#be185d"
+                                    strokeWidth="2"
+                                    strokeDasharray="5,5"
+                                    opacity="0.7"
+                                />
+                            )}
+                            {showCenterLine && measurements.centerLine && displaySettings.centerLine.showLine && (
+                                <line
+                                    x1={measurements.centerLine.lineStart.x}
+                                    y1={measurements.centerLine.lineStart.y}
+                                    x2={measurements.centerLine.lineEnd.x}
+                                    y2={measurements.centerLine.lineEnd.y}
+                                    stroke="#be185d"
+                                    strokeWidth="2"
+                                    strokeDasharray="5,5"
+                                    opacity="0.7"
+                                />
+                            )}
+                            {showClosestRing && measurements.closestRing && displaySettings.closestRing?.showLine && !measurements.closestRing.isOverlapping && (
+                                <line
+                                    x1={measurements.closestRing.lineStart.x}
+                                    y1={measurements.closestRing.lineStart.y}
+                                    x2={measurements.closestRing.lineEnd.x}
+                                    y2={measurements.closestRing.lineEnd.y}
+                                    stroke="#06b6d4"
+                                    strokeWidth="3"
+                                    strokeDasharray="1,4"
+                                    strokeLinecap="round"
+                                    opacity="0.7"
+                                />
+                            )}
+                            {showGuard && measurements.guard && (
+                                <>
+                                    {measurements.isTop20Percent && measurements.guard.top20Line && (
+                                        <line
+                                            x1={measurements.guard.top20Line.start.x}
+                                            y1={measurements.guard.top20Line.start.y}
+                                            x2={measurements.guard.top20Line.end.x}
+                                            y2={measurements.guard.top20Line.end.y}
+                                            stroke="#9333ea"
+                                            strokeWidth="2"
+                                            strokeDasharray="5,5"
+                                            opacity="0.7"
+                                        />
+                                    )}
+                                    {!measurements.isTop20Percent && measurements.guard.brace && displaySettings.guard.showBraceLine && (
+                                        <>
+                                            {/* Hog Line Reference */}
+                                            <line
+                                                x1={0}
+                                                y1={measurements.guard.hogLineY}
+                                                x2={SHEET_WIDTH * scale}
+                                                y2={measurements.guard.hogLineY}
+                                                stroke="#9333ea"
+                                                strokeWidth="1"
+                                                opacity="0.7"
+                                            />
+                                            {/* Top of House Reference */}
+                                            <line
+                                                x1={0}
+                                                y1={measurements.guard.topOfHouseY}
+                                                x2={SHEET_WIDTH * scale}
+                                                y2={measurements.guard.topOfHouseY}
+                                                stroke="#9333ea"
+                                                strokeWidth="1"
+                                                opacity="0.7"
+                                            />
+
+                                            {/* Brace */}
+                                            <path
+                                                d={getBracePath(
+                                                    measurements.guard.brace.x,
+                                                    measurements.guard.brace.startY,
+                                                    measurements.guard.brace.x,
+                                                    measurements.guard.brace.endY,
+                                                    measurements.guard.brace.width,
+                                                    0.6
+                                                )}
+                                                stroke="#9333ea"
+                                                strokeWidth="2"
+                                                fill="none"
+                                                opacity="0.7"
+                                            />
+                                            {/* Connector to stone */}
+                                            <line
+                                                x1={measurements.guard.brace.x}
+                                                y1={label.stoneY}
+                                                x2={measurements.guard.brace.stoneEdgeX}
+                                                y2={label.stoneY}
+                                                stroke="#9333ea"
+                                                strokeWidth="2"
+                                                strokeDasharray="5,5"
+                                                opacity="0.7"
+                                            />
+                                            {/* Connector to reference line */}
+                                            <line
+                                                x1={measurements.guard.brace.x}
+                                                y1={measurements.guard.brace.refLineY}
+                                                x2={measurements.guard.brace.stoneEdgeX}
+                                                y2={measurements.guard.brace.refLineY}
+                                                stroke="#9333ea"
+                                                strokeWidth="2"
+                                                strokeDasharray="5,5"
+                                                opacity="0.7"
+                                            />
+                                            {/* Vertical extension line */}
+                                            <line
+                                                x1={measurements.guard.brace.verticalExtX}
+                                                y1={measurements.guard.topOfHouseY}
+                                                x2={measurements.guard.brace.verticalExtX}
+                                                y2={measurements.guard.hogLineY}
+                                                stroke="#9333ea"
+                                                strokeWidth="2"
+                                                strokeDasharray="5,5"
+                                                opacity="0.35"
+                                            />
+                                        </>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Leader Line if far */}
+                            <path
+                                d={getWavyPath(
+                                    label.stoneX,
+                                    label.stoneY,
+                                    label.x,
+                                    label.y + label.height / 2
+                                )}
+                                stroke="#1a1a1a"
+                                strokeOpacity="0.6"
+                                strokeWidth="1.5"
+                                fill="none"
+                            />
+                        </React.Fragment>
+                    );
+                })}
+
+                {/* Pass 2: Render all Label Boxes (on top of lines) */}
+                {labels.map(label => {
+                    const { measurements } = label;
+                    const showTLine = measurements.isInGuardZone ? toggleModeSettings.guardZone.showTLine : toggleModeSettings.houseZone.showTLine;
+                    const showCenterLine = measurements.isInGuardZone ? toggleModeSettings.guardZone.showCenterLine : toggleModeSettings.houseZone.showCenterLine;
+                    const showGuard = measurements.isInGuardZone && toggleModeSettings.guardZone.showGuard;
+                    const showClosestRing = !measurements.isInGuardZone && toggleModeSettings.houseZone.showClosestRing;
+
+                    // Filter active items to render
+                    const items = [];
+                    if (showGuard && measurements.guard) {
+                        items.push({
+                            label: `${measurements.guard.percentage}% (${formatDistance(measurements.guard.braceDist - STONE_RADIUS)})`,
+                            icon: '{',
+                            color: '#a855f7', // Purple
+                            iconType: 'text'
+                        });
+                    }
+                    if (showClosestRing && measurements.closestRing) {
+                        items.push({
+                            label: measurements.closestRing.isOverlapping
+                                ? `${measurements.closestRing.overlapPercent}%`
+                                : formatDistance(measurements.closestRing.dist),
+                            icon: measurements.closestRing.isOverlapping ? 'overlap' : 'dots',
+                            color: '#06b6d4', // Cyan
+                            iconType: 'svg'
+                        });
+                    }
+                    if (showTLine && measurements.tLine) {
+                        items.push({
+                            label: `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`,
+                            icon: 'T',
+                            color: '#ec4899', // Pink
+                            iconType: 'text'
+                        });
+                    }
+                    if (showCenterLine && measurements.centerLine) {
+                        items.push({
+                            label: `${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`,
+                            icon: '⌖',
+                            color: '#ec4899', // Pink
+                            iconType: 'text'
+                        });
+                    }
+
+                    if (items.length === 0) return null;
+
+                    return (
+                        <g key={`box-${label.id}`} transform={`translate(${label.x - label.width / 2}, ${label.y - label.height / 2})`}>
+                            {/* Container Box */}
+                            <rect
+                                width={label.width}
+                                height={label.height}
+                                rx="6"
+                                fill="#1a1a1a"
+                                fillOpacity="0.9"
+                                stroke="rgba(255,255,255,0.1)"
+                                strokeWidth="1"
+                            />
+
+                            {/* Items */}
+                            {items.map((item, idx) => (
+                                <g key={idx} transform={`translate(0, ${LABEL_PADDING_Y + (idx * LABEL_ITEM_HEIGHT) + (LABEL_ITEM_HEIGHT / 2)})`}>
+                                    {/* Icon */}
+                                    {item.iconType === 'text' ? (
+                                        <text
+                                            x={LABEL_PADDING_X}
+                                            fill={item.color}
+                                            fontSize="12"
+                                            fontWeight="600"
+                                            dominantBaseline="middle"
+                                        >
+                                            {item.icon}
+                                        </text>
+                                    ) : (
+                                        <g transform={`translate(${LABEL_PADDING_X + 6}, 0)`}>
+                                            {item.icon === 'overlap' ? (
+                                                // Intersecting circles icon for overlap
+                                                <g>
+                                                    <circle cx="-2.5" cy="0" r="4" fill="none" stroke={item.color} strokeWidth="1.2" />
+                                                    <circle cx="2.5" cy="0" r="4" fill="none" stroke={item.color} strokeWidth="1.2" />
+                                                    {/* Intersection highlight */}
+                                                    <path
+                                                        d="M 0,-2.8 A 4,4 0 0,0 0,2.8 A 4,4 0 0,0 0,-2.8"
+                                                        fill={item.color}
+                                                        fillOpacity="0.3"
+                                                        stroke="none"
+                                                    />
+                                                </g>
+                                            ) : (
+                                                // Dots icon for distance
+                                                <g>
+                                                    <circle cx="-4" cy="0" r="1.5" fill={item.color} />
+                                                    <circle cx="0" cy="0" r="1.5" fill={item.color} />
+                                                    <circle cx="4" cy="0" r="1.5" fill={item.color} />
+                                                </g>
+                                            )}
+                                        </g>
+                                    )}
+                                    {/* Label */}
+                                    <text
+                                        x={LABEL_PADDING_X + LABEL_ICON_WIDTH}
+                                        fill="#e5e5e5"
+                                        fontSize="12"
+                                        fontWeight="500"
+                                        dominantBaseline="middle"
+                                    >
+                                        {item.label}
+                                    </text>
+                                </g>
+                            ))}
+                        </g>
+                    );
+                })}
+            </svg >
+        );
+    }
 
     return (
         <>
@@ -151,22 +912,44 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 const topOfHouseY = teeLineY - HOUSE_RADIUS_12;
                 const hogLineY = teeLineY - HOG_LINE_OFFSET;
 
-                // Check if the whole stone is in the guard zone
-                // A stone is a guard if its bottom edge (center + radius) is above (less than) the top of house line
-                // In our coordinate system, Y increases downwards, so "above" means smaller Y value
-                // Guard zone: between Hog Line and Top of House
-                // The stone's bottom edge should be above (less than) the top of house Y
-                const stoneBottomEdgeY = stone.pos.y + STONE_RADIUS;
-                const isInGuardZone = stoneBottomEdgeY < topOfHouseY && stone.pos.y > hogLineY;
+                // Zone Classification using radial distance from house center
+                const nearHouseThreshold = 150; // 1.5 meters
+
+                // Calculate distance from stone center to house center
+                const distToCenterPoint = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+
+                // Determine zone based on radial distance
+                const isTouchingHouse = distToCenterPoint <= (HOUSE_RADIUS_12 + STONE_RADIUS);
+                const isInNearHouseZone = !isTouchingHouse && distToCenterPoint <= (HOUSE_RADIUS_12 + STONE_RADIUS + nearHouseThreshold) && stone.pos.y > hogLineY;
+                const isInGuardZone = !isTouchingHouse && !isInNearHouseZone && stone.pos.y > hogLineY;
+
+                // Debug output when stone is highlighted
+                if (isHighlighted) {
+                    const distToHouseEdge = distToCenterPoint - STONE_RADIUS - HOUSE_RADIUS_12;
+                    console.log(`=== STONE DEBUG (${stone.color} #${stone.index}) ===`);
+                    console.log(`Position: (${stone.pos.x.toFixed(1)}, ${stone.pos.y.toFixed(1)})`);
+                    console.log(`Distance to center: ${distToCenterPoint.toFixed(1)}cm`);
+                    console.log(`Distance to house edge: ${distToHouseEdge.toFixed(1)}cm`);
+                    console.log(`Is touching house: ${isTouchingHouse}`);
+                    console.log(`Is in near-house zone: ${isInNearHouseZone}`);
+                    console.log(`Is in guard zone: ${isInGuardZone}`);
+                    console.log(`Above hog line (y > ${hogLineY}): ${stone.pos.y > hogLineY}`);
+                    console.log(`Near-house threshold: ${nearHouseThreshold}cm`);
+                    console.log(`Near-house max distance: ${(HOUSE_RADIUS_12 + STONE_RADIUS + nearHouseThreshold).toFixed(1)}cm`);
+                }
 
                 // Determine which measurements should be shown based on toggle mode settings
                 const shouldShowGuardInToggle = isInGuardZone && toggleModeSettings.guardZone.showGuard;
                 const shouldShowTLineInToggle = isInGuardZone
                     ? toggleModeSettings.guardZone.showTLine
-                    : toggleModeSettings.houseZone.showTLine;
+                    : isInNearHouseZone
+                        ? toggleModeSettings.nearHouseZone.showTLine
+                        : toggleModeSettings.houseZone.showTLine;
                 const shouldShowCenterLineInToggle = isInGuardZone
                     ? toggleModeSettings.guardZone.showCenterLine
-                    : toggleModeSettings.houseZone.showCenterLine;
+                    : isInNearHouseZone
+                        ? toggleModeSettings.nearHouseZone.showCenterLine
+                        : toggleModeSettings.houseZone.showCenterLine;
 
                 // Brace Logic - Unused for now, commented out to fix build
                 // const isLeftOfCenter = stone.pos.x < centerLineX; // Already defined above
@@ -219,7 +1002,11 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 // }
 
                 // Closest Ring Measurement
-                const shouldShowClosestRingInToggle = !isInGuardZone && toggleModeSettings.houseZone.showClosestRing;
+                const shouldShowClosestRingInToggle = isInGuardZone
+                    ? false
+                    : isInNearHouseZone
+                        ? toggleModeSettings.nearHouseZone.showClosestRing
+                        : toggleModeSettings.houseZone.showClosestRing;
 
                 // Calculate distance to closest ring
                 // Rings are at (centerLineX, teeLineY) with radii:
@@ -227,8 +1014,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 // HOUSE_RADIUS_8 (122cm)
                 // HOUSE_RADIUS_4 (61cm)
                 // BUTTON_RADIUS (15cm)
-
-                const distToCenterPoint = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+                // Note: distToCenterPoint is already calculated above for zone classification
 
                 // Define ring radii
                 const ringRadii = [HOUSE_RADIUS_12, HOUSE_RADIUS_8, HOUSE_RADIUS_4, BUTTON_RADIUS];
@@ -453,7 +1239,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                     {/* Distance Label (cm) */}
                                                     <text
                                                         x={labelX}
-                                                        y={labelY - 6}
+                                                        y={labelY}
                                                         fill="#7e22ce"
                                                         fontSize={isHighlighted ? "12" : "10"}
                                                         fontWeight="600"
@@ -464,55 +1250,6 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                     >
                                                         {formatDistance(distanceCm)}
                                                     </text>
-
-                                                    {/* Unit Label (Stone/Brush Lengths) */}
-                                                    {(() => {
-                                                        const stoneDiameter = STONE_RADIUS * 2;
-                                                        const stoneLengths = distanceCm / stoneDiameter;
-
-                                                        if (stoneLengths <= 2) {
-                                                            // Show Stone Lengths
-                                                            return (
-                                                                <g opacity={opacity} style={{ transition: 'all 0.2s ease' }}>
-                                                                    <text
-                                                                        x={labelX}
-                                                                        y={labelY + 8}
-                                                                        fill="#7e22ce"
-                                                                        fontSize={isHighlighted ? "10" : "8"}
-                                                                        fontWeight="500"
-                                                                        textAnchor="start"
-                                                                        dominantBaseline="middle"
-                                                                    >
-                                                                        {stoneLengths.toFixed(2)}
-                                                                    </text>
-                                                                    {/* Stone Icon */}
-                                                                    <g transform={`translate(${labelX + (isHighlighted ? 28 : 24)}, ${labelY + 8})`}>
-                                                                        <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke="#7e22ce" strokeWidth="0.8" />
-                                                                        <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill="#7e22ce" />
-                                                                    </g>
-                                                                </g>
-                                                            );
-                                                        } else {
-                                                            // Show Brush Lengths
-                                                            const brushLengthCm = 155; // Approx brush length? Using 155 from previous code
-                                                            const brushLengths = distanceCm / brushLengthCm;
-                                                            return (
-                                                                <text
-                                                                    x={labelX}
-                                                                    y={labelY + 8}
-                                                                    fill="#7e22ce"
-                                                                    fontSize={isHighlighted ? "10" : "8"}
-                                                                    fontWeight="500"
-                                                                    textAnchor="start"
-                                                                    dominantBaseline="middle"
-                                                                    opacity={opacity}
-                                                                    style={{ transition: 'all 0.2s ease' }}
-                                                                >
-                                                                    {brushLengths.toFixed(2)} 🧹
-                                                                </text>
-                                                            );
-                                                        }
-                                                    })()}
                                                 </>
                                             );
                                         } else {
@@ -675,49 +1412,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                             >
                                                                 {formatDistance(braceDistanceCm)}
                                                             </text>
-                                                            {/* Broom/Rock Length Label */}
-                                                            {displaySettings.guard.showBroomLength && (
-                                                                braceDistanceCm < STONE_RADIUS * 2 * 2 ? (
-                                                                    // Rock lengths (< 2 stone diameters)
-                                                                    <g>
-                                                                        <text
-                                                                            x={labelX - (isHighlighted ? 8 : 6)}
-                                                                            y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
-                                                                            fill="#7e22ce"
-                                                                            fontSize={isHighlighted ? "10" : "8"}
-                                                                            fontWeight="500"
-                                                                            textAnchor="end"
-                                                                            dominantBaseline="middle"
-                                                                            opacity={opacity}
-                                                                            style={{ transition: 'all 0.2s ease' }}
-                                                                        >
-                                                                            {(braceDistanceCm / (STONE_RADIUS * 2)).toFixed(2)}
-                                                                        </text>
-                                                                        {/* Curling stone icon */}
-                                                                        <g transform={`translate(${labelX + (isHighlighted ? 3 : 2)}, ${midY + verticalAdjustment + (isHighlighted ? 20 : 16)})`} opacity={opacity}>
-                                                                            {/* Stone body (circle) */}
-                                                                            <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke="#7e22ce" strokeWidth="0.8" />
-                                                                            {/* Handle */}
-                                                                            <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill="#7e22ce" />
-                                                                        </g>
-                                                                    </g>
-                                                                ) : (
-                                                                    // Broom lengths (>= 2 stone diameters)
-                                                                    <text
-                                                                        x={labelX}
-                                                                        y={midY + verticalAdjustment + (isHighlighted ? 20 : 16)}
-                                                                        fill="#7e22ce"
-                                                                        fontSize={isHighlighted ? "10" : "8"}
-                                                                        fontWeight="500"
-                                                                        textAnchor="middle"
-                                                                        dominantBaseline="middle"
-                                                                        opacity={opacity}
-                                                                        style={{ transition: 'all 0.2s ease' }}
-                                                                    >
-                                                                        {(braceDistanceCm / 155).toFixed(2)} 🧹
-                                                                    </text>
-                                                                )
-                                                            )}
+
                                                         </>
                                                     )}
 
@@ -859,49 +1554,6 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                     {isLeftOfCenter ? `${formatDistance(displayDistanceToCenter)} →` : `← ${formatDistance(displayDistanceToCenter)}`}
                                                 </text>
                                             </g>
-                                            {/* Broom/Stone Length Label for Guard Zone */}
-                                            {isInGuardZone && displaySettings.guard.showBroomLength && (
-                                                displayDistanceToCenter < STONE_RADIUS * 2 * 2 ? (
-                                                    // Rock lengths (< 2 stone diameters)
-                                                    <g>
-                                                        <text
-                                                            x={(horizontalLineStartX + centerLinePixelX) / 2 - (isHighlighted ? 8 : 6)}
-                                                            y={stonePixelY + horizontalLabelOffset + (isHighlighted ? 14 : 12)}
-                                                            fill={textColor}
-                                                            fontSize={isHighlighted ? "10" : "8"}
-                                                            fontWeight="500"
-                                                            textAnchor="end"
-                                                            dominantBaseline="middle"
-                                                            opacity={opacity}
-                                                            style={{ transition: 'all 0.2s ease' }}
-                                                        >
-                                                            {(displayDistanceToCenter / (STONE_RADIUS * 2)).toFixed(2)}
-                                                        </text>
-                                                        {/* Curling stone icon */}
-                                                        <g transform={`translate(${(horizontalLineStartX + centerLinePixelX) / 2 + (isHighlighted ? 3 : 2)}, ${stonePixelY + horizontalLabelOffset + (isHighlighted ? 14 : 12)})`} opacity={opacity}>
-                                                            {/* Stone body (circle) */}
-                                                            <circle cx="0" cy="0" r={isHighlighted ? "4" : "3"} fill="none" stroke={textColor} strokeWidth="0.8" />
-                                                            {/* Handle */}
-                                                            <rect x="-1.5" y="-1" width="3" height="2" rx="0.5" fill={textColor} />
-                                                        </g>
-                                                    </g>
-                                                ) : (
-                                                    // Broom lengths (>= 2 stone diameters)
-                                                    <text
-                                                        x={(horizontalLineStartX + centerLinePixelX) / 2}
-                                                        y={stonePixelY + horizontalLabelOffset + (isHighlighted ? 14 : 12)}
-                                                        fill={textColor}
-                                                        fontSize={isHighlighted ? "10" : "8"}
-                                                        fontWeight="500"
-                                                        textAnchor="middle"
-                                                        dominantBaseline="middle"
-                                                        opacity={opacity}
-                                                        style={{ transition: 'all 0.2s ease' }}
-                                                    >
-                                                        {(displayDistanceToCenter / 155).toFixed(2)} 🧹
-                                                    </text>
-                                                )
-                                            )}
                                         </>
                                     )}
                                 </svg>
