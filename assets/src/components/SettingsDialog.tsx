@@ -1,17 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog } from './ui/Dialog';
 import { useSettings, MeasurementStep, MeasurementType } from '../contexts/SettingsContext';
 import { Trash2, Target, Shield, AlignCenterVertical, AlignCenterHorizontal, ChevronRight, ChevronLeft, Ruler, Grid } from 'lucide-react';
 import { SheetStyleCarousel } from './SheetStyleCarousel';
 import { ZonesDiagram } from './ZonesDiagram';
 
-type View = 'main' | 'measurements' | 'sheet';
+type View = 'main' | 'measurements' | 'sheet' | 'smart-units';
 type MeasurementTab = 'cycles' | 'toggle' | 'display' | 'zones';
 
 export const SettingsDialog: React.FC = () => {
-    const { isSettingsOpen, closeSettings, settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, unitSystem, updateUnitSystem } = useSettings();
+    const { isSettingsOpen, closeSettings, settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, unitSystem, updateUnitSystem, smartUnits, updateSmartUnits } = useSettings();
     const [view, setView] = useState<View>('main');
     const [measurementTab, setMeasurementTab] = useState<MeasurementTab>('cycles');
+
+    // Handle Escape key to go back or close
+    useEffect(() => {
+        if (!isSettingsOpen) return;
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                if (view !== 'main') {
+                    // Go back to main view
+                    setView('main');
+                } else {
+                    // Close the dialog
+                    closeSettings();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isSettingsOpen, view, closeSettings]);
 
     const getIcon = (type: MeasurementType) => {
         switch (type) {
@@ -180,6 +202,39 @@ export const SettingsDialog: React.FC = () => {
                             }`}
                     />
                 </button>
+            </div>
+
+            {/* Smart Units Toggle */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                        <span className="font-bold text-lg">🧠</span>
+                    </div>
+                    <div className="text-left">
+                        <h3 className="font-semibold text-icy-black">Smart Units</h3>
+                        <p className="text-sm text-gray-500">Auto-switch units based on distance</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    {unitSystem === 'smart' && (
+                        <button
+                            onClick={() => setView('smart-units')}
+                            className="text-sm text-lavender-600 font-medium hover:text-lavender-700"
+                        >
+                            Configure
+                        </button>
+                    )}
+                    <button
+                        onClick={() => updateUnitSystem(unitSystem === 'smart' ? 'metric' : 'smart')}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${unitSystem === 'smart' ? 'bg-lavender-600' : 'bg-gray-200'
+                            }`}
+                    >
+                        <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${unitSystem === 'smart' ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                        />
+                    </button>
+                </div>
             </div>
 
             <button
@@ -675,12 +730,77 @@ export const SettingsDialog: React.FC = () => {
         </div>
     );
 
+    const renderSmartUnitsView = () => (
+        <div className="space-y-6">
+            <p className="text-sm text-gray-600">
+                Define distance ranges and the units to use for each range. Rules are applied in order.
+            </p>
+
+            <div className="space-y-3">
+                {smartUnits.map((rule, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="flex-grow grid grid-cols-2 gap-4 items-center">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-500">Up to</span>
+                                <input
+                                    type="number"
+                                    value={rule.maxDistance === Infinity ? '' : rule.maxDistance}
+                                    placeholder="∞"
+                                    onChange={(e) => {
+                                        const val = e.target.value ? parseFloat(e.target.value) : Infinity;
+                                        const newRules = [...smartUnits];
+                                        newRules[index] = { ...rule, maxDistance: val };
+                                        updateSmartUnits(newRules);
+                                    }}
+                                    className="w-24 px-2 py-1 rounded border-gray-300 text-sm"
+                                />
+                                <span className="text-sm text-gray-500">cm</span>
+                            </div>
+                            <select
+                                value={rule.unit}
+                                onChange={(e) => {
+                                    const newRules = [...smartUnits];
+                                    newRules[index] = { ...rule, unit: e.target.value as any };
+                                    updateSmartUnits(newRules);
+                                }}
+                                className="px-2 py-1 rounded border-gray-300 text-sm"
+                            >
+                                <option value="metric">Metric (cm)</option>
+                                <option value="imperial">Imperial (in)</option>
+                                <option value="stone">Stone Widths</option>
+                                <option value="broom">Broom Lengths</option>
+                            </select>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const newRules = [...smartUnits];
+                                newRules.splice(index, 1);
+                                updateSmartUnits(newRules);
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            <button
+                onClick={() => updateSmartUnits([...smartUnits, { maxDistance: 100, unit: 'metric' }])}
+                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-medium hover:border-lavender-500 hover:text-lavender-600 transition-colors flex items-center justify-center gap-2"
+            >
+                + Add Rule
+            </button>
+        </div>
+    );
+
 
 
     const getTitle = () => {
         switch (view) {
             case 'measurements': return 'Measurements';
             case 'sheet': return 'Sheet Settings';
+            case 'smart-units': return 'Smart Units Configuration';
             default: return 'Settings';
         }
     };
@@ -705,6 +825,7 @@ export const SettingsDialog: React.FC = () => {
                 {view === 'main' && renderMainView()}
                 {view === 'measurements' && renderMeasurementsView()}
                 {view === 'sheet' && renderSheetView()}
+                {view === 'smart-units' && renderSmartUnitsView()}
             </div>
         </Dialog>
     );

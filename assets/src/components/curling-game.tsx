@@ -153,6 +153,22 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
     };
   }, [showMenu]);
 
+  // Close menu with Escape key
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showMenu]);
+
   // Lock body scroll to prevent "double scroll" on mobile
   useEffect(() => {
     // Only apply on mobile/when fixed
