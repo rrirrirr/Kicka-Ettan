@@ -12,6 +12,7 @@ export const BUTTON_RADIUS = 15;    // Approx 6 inches radius
 export const HOG_LINE_OFFSET = 640; // 21ft from Tee Line
 export const BACK_LINE_OFFSET = 183; // 6ft from Tee Line
 export const HACK_OFFSET = 366; // 12ft from Tee Line (approx)
+export const NEAR_HOUSE_THRESHOLD = 150; // 1.5 meters (~5ft) from outer ring
 
 // Stone dimensions
 export const STONE_RADIUS = 14.5; // Approx 11.4 inches diameter / 2 = 14.5cm radius

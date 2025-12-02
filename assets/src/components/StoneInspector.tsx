@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loupe } from './Loupe';
 import { MeasurementType } from '../contexts/SettingsContext';
-import { Target, Shield, AlignCenterVertical, AlignCenterHorizontal } from 'lucide-react';
+import { Target, Shield } from 'lucide-react';
 
 interface StoneInspectorProps {
     x: number;
@@ -47,8 +47,8 @@ export const StoneInspector: React.FC<StoneInspectorProps> = ({
         switch (type) {
             case 'closest-ring': return <Target size={20} />;
             case 'guard': return <Shield size={20} />;
-            case 't-line': return <AlignCenterVertical size={20} className="rotate-90" />; // Horizontal line icon
-            case 'center-line': return <AlignCenterHorizontal size={20} className="rotate-90" />; // Vertical line icon
+            case 't-line': return <span className="text-2xl font-bold">T</span>; // T-line icon
+            case 'center-line': return <span className="text-2xl font-bold">│</span>; // Thicker vertical line icon
             default: return null;
         }
     };

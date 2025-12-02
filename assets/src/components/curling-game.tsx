@@ -17,7 +17,8 @@ import {
   VIEW_BOTTOM_OFFSET,
   HOG_LINE_OFFSET,
   BACK_LINE_OFFSET,
-  HOUSE_RADIUS_12
+  HOUSE_RADIUS_12,
+  NEAR_HOUSE_THRESHOLD
 } from '../utils/constants';
 
 interface CurlingGameProps {
@@ -450,8 +451,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                     // House Stone: Touching the house
                     const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
 
-                    // Near House Stone: Not touching house, but within 2ft (61cm)
-                    const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + 61);
+                    // Near House Stone: Not touching house, but within threshold
+
+                    const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD);
 
                     let steps;
                     if (isHouseStone) {
@@ -789,9 +791,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                 // House Stone: Touching the house (dist <= 12ft radius + stone radius)
                 const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
 
-                // Near House Stone: Not touching house, but within 2ft (61cm) of outer ring
-                // Distance from center <= 12ft radius + stone radius + 2ft (61cm)
-                const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + 61);
+                // Near House Stone: Not touching house, but within threshold of outer ring
+                // Distance from center <= 12ft radius + stone radius + threshold
+                const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD);
 
                 // Guard Stone: Anything else (typically above house)
                 let steps;
@@ -966,8 +968,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               // House Stone: Touching the house
               const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
 
-              // Near House Stone: Not touching house, but within 2ft (61cm)
-              const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + 61);
+              // Near House Stone: Not touching house, but within threshold
+
+              const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD);
 
               if (isHouseStone) {
                 steps = settings.houseZone;

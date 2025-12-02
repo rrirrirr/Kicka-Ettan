@@ -1,5 +1,10 @@
+
 import React from 'react';
-import { SHEET_WIDTH, VIEW_TOP_OFFSET, STONE_RADIUS, HOUSE_RADIUS_12, HOUSE_RADIUS_8, HOUSE_RADIUS_4, BUTTON_RADIUS, HOG_LINE_OFFSET } from '../utils/constants';
+import {
+    SHEET_WIDTH, VIEW_TOP_OFFSET, STONE_RADIUS, HOUSE_RADIUS_12, HOUSE_RADIUS_8,
+    HOUSE_RADIUS_4, BUTTON_RADIUS, HOG_LINE_OFFSET,
+    NEAR_HOUSE_THRESHOLD
+} from '../utils/constants';
 
 interface StonePosition {
     x: number;
@@ -37,7 +42,7 @@ const getBracePath = (x1: number, y1: number, x2: number, y2: number, w: number,
     const qx4 = (x1 - 0.75 * len * dx) + (1 - q) * w * dy;
     const qy4 = (y1 - 0.75 * len * dy) - (1 - q) * w * dx;
 
-    return `M ${x1} ${y1} Q ${qx1} ${qy1} ${qx2} ${qy2} T ${tx1} ${ty1} M ${x2} ${y2} Q ${qx3} ${qy3} ${qx4} ${qy4} T ${tx1} ${ty1}`;
+    return `M ${x1} ${y1} Q ${qx1} ${qy1} ${qx2} ${qy2} T ${tx1} ${ty1} M ${x2} ${y2} Q ${qx3} ${qy3} ${qx4} ${qy4} T ${tx1} ${ty1} `;
 };
 
 // --- New Types and Helpers for Grouped Labels ---
@@ -127,7 +132,7 @@ const calculateMeasurements = (
     // T-Line
     const deltaY = stone.y - teeLineY;
     const rawDistTee = Math.abs(deltaY) - STONE_RADIUS;
-    const distTee = rawDistTee < 0 ? 0 : rawDistTee;
+    const distTee = rawDistTee; // Allow negative numbers
     const isAboveTee = stone.y < teeLineY;
 
     const tLineStartY = isAboveTee
@@ -138,7 +143,7 @@ const calculateMeasurements = (
     // Center Line
     const deltaX = stone.x - centerLineX;
     const rawDistCenter = Math.abs(deltaX) - STONE_RADIUS;
-    const distCenter = rawDistCenter < 0 ? 0 : rawDistCenter;
+    const distCenter = rawDistCenter; // Allow negative numbers
     const isLeftOfCenter = stone.x < centerLineX;
 
     const cLineStartX = isLeftOfCenter
@@ -147,7 +152,7 @@ const calculateMeasurements = (
     const cLineEndX = centerLineX * scale;
 
     // Zone Classification using radial distance from house center
-    const nearHouseThreshold = 150; // 1.5 meters
+    const nearHouseThreshold = NEAR_HOUSE_THRESHOLD; // Use shared constant
 
     // Calculate distance from stone center to house center
     const distToCenter = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
@@ -324,7 +329,7 @@ const calculateMeasurements = (
     };
 };
 
-const solveLabelCollisions = (labels: LabelBox[], stones: { x: number; y: number }[], sheetWidth: number, scale: number) => {
+const solveLabelCollisions = (labels: LabelBox[], stones: { x: number; y: number }[], sheetWidth: number, scale: number, maxY: number) => {
     const iterations = 10;
     const stoneRadiusPx = STONE_RADIUS * scale;
 
@@ -415,15 +420,11 @@ const solveLabelCollisions = (labels: LabelBox[], stones: { x: number; y: number
             labelA.x = Math.max(minX, Math.min(maxX, labelA.x));
 
             // Clamp Y to avoid backline (stone bar area)
-            // Backline is at teeLineY + HOUSE_RADIUS_12
-            // We need to pass teeLineY and HOUSE_RADIUS_12 or calculate it.
-            // Assuming standard layout, backline is roughly where the house ends.
-            // Let's use a safe margin from the bottom of the sheet if possible, or pass the limit.
-            // For now, let's assume the stone bar takes up the bottom 100px or so of the view.
-            // Better yet, let's pass the max Y limit to this function.
-
-            // However, we don't have the limit passed in yet.
-            // Let's modify the signature to accept maxY.
+            // Ensure bottom of label is above maxY
+            const labelBottom = labelA.y + labelA.height / 2;
+            if (labelBottom > maxY) {
+                labelA.y = maxY - labelA.height / 2;
+            }
         }
     }
 };
@@ -433,7 +434,7 @@ const getWavyPath = (x1: number, y1: number, x2: number, y2: number) => {
     const dy = y2 - y1;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < 5) return `M ${x1} ${y1} L ${x2} ${y2}`;
+    if (dist < 5) return `M ${x1} ${y1} L ${x2} ${y2} `;
 
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
@@ -448,7 +449,7 @@ const getWavyPath = (x1: number, y1: number, x2: number, y2: number) => {
     const cp1x = x1 + (dx * 0.25) + normalX * amp;
     const cp1y = y1 + (dy * 0.25) + normalY * amp;
 
-    return `M ${x1} ${y1} Q ${cp1x} ${cp1y} ${midX} ${midY} T ${x2} ${y2}`;
+    return `M ${x1} ${y1} Q ${cp1x} ${cp1y} ${midX} ${midY} T ${x2} ${y2} `;
 };
 
 const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, highlightedStone, showMeasurements = true }) => {
@@ -461,7 +462,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
             const rule = smartUnits.find(r => cm <= r.maxDistance) || { unit: 'metric' };
             switch (rule.unit) {
                 case 'imperial':
-                    return `${(cm / 2.54).toFixed(1)}"`;
+                    return `${(cm / 2.54).toFixed(1)} "`;
                 case 'stone':
                     return `${(cm / (STONE_RADIUS * 2)).toFixed(1)} 🥌`;
                 case 'broom':
@@ -494,14 +495,6 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
         const labels: LabelBox[] = allStones.map(stone => {
             const measurements = calculateMeasurements(stone.pos, scale, centerLineX, teeLineY, topOfHouseY, hogLineY);
 
-            // Debug output for first stone only (to avoid spam)
-            if (stone.color === 'red' && stone.index === 0) {
-                console.log(`=== TOGGLE MODE DEBUG (${stone.color} #${stone.index}) ===`);
-                console.log(`isInGuardZone: ${measurements.isInGuardZone}`);
-                console.log(`isInNearHouseZone: ${measurements.isInNearHouseZone}`);
-                console.log(`nearHouseZone settings:`, toggleModeSettings.nearHouseZone);
-            }
-
             // Calculate which items will be displayed to determine width
             const items = [];
             if (measurements.isInGuardZone) {
@@ -512,7 +505,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     items.push(`${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`);
                 }
                 if (toggleModeSettings.guardZone.showCenterLine && measurements.centerLine) {
-                    items.push(`${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`);
+                    items.push(`│ ${formatDistance(measurements.centerLine.dist)}`);
                 }
             } else if (measurements.isInNearHouseZone) {
                 if (toggleModeSettings.nearHouseZone.showClosestRing && measurements.closestRing) {
@@ -524,7 +517,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     items.push(`${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`);
                 }
                 if (toggleModeSettings.nearHouseZone.showCenterLine && measurements.centerLine) {
-                    items.push(`${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`);
+                    items.push(`│ ${formatDistance(measurements.centerLine.dist)}`);
                 }
             } else {
                 if (toggleModeSettings.houseZone.showClosestRing && measurements.closestRing) {
@@ -536,7 +529,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     items.push(`${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? '↓' : '↑'}`);
                 }
                 if (toggleModeSettings.houseZone.showCenterLine && measurements.centerLine) {
-                    items.push(`${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`);
+                    items.push(`│ ${formatDistance(measurements.centerLine.dist)}`);
                 }
             }
 
@@ -582,7 +575,10 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
 
         // 2. Resolve Collisions
         const allStonePositions = allStones.map(s => ({ x: s.pos.x * scale, y: s.pos.y * scale }));
-        solveLabelCollisions(labels, allStonePositions, SHEET_WIDTH * scale, scale);
+        const backLineY = (teeLineY + HOUSE_RADIUS_12) * scale;
+        // Allow labels to go slightly past backline but not too far (e.g. 20px padding)
+        const maxLabelY = backLineY - 20;
+        solveLabelCollisions(labels, allStonePositions, SHEET_WIDTH * scale, scale, maxLabelY);
 
         // 3. Render Grouped Labels
         return (
@@ -792,8 +788,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     }
                     if (showCenterLine && measurements.centerLine) {
                         items.push({
-                            label: `${measurements.centerLine.isLeft ? '→' : '←'} ${formatDistance(measurements.centerLine.dist)}`,
-                            icon: '⌖',
+                            label: formatDistance(measurements.centerLine.dist),
+                            icon: '│',
                             color: 'text-pink-500', // Pink
                             iconType: 'text'
                         });
@@ -961,7 +957,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 const hogLineY = teeLineY - HOG_LINE_OFFSET;
 
                 // Zone Classification using radial distance from house center
-                const nearHouseThreshold = 150; // 1.5 meters
+                const nearHouseThreshold = NEAR_HOUSE_THRESHOLD; // Use shared constant
 
                 // Calculate distance from stone center to house center
                 const distToCenterPoint = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
@@ -970,21 +966,6 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 const isTouchingHouse = distToCenterPoint <= (HOUSE_RADIUS_12 + STONE_RADIUS);
                 const isInNearHouseZone = !isTouchingHouse && distToCenterPoint <= (HOUSE_RADIUS_12 + STONE_RADIUS + nearHouseThreshold) && stone.pos.y > hogLineY;
                 const isInGuardZone = !isTouchingHouse && !isInNearHouseZone && stone.pos.y > hogLineY;
-
-                // Debug output when stone is highlighted
-                if (isHighlighted) {
-                    const distToHouseEdge = distToCenterPoint - STONE_RADIUS - HOUSE_RADIUS_12;
-                    console.log(`=== STONE DEBUG (${stone.color} #${stone.index}) ===`);
-                    console.log(`Position: (${stone.pos.x.toFixed(1)}, ${stone.pos.y.toFixed(1)})`);
-                    console.log(`Distance to center: ${distToCenterPoint.toFixed(1)}cm`);
-                    console.log(`Distance to house edge: ${distToHouseEdge.toFixed(1)}cm`);
-                    console.log(`Is touching house: ${isTouchingHouse}`);
-                    console.log(`Is in near-house zone: ${isInNearHouseZone}`);
-                    console.log(`Is in guard zone: ${isInGuardZone}`);
-                    console.log(`Above hog line (y > ${hogLineY}): ${stone.pos.y > hogLineY}`);
-                    console.log(`Near-house threshold: ${nearHouseThreshold}cm`);
-                    console.log(`Near-house max distance: ${(HOUSE_RADIUS_12 + STONE_RADIUS + nearHouseThreshold).toFixed(1)}cm`);
-                }
 
                 // Determine which measurements should be shown based on toggle mode settings
                 const shouldShowGuardInToggle = isInGuardZone && toggleModeSettings.guardZone.showGuard;

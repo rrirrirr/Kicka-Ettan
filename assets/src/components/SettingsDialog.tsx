@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from './ui/Dialog';
 import { useSettings, MeasurementStep, MeasurementType } from '../contexts/SettingsContext';
-import { Trash2, Target, Shield, AlignCenterVertical, AlignCenterHorizontal, ChevronRight, ChevronLeft, Ruler, Grid } from 'lucide-react';
+import { Trash2, Target, Shield, ChevronRight, ChevronLeft, Ruler, Grid } from 'lucide-react';
 import { SheetStyleCarousel } from './SheetStyleCarousel';
 import { ZonesDiagram } from './ZonesDiagram';
 
@@ -39,8 +39,8 @@ export const SettingsDialog: React.FC = () => {
         switch (type) {
             case 'closest-ring': return <Target size={16} />;
             case 'guard': return <Shield size={16} />;
-            case 't-line': return <AlignCenterVertical size={16} className="rotate-90" />;
-            case 'center-line': return <AlignCenterHorizontal size={16} className="rotate-90" />;
+            case 't-line': return <span className="text-xl font-bold">T</span>; // T-line icon
+            case 'center-line': return <span className="text-xl font-bold">│</span>; // Thicker vertical line
             default: return null;
         }
     };
