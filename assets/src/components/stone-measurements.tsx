@@ -80,14 +80,16 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 // Calculate vertical line (to Tee Line)
                 // - Line should go from stone's near edge toward tee line
                 // - If stone overlaps tee line, no line needed (handled by distanceToTee check)
+                // Add 2px to account for stone's border
                 const verticalLineStartY = isAboveTee
-                    ? stonePixelY + (STONE_RADIUS * scale)  // Bottom edge of stone above tee
-                    : stonePixelY - (STONE_RADIUS * scale); // Top edge of stone below tee
+                    ? stonePixelY + (STONE_RADIUS * scale) + 2  // Bottom edge of stone above tee
+                    : stonePixelY - (STONE_RADIUS * scale) - 2; // Top edge of stone below tee
 
                 // Calculate horizontal line (to Center Line)
+                // Add 2px to account for stone's border
                 const horizontalLineStartX = isLeftOfCenter
-                    ? stonePixelX + (STONE_RADIUS * scale)  // Right edge of stone left of center
-                    : stonePixelX - (STONE_RADIUS * scale); // Left edge of stone right of center
+                    ? stonePixelX + (STONE_RADIUS * scale) + 2  // Right edge of stone left of center
+                    : stonePixelX - (STONE_RADIUS * scale) - 2; // Left edge of stone right of center
 
                 // Check if this stone is highlighted
                 const isHighlighted = highlightedStone &&
@@ -110,12 +112,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
 
                 const fontSize = isHighlighted ? "16" : "12";
                 const fontWeight = isHighlighted ? "900" : "bold";
-                const strokeColor = stone.color === 'red' ?
-                    (isHighlighted ? '#dc2626' : '#ef4444') :
-                    (isHighlighted ? '#ca8a04' : '#eab308');
-                const textColor = stone.color === 'red' ?
-                    (isHighlighted ? '#991b1b' : '#dc2626') :
-                    (isHighlighted ? '#a16207' : '#ca8a04');
+                const strokeColor = isHighlighted ? '#9f1239' : '#be185d'; // Pink-800 : Pink-700
+                const textColor = isHighlighted ? '#831843' : '#9f1239'; // Pink-900 : Pink-800
 
                 // Determine which side of center line the stone is on
                 // Edge detection: check if stone is too close to left/right edges
@@ -170,31 +168,31 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     ? toggleModeSettings.guardZone.showCenterLine
                     : toggleModeSettings.houseZone.showCenterLine;
 
-                // Brace Logic
+                // Brace Logic - Unused for now, commented out to fix build
                 // const isLeftOfCenter = stone.pos.x < centerLineX; // Already defined above
-                const braceWidth = 20;
-                const braceXOffset = 40; // Distance from stone center
+                // const braceWidth = 20;
+                // const braceXOffset = 40; // Distance from stone center
 
                 // Determine side based on position (reusing xPercent calculated above)
                 // First 25%: Face inward (right side, pointing toward center)
                 // 25-75%: Standard behavior (face away from center)
                 // Last 25% (75-100%): Face inward (left side, pointing toward center)
-                let placeBraceOnRight;
-                if (xPercent < 25) {
-                    placeBraceOnRight = true; // Right side, facing inward (toward center)
-                } else if (xPercent > 75) {
-                    placeBraceOnRight = false; // Left side, facing inward (toward center)
-                } else {
-                    placeBraceOnRight = !isLeftOfCenter; // Standard: face away from center
-                }
+                // let placeBraceOnRight;
+                // if (xPercent < 25) {
+                //     placeBraceOnRight = true; // Right side, facing inward (toward center)
+                // } else if (xPercent > 75) {
+                //     placeBraceOnRight = false; // Left side, facing inward (toward center)
+                // } else {
+                //     placeBraceOnRight = !isLeftOfCenter; // Standard: face away from center
+                // }
 
-                const braceX = placeBraceOnRight
-                    ? stonePixelX + braceXOffset
-                    : stonePixelX - braceXOffset;
+                // const braceX = placeBraceOnRight
+                //     ? stonePixelX + braceXOffset
+                //     : stonePixelX - braceXOffset;
 
                 // If brace is on right, it points right (bulges right).
                 // If brace is on left, it points left (bulges left).
-                const pointRight = placeBraceOnRight;
+                // const pointRight = placeBraceOnRight;
 
                 // Determine closest reference line
                 // Y increases downwards.
@@ -202,24 +200,23 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 // House is at bottom (larger Y).
                 // Stone is in between.
 
-                const distToHog = Math.abs(stonePixelY - (hogLineY * scale));
-                const distToHouse = Math.abs((topOfHouseY * scale) - stonePixelY);
-
-                const isCloserToHog = distToHog < distToHouse;
+                // const distToHog = Math.abs(stonePixelY - (hogLineY * scale));
+                // const distToHouse = Math.abs((topOfHouseY * scale) - stonePixelY);
+                // const isCloserToHog = distToHog < distToHouse;
 
                 // Brace spans from reference line to stone.
                 // If closer to Hog: Start at Hog (top), End at Stone (bottom).
                 // If closer to House: Start at Stone (top), End at House (bottom).
 
-                let braceStartY, braceEndY;
-
-                if (isCloserToHog) {
-                    braceStartY = hogLineY * scale;
-                    braceEndY = stonePixelY;
-                } else {
-                    braceStartY = stonePixelY;
-                    braceEndY = topOfHouseY * scale;
-                }
+                // Unused for now - commented out to fix build
+                // let braceStartY, braceEndY;
+                // if (isCloserToHog) {
+                //     braceStartY = hogLineY * scale;
+                //     braceEndY = stonePixelY;
+                // } else {
+                //     braceStartY = stonePixelY;
+                //     braceEndY = topOfHouseY * scale;
+                // }
 
                 // Closest Ring Measurement
                 const shouldShowClosestRingInToggle = !isInGuardZone && toggleModeSettings.houseZone.showClosestRing;
@@ -276,15 +273,22 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                     uy = 0;
                 }
 
-                // Determine if stone is inside the target ring
-                const isInsideRing = distToCenterPoint < closestRingRadius;
+                // Determine if stone is inside the target ring - unused for now
+                // const isInsideRing = distToCenterPoint < closestRingRadius;
 
                 // Stone edge point (start)
-                // ux points from Center to Stone.
-                // If outside: closest point is towards center (pos - u * R)
-                // If inside: closest point is away from center (pos + u * R)
-                const stoneEdgeX = stone.pos.x + (isInsideRing ? ux : -ux) * STONE_RADIUS;
-                const stoneEdgeY = stone.pos.y + (isInsideRing ? uy : -uy) * STONE_RADIUS;
+                // ux, uy points from Center to Stone.
+                // If stone is outside ring (distToCenterPoint > closestRingRadius):
+                //   Line goes INWARD (toward ring/center), so start at inner edge (stone.pos - u * STONE_RADIUS)
+                // If stone is inside ring (distToCenterPoint < closestRingRadius):
+                //   Line goes OUTWARD (toward ring/away from center), so start at outer edge (stone.pos + u * STONE_RADIUS)
+                const isStoneOutsideRing = distToCenterPoint > closestRingRadius;
+                const stoneEdgeX = isStoneOutsideRing
+                    ? stone.pos.x - ux * STONE_RADIUS  // Inner edge (toward center) - line goes inward
+                    : stone.pos.x + ux * STONE_RADIUS; // Outer edge (away from center) - line goes outward
+                const stoneEdgeY = isStoneOutsideRing
+                    ? stone.pos.y - uy * STONE_RADIUS  // Inner edge (toward center) - line goes inward
+                    : stone.pos.y + uy * STONE_RADIUS; // Outer edge (away from center) - line goes outward
 
                 // Ring edge point (end)
                 // Point on ring closest to stone.
@@ -293,9 +297,11 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 const ringEdgeX = centerLineX + ux * closestRingRadius;
                 const ringEdgeY = teeLineY + uy * closestRingRadius;
 
-                // Convert to pixels
-                const stoneEdgePixelX = stoneEdgeX * scale;
-                const stoneEdgePixelY = stoneEdgeY * scale;
+                // Convert to pixels and account for 2px border
+                // Outside ring (line inward): move 2px more toward center (-ux)
+                // Inside ring (line outward): move 2px more away from center (+ux)
+                const stoneEdgePixelX = stoneEdgeX * scale + (isStoneOutsideRing ? -ux * 2 : ux * 2);
+                const stoneEdgePixelY = stoneEdgeY * scale + (isStoneOutsideRing ? -uy * 2 : uy * 2);
                 const ringEdgePixelX = ringEdgeX * scale;
                 const ringEdgePixelY = ringEdgeY * scale;
 
@@ -303,7 +309,10 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                 // If line goes upwards (dy < 0), place text further down (+Y)
                 // If line goes downwards (dy > 0), place text further up (-Y)
                 const lineDy = ringEdgePixelY - stoneEdgePixelY;
-                const textYOffset = lineDy < 0 ? 20 : -20;
+                // Use smaller offset for overlapping/percentage (no line), larger for distance (with line)
+                const isOverlappingRing = minDistToRingEdge <= 0;
+                const offsetAmount = isOverlappingRing ? 20 : 40;
+                const textYOffset = lineDy < 0 ? offsetAmount : -offsetAmount;
 
                 return (
                     <React.Fragment key={`${stone.color}-${stone.index}`}>
@@ -338,19 +347,30 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                     )}
                                     {/* Distance label for Tee Line */}
                                     {displaySettings.tLine.showDistance && (
-                                        <text
-                                            x={stonePixelX + teeLineLabelHorizontalOffset}
-                                            y={(stonePixelY + teeLinePixelY) / 2}
-                                            fill={textColor}
-                                            fontSize={fontSize}
-                                            fontWeight={fontWeight}
-                                            textAnchor="middle"
-                                            dominantBaseline="middle"
-                                            style={{ transition: 'all 0.2s ease' }}
-                                            opacity={opacity}
-                                        >
-                                            {formatDistance(displayDistanceToTee)} {isAboveTee ? '↓' : '↑'}
-                                        </text>
+                                        <g transform={`translate(${stonePixelX + teeLineLabelHorizontalOffset}, ${(stonePixelY + teeLinePixelY) / 2})`} opacity={opacity}>
+                                            {/* Background rectangle */}
+                                            <rect
+                                                x={isHighlighted ? "-45" : "-38"}
+                                                y="-12"
+                                                width={isHighlighted ? "90" : "76"}
+                                                height="24"
+                                                rx="4"
+                                                fill="#1a1a1a"
+                                                fillOpacity="0.85"
+                                            />
+                                            <text
+                                                x="0"
+                                                y="0"
+                                                fill={textColor}
+                                                fontSize={fontSize}
+                                                fontWeight={fontWeight}
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                style={{ transition: 'all 0.2s ease' }}
+                                            >
+                                                {formatDistance(displayDistanceToTee)} {isAboveTee ? '↓' : '↑'}
+                                            </text>
+                                        </g>
                                     )}
                                 </svg>
 
@@ -407,7 +427,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                         if (isTop20Percent) {
                                             // --- Top 20% Logic: Direct Line to Hog Line ---
                                             const lineStartX = stonePixelX;
-                                            const lineStartY = stonePixelY - (STONE_RADIUS * scale); // Top of stone
+                                            const lineStartY = stonePixelY - (STONE_RADIUS * scale) - 2; // Top of stone (including border)
                                             const lineEndY = hogLineY * scale;
                                             const distanceCm = distFromHog - STONE_RADIUS; // Distance from stone top to hog line
 
@@ -587,7 +607,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                     <line
                                                         x1={braceX}
                                                         y1={stonePixelY}
-                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) + 2 : stonePixelX - (STONE_RADIUS * scale) - 2}
                                                         y2={stonePixelY}
                                                         stroke="#9333ea"
                                                         strokeWidth="2"
@@ -600,7 +620,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                     <line
                                                         x1={braceX}
                                                         y1={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
-                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) + 2 : stonePixelX - (STONE_RADIUS * scale) - 2}
                                                         y2={isCloserToHog ? hogLineY * scale : topOfHouseY * scale}
                                                         stroke="#9333ea"
                                                         strokeWidth="2"
@@ -611,9 +631,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
 
                                                     {/* Vertical extension line (from Top of House to Hog Line) */}
                                                     <line
-                                                        x1={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        x1={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) + 2 : stonePixelX - (STONE_RADIUS * scale) - 2}
                                                         y1={topOfHouseY * scale}
-                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) : stonePixelX - (STONE_RADIUS * scale)}
+                                                        x2={placeBraceOnRight ? stonePixelX + (STONE_RADIUS * scale) + 2 : stonePixelX - (STONE_RADIUS * scale) - 2}
                                                         y2={hogLineY * scale}
                                                         stroke="#9333ea"
                                                         strokeWidth="2"
@@ -815,19 +835,30 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                     {/* Distance label for Center Line */}
                                     {displaySettings.centerLine.showDistance && (
                                         <>
-                                            <text
-                                                x={(horizontalLineStartX + centerLinePixelX) / 2}
-                                                y={stonePixelY + horizontalLabelOffset}
-                                                fill={textColor}
-                                                fontSize={fontSize}
-                                                fontWeight={fontWeight}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                                style={{ transition: 'all 0.2s ease' }}
-                                                opacity={opacity}
-                                            >
-                                                {isLeftOfCenter ? `${displayDistanceToCenter.toFixed(1)}cm →` : `← ${displayDistanceToCenter.toFixed(1)}cm`}
-                                            </text>
+                                            <g transform={`translate(${(horizontalLineStartX + centerLinePixelX) / 2}, ${stonePixelY + horizontalLabelOffset})`} opacity={opacity}>
+                                                {/* Background rectangle */}
+                                                <rect
+                                                    x={isHighlighted ? "-45" : "-38"}
+                                                    y="-12"
+                                                    width={isHighlighted ? "90" : "76"}
+                                                    height="24"
+                                                    rx="4"
+                                                    fill="#1a1a1a"
+                                                    fillOpacity="0.85"
+                                                />
+                                                <text
+                                                    x="0"
+                                                    y="0"
+                                                    fill={textColor}
+                                                    fontSize={fontSize}
+                                                    fontWeight={fontWeight}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                    style={{ transition: 'all 0.2s ease' }}
+                                                >
+                                                    {isLeftOfCenter ? `${formatDistance(displayDistanceToCenter)} →` : `← ${formatDistance(displayDistanceToCenter)}`}
+                                                </text>
+                                            </g>
                                             {/* Broom/Stone Length Label for Guard Zone */}
                                             {isInGuardZone && displaySettings.guard.showBroomLength && (
                                                 displayDistanceToCenter < STONE_RADIUS * 2 * 2 ? (
@@ -905,6 +936,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                             y2={ringEdgePixelY}
                                             stroke="#06b6d4" // Cyan-500
                                             strokeWidth="3"
+                                            strokeDasharray="1,4"
+                                            strokeLinecap="round"
                                             opacity={opacity}
                                             style={{ transition: 'all 0.2s ease' }}
                                         />
@@ -930,6 +963,16 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                     return (
                                                         <>
                                                             {/* Overlap Icon (Two intersecting circles) - Optional, maybe just text is cleaner for button */}
+                                                            {/* Background rectangle */}
+                                                            <rect
+                                                                x="-25"
+                                                                y="-12"
+                                                                width="50"
+                                                                height="24"
+                                                                rx="4"
+                                                                fill="#1a1a1a"
+                                                                fillOpacity="0.85"
+                                                            />
                                                             {/* Percentage Text */}
                                                             <text
                                                                 x="0"
@@ -939,9 +982,6 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                                 fontWeight={fontWeight}
                                                                 textAnchor="middle"
                                                                 dominantBaseline="middle"
-                                                                style={{
-                                                                    textShadow: '0 0 4px white'
-                                                                }}
                                                             >
                                                                 {buttonPercentage}%
                                                             </text>
@@ -953,6 +993,16 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                 if (isOverlapping) {
                                                     return (
                                                         <>
+                                                            {/* Background rectangle */}
+                                                            <rect
+                                                                x="-35"
+                                                                y="-12"
+                                                                width="70"
+                                                                height="24"
+                                                                rx="4"
+                                                                fill="#1a1a1a"
+                                                                fillOpacity="0.85"
+                                                            />
                                                             {/* Overlap Icon (Two intersecting circles) */}
                                                             <g transform="translate(-16, 0)">
                                                                 <circle cx="-3" cy="0" r="4.5" fill="none" stroke="#0891b2" strokeWidth="1.5" />
@@ -970,30 +1020,45 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({ stones, scale, hi
                                                                 fontWeight={fontWeight}
                                                                 textAnchor="middle"
                                                                 dominantBaseline="middle"
-                                                                style={{
-                                                                    textShadow: '0 0 4px white'
-                                                                }}
                                                             >
-                                                                {Math.round((Math.abs(minDistToRingEdge) / (2 * STONE_RADIUS)) * 100)}%
+                                                                {(() => {
+                                                                    // Calculate overlap percentage
+                                                                    // Maximum overlap is when stone center is on ring edge: overlap = STONE_RADIUS
+                                                                    // No overlap when stone edge just touches ring: overlap = 0
+                                                                    // minDistToRingEdge is negative when overlapping
+                                                                    const overlapDistance = Math.abs(minDistToRingEdge);
+                                                                    const maxOverlap = STONE_RADIUS; // Max meaningful overlap
+                                                                    const overlapPercent = Math.min(100, Math.round((overlapDistance / maxOverlap) * 100));
+                                                                    return `${overlapPercent}%`;
+                                                                })()}
                                                             </text>
                                                         </>
                                                     );
                                                 } else {
                                                     return (
-                                                        <text
-                                                            x="0"
-                                                            y="0"
-                                                            fill="#0891b2" // Cyan-600
-                                                            fontSize={fontSize}
-                                                            fontWeight={fontWeight}
-                                                            textAnchor="middle"
-                                                            dominantBaseline="middle"
-                                                            style={{
-                                                                textShadow: '0 0 4px white'
-                                                            }}
-                                                        >
-                                                            {formatDistance(displayDistanceToRing)}
-                                                        </text>
+                                                        <>
+                                                            {/* Background rectangle */}
+                                                            <rect
+                                                                x="-30"
+                                                                y="-12"
+                                                                width="60"
+                                                                height="24"
+                                                                rx="4"
+                                                                fill="#1a1a1a"
+                                                                fillOpacity="0.85"
+                                                            />
+                                                            <text
+                                                                x="0"
+                                                                y="0"
+                                                                fill="#0891b2" // Cyan-600
+                                                                fontSize={fontSize}
+                                                                fontWeight={fontWeight}
+                                                                textAnchor="middle"
+                                                                dominantBaseline="middle"
+                                                            >
+                                                                {formatDistance(displayDistanceToRing)}
+                                                            </text>
+                                                        </>
                                                     );
                                                 }
                                             })()}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog } from './ui/Dialog';
 import { useSettings, MeasurementStep, MeasurementType } from '../contexts/SettingsContext';
-import { Plus, Trash2, Target, Shield, AlignCenterVertical, AlignCenterHorizontal, ChevronRight, ChevronLeft, Ruler, Grid, HelpCircle } from 'lucide-react';
+import { Trash2, Target, Shield, AlignCenterVertical, AlignCenterHorizontal, ChevronRight, ChevronLeft, Ruler, Grid } from 'lucide-react';
 import { SheetStyleCarousel } from './SheetStyleCarousel';
 import { ZonesDiagram } from './ZonesDiagram';
 
@@ -85,8 +85,8 @@ export const SettingsDialog: React.FC = () => {
                                 className={`
                                     flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
                                     ${step.types.includes('guard')
-                                        ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                        : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-purple-600'
+                                        ? 'bg-lavender-600 text-white hover:bg-lavender-700'
+                                        : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
                                     }
                                 `}
                                 title={`Toggle ${getLabel('guard')}`}
@@ -101,8 +101,8 @@ export const SettingsDialog: React.FC = () => {
                             className={`
                                 flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
                                 ${step.types.includes('t-line')
-                                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-purple-600'
+                                    ? 'bg-lavender-600 text-white hover:bg-lavender-700'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
                                 }
                             `}
                             title={`Toggle ${getLabel('t-line')}`}
@@ -116,8 +116,8 @@ export const SettingsDialog: React.FC = () => {
                             className={`
                                 flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
                                 ${step.types.includes('center-line')
-                                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-purple-600'
+                                    ? 'bg-lavender-600 text-white hover:bg-lavender-700'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
                                 }
                             `}
                             title={`Toggle ${getLabel('center-line')}`}
@@ -132,8 +132,8 @@ export const SettingsDialog: React.FC = () => {
                                 className={`
                                     flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
                                     ${step.types.includes('closest-ring')
-                                        ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                        : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-purple-600'
+                                        ? 'bg-lavender-600 text-white hover:bg-lavender-700'
+                                        : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
                                     }
                                 `}
                                 title={`Toggle ${getLabel('closest-ring')}`}
@@ -162,17 +162,17 @@ export const SettingsDialog: React.FC = () => {
             {/* Unit System Toggle */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-lavender-100 text-lavender-600 flex items-center justify-center">
                         <span className="font-bold text-sm">{unitSystem === 'metric' ? 'CM' : 'IN'}</span>
                     </div>
                     <div className="text-left">
-                        <h3 className="font-semibold text-gray-900">Unit System</h3>
+                        <h3 className="font-semibold text-icy-black">Unit System</h3>
                         <p className="text-sm text-gray-500">{unitSystem === 'metric' ? 'Metric (cm)' : 'Imperial (inches)'}</p>
                     </div>
                 </div>
                 <button
                     onClick={() => updateUnitSystem(unitSystem === 'metric' ? 'imperial' : 'metric')}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${unitSystem === 'imperial' ? 'bg-purple-600' : 'bg-gray-200'
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${unitSystem === 'imperial' ? 'bg-lavender-600' : 'bg-gray-200'
                         }`}
                 >
                     <span
@@ -187,11 +187,11 @@ export const SettingsDialog: React.FC = () => {
                 className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
             >
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-lavender-100 text-lavender-600 flex items-center justify-center group-hover:bg-lavender-200 transition-colors">
                         <Ruler size={20} />
                     </div>
                     <div className="text-left">
-                        <h3 className="font-semibold text-gray-900">Measurements</h3>
+                        <h3 className="font-semibold text-icy-black">Measurements</h3>
                         <p className="text-sm text-gray-500">Configure measurement cycles and display</p>
                     </div>
                 </div>
@@ -207,7 +207,7 @@ export const SettingsDialog: React.FC = () => {
                         <Grid size={20} />
                     </div>
                     <div className="text-left">
-                        <h3 className="font-semibold text-gray-900">Sheet</h3>
+                        <h3 className="font-semibold text-icy-black">Sheet</h3>
                         <p className="text-sm text-gray-500">Configure sheet properties</p>
                     </div>
                 </div>
@@ -223,49 +223,49 @@ export const SettingsDialog: React.FC = () => {
                 <button
                     onClick={() => setMeasurementTab('cycles')}
                     className={`px-4 py-2 font-semibold text-sm transition-colors relative ${measurementTab === 'cycles'
-                        ? 'text-purple-700'
+                        ? 'text-lavender-700'
                         : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Cycles
                     {measurementTab === 'cycles' && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-700" />
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-lavender-700" />
                     )}
                 </button>
                 <button
                     onClick={() => setMeasurementTab('toggle')}
                     className={`px-4 py-2 font-semibold text-sm transition-colors relative ${measurementTab === 'toggle'
-                        ? 'text-purple-700'
+                        ? 'text-lavender-700'
                         : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Toggle Mode
                     {measurementTab === 'toggle' && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-700" />
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-lavender-700" />
                     )}
                 </button>
                 <button
                     onClick={() => setMeasurementTab('display')}
                     className={`px-4 py-2 font-semibold text-sm transition-colors relative ${measurementTab === 'display'
-                        ? 'text-purple-700'
+                        ? 'text-lavender-700'
                         : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Display
                     {measurementTab === 'display' && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-700" />
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-lavender-700" />
                     )}
                 </button>
                 <button
                     onClick={() => setMeasurementTab('zones')}
                     className={`px-4 py-2 font-semibold text-sm transition-colors relative ${measurementTab === 'zones'
-                        ? 'text-purple-700'
+                        ? 'text-lavender-700'
                         : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Zones Guide
                     {measurementTab === 'zones' && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-700" />
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-lavender-700" />
                     )}
                 </button>
             </div>
@@ -275,8 +275,8 @@ export const SettingsDialog: React.FC = () => {
                 {measurementTab === 'cycles' && (
                     <div className="space-y-8">
                         {/* Icon Legend */}
-                        <div className="bg-purple-50 rounded-xl p-4">
-                            <h3 className="font-semibold text-purple-900 mb-3 text-sm">Measurement Icons</h3>
+                        <div className="bg-lavender-50 rounded-xl p-4">
+                            <h3 className="font-semibold text-lavender-900 mb-3 text-sm">Measurement Icons</h3>
                             <div className="grid grid-cols-2 gap-3 text-xs">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
@@ -308,13 +308,13 @@ export const SettingsDialog: React.FC = () => {
                         {/* Guard Zone Section */}
                         <div className="space-y-4">
                             <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-purple-500" />
+                                <div className="w-2 h-2 rounded-full bg-lavender-500" />
                                 Guard Zone
                             </h3>
                             {settings.guardZone.map((step, index) => renderStep(step, index, 'guardZone'))}
                             <button
                                 onClick={() => handleAddStep('guardZone')}
-                                className="text-sm text-purple-600 font-medium hover:text-purple-700 flex items-center gap-1"
+                                className="text-sm text-lavender-600 font-medium hover:text-lavender-700 flex items-center gap-1"
                             >
                                 + Add Step
                             </button>
@@ -322,12 +322,12 @@ export const SettingsDialog: React.FC = () => {
 
                             <h3 className="font-semibold text-gray-700 flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                Near House Zone (&lt; 2ft from house)
+                                Near House Zone (&lt; 1.5m from house)
                             </h3>
                             {settings.nearHouseZone.map((step, index) => renderStep(step, index, 'nearHouseZone'))}
                             <button
                                 onClick={() => handleAddStep('nearHouseZone')}
-                                className="text-sm text-purple-600 font-medium hover:text-purple-700 flex items-center gap-1"
+                                className="text-sm text-lavender-600 font-medium hover:text-lavender-700 flex items-center gap-1"
                             >
                                 + Add Step
                             </button>
@@ -340,7 +340,7 @@ export const SettingsDialog: React.FC = () => {
                             {settings.houseZone.map((step, index) => renderStep(step, index, 'houseZone'))}
                             <button
                                 onClick={() => handleAddStep('houseZone')}
-                                className="text-sm text-purple-600 font-medium hover:text-purple-700 flex items-center gap-1"
+                                className="text-sm text-lavender-600 font-medium hover:text-lavender-700 flex items-center gap-1"
                             >
                                 + Add Step
                             </button>
@@ -366,7 +366,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.guardZone.showGuard}
                                         onChange={(e) => updateToggleModeSettings('guardZone', 'showGuard', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                                 <label className="flex items-center justify-between">
@@ -378,7 +378,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.guardZone.showTLine}
                                         onChange={(e) => updateToggleModeSettings('guardZone', 'showTLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                                 <label className="flex items-center justify-between">
@@ -390,7 +390,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.guardZone.showCenterLine}
                                         onChange={(e) => updateToggleModeSettings('guardZone', 'showCenterLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                             </div>
@@ -408,7 +408,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.nearHouseZone?.showClosestRing ?? true}
                                         onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showClosestRing', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                                 <label className="flex items-center justify-between">
@@ -420,7 +420,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.nearHouseZone?.showTLine ?? false}
                                         onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showTLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                                 <label className="flex items-center justify-between">
@@ -432,7 +432,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.nearHouseZone?.showCenterLine ?? false}
                                         onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showCenterLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                             </div>
@@ -450,7 +450,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.houseZone.showClosestRing ?? true}
                                         onChange={(e) => updateToggleModeSettings('houseZone', 'showClosestRing', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                                 <label className="flex items-center justify-between">
@@ -462,7 +462,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.houseZone.showTLine}
                                         onChange={(e) => updateToggleModeSettings('houseZone', 'showTLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                                 <label className="flex items-center justify-between">
@@ -474,7 +474,7 @@ export const SettingsDialog: React.FC = () => {
                                         type="checkbox"
                                         checked={toggleModeSettings.houseZone.showCenterLine}
                                         onChange={(e) => updateToggleModeSettings('houseZone', 'showCenterLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                 </label>
                             </div>
@@ -486,7 +486,7 @@ export const SettingsDialog: React.FC = () => {
                     <div className="space-y-6">
                         {/* Guard Measurements */}
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
                                 {getIcon('guard')}
                                 Guard Measurements
                             </h3>
@@ -499,7 +499,7 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             guard: { ...displaySettings.guard, showBraceLine: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Brace Line</span>
                                 </label>
@@ -511,7 +511,7 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             guard: { ...displaySettings.guard, showPercentage: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Percentage</span>
                                 </label>
@@ -523,7 +523,7 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             guard: { ...displaySettings.guard, showDistance: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Distance (cm)</span>
                                 </label>
@@ -535,9 +535,9 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             guard: { ...displaySettings.guard, showBroomLength: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
-                                    <span className="text-sm text-gray-700">Show Broom Length (for distances &gt; 2ft)</span>
+                                    <span className="text-sm text-gray-700">Show Broom Length (for distances &gt; 1.5m)</span>
                                 </label>
                             </div>
                         </div>
@@ -545,7 +545,7 @@ export const SettingsDialog: React.FC = () => {
 
                         {/* T-Line Measurements */}
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
                                 {getIcon('t-line')}
                                 T-Line Measurements
                             </h3>
@@ -558,7 +558,7 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             tLine: { ...displaySettings.tLine, showLine: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Line</span>
                                 </label>
@@ -570,7 +570,7 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             tLine: { ...displaySettings.tLine, showDistance: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Distance Label</span>
                                 </label>
@@ -580,7 +580,7 @@ export const SettingsDialog: React.FC = () => {
 
                         {/* Center Line Measurements */}
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
                                 {getIcon('center-line')}
                                 Center Line Measurements
                             </h3>
@@ -593,7 +593,7 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             centerLine: { ...displaySettings.centerLine, showLine: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Line</span>
                                 </label>
@@ -605,7 +605,7 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             centerLine: { ...displaySettings.centerLine, showDistance: e.target.checked }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Distance Label</span>
                                 </label>
@@ -615,7 +615,7 @@ export const SettingsDialog: React.FC = () => {
 
                         {/* Closest Ring Measurements */}
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
                                 {getIcon('closest-ring')}
                                 Closest Ring Measurements
                             </h3>
@@ -631,7 +631,7 @@ export const SettingsDialog: React.FC = () => {
                                                 showDistance: displaySettings.closestRing?.showDistance ?? true
                                             }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Line</span>
                                 </label>
@@ -646,7 +646,7 @@ export const SettingsDialog: React.FC = () => {
                                                 showDistance: e.target.checked
                                             }
                                         })}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                     />
                                     <span className="text-sm text-gray-700">Show Distance Label</span>
                                 </label>

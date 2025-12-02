@@ -167,6 +167,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   }, []);
 
   // Update scale and dimensions when container resizes
+  // Update dimensions when container resizes (Layout)
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -175,7 +176,6 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         const containerWidth = containerRef.current.offsetWidth;
         const containerHeight = containerRef.current.offsetHeight;
 
-        // If container has no size yet, skip
         if (containerWidth === 0 || containerHeight === 0) return;
 
         // Calculate available space
@@ -187,32 +187,51 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         const scaleHeight = availableHeight / (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET);
 
         // Use the smaller scale to ensure it fits completely
-        // But don't scale UP too much if we have tons of space (optional, but good for desktop)
-        // For mobile, we want to maximize usage.
-        const newScale = Math.min(scaleWidth, scaleHeight);
+        const layoutScale = Math.min(scaleWidth, scaleHeight);
 
         setSheetDimensions({
-          width: SHEET_WIDTH * newScale,
-          height: (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET) * newScale
+          width: SHEET_WIDTH * layoutScale,
+          height: (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET) * layoutScale
         });
-        setScale(newScale);
+        // Note: We do NOT set 'scale' here anymore. 
+        // 'scale' is updated by the ResizeObserver on the actual sheet element
+        // to ensure it matches the rendered pixels exactly.
       }
     };
 
-    // Use ResizeObserver to detect container size changes
     const resizeObserver = new ResizeObserver(() => {
       updateDimensions();
     });
 
     resizeObserver.observe(containerRef.current);
-
-    // Initial call
     updateDimensions();
 
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return () => resizeObserver.disconnect();
   }, [myColor]);
+
+  // Update scale based on actual rendered size of the sheet (Coordinate Mapping)
+  useEffect(() => {
+    if (!sheetRef.current) return;
+
+    const updateScale = () => {
+      if (sheetRef.current) {
+        const { width } = sheetRef.current.getBoundingClientRect();
+        if (width > 0) {
+          const newScale = width / SHEET_WIDTH;
+          setScale(newScale);
+        }
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScale();
+    });
+
+    resizeObserver.observe(sheetRef.current);
+    updateScale();
+
+    return () => resizeObserver.disconnect();
+  }, [sheetDimensions.width]); // Re-attach/re-measure if dimensions change
 
   const [lastInitializedRound, setLastInitializedRound] = useState(0);
 
@@ -393,8 +412,8 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                 if (gameState.phase === 'combined' || isHistoryMode) {
                   setHighlightedStone(prev => {
                     // Check if stone is in guard zone
-                    const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
-                    const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
+                    // const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+                    // const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
                     // Note: Y increases downwards. Hog Line (smaller Y) < Stone < Top of House (larger Y)
                     // But wait, in our coordinate system for `stone.y`:
                     // It seems `stone.y` is in logical coordinates where 0 is top-left?
@@ -748,7 +767,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             if (gameState.phase === 'combined' || isHistoryMode) {
               setHighlightedStone(prev => {
                 // Determine zone
-                const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
+                // const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
                 const distToCenter = Math.sqrt(Math.pow(pos.x - (SHEET_WIDTH / 2), 2) + Math.pow(pos.y - VIEW_TOP_OFFSET, 2));
 
                 // House Stone: Touching the house (dist <= 12ft radius + stone radius)
@@ -923,7 +942,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               stone = displayYellowStones[targetStone.index];
             }
 
-            let initialActiveTypes: MeasurementType[] = [];
+            // let initialActiveTypes: MeasurementType[] = [];
             let steps: any[] = [];
             if (stone) {
               const distToCenter = Math.sqrt(Math.pow(stone.x - (SHEET_WIDTH / 2), 2) + Math.pow(stone.y - VIEW_TOP_OFFSET, 2));
@@ -943,7 +962,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               }
 
               // Default to first step
-              initialActiveTypes = steps[0]?.types || [];
+              // initialActiveTypes = steps[0]?.types || [];
             }
 
             if (highlightedStone && targetStone === highlightedStone && highlightedStone.activeTypes) {

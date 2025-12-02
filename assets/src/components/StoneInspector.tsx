@@ -72,6 +72,7 @@ export const StoneInspector: React.FC<StoneInspectorProps> = ({
                 scale={scale}
                 size={size}
                 content={content}
+                showCrosshair={false}
             />
 
             <div style={buttonContainerStyle}>
@@ -87,8 +88,8 @@ export const StoneInspector: React.FC<StoneInspectorProps> = ({
                             className={`
                                 flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
                                 ${isActive
-                                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-purple-600'
+                                    ? 'bg-lavender-600 text-white hover:bg-lavender-700'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
                                 }
                             `}
                             title={`Toggle ${getLabel(type)}`}

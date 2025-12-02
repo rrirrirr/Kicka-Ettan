@@ -9,6 +9,7 @@ interface LoupeProps {
     content: React.ReactNode;
     offsetY?: number;
     fixedPosition?: { x: number; y: number };
+    showCrosshair?: boolean;
 }
 
 export const Loupe: React.FC<LoupeProps> = ({
@@ -18,7 +19,8 @@ export const Loupe: React.FC<LoupeProps> = ({
     size = 120,
     content,
     offsetY = 100,
-    fixedPosition
+    fixedPosition,
+    showCrosshair = true
 }) => {
     // Calculate position synchronously to avoid render lag
     const padding = 10;
@@ -97,10 +99,12 @@ export const Loupe: React.FC<LoupeProps> = ({
             </div>
 
             {/* Crosshair for precision */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-50">
-                <div className="w-4 h-0.5 bg-red-500/50 absolute" />
-                <div className="h-4 w-0.5 bg-red-500/50 absolute" />
-            </div>
+            {showCrosshair && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-50">
+                    <div className="w-4 h-0.5 bg-red-500/50 absolute" />
+                    <div className="h-4 w-0.5 bg-red-500/50 absolute" />
+                </div>
+            )}
         </div>,
         document.body
     );

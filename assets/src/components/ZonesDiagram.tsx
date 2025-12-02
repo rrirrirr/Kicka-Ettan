@@ -5,8 +5,7 @@ import {
     HOG_LINE_OFFSET,
     BACK_LINE_OFFSET,
     VIEW_TOP_OFFSET,
-    HOUSE_RADIUS_12,
-    HOUSE_RADIUS_4
+    HOUSE_RADIUS_12
 } from '../utils/constants';
 
 // Define zone colors
@@ -25,7 +24,7 @@ export const ZonesDiagram: React.FC = () => {
 
     // Radius definitions
     const houseRadius = HOUSE_RADIUS_12; // 6ft radius
-    const nearHouseRadius = HOUSE_RADIUS_12 + HOUSE_RADIUS_4; // 8ft radius (6ft + 2ft)
+    const nearHouseRadius = HOUSE_RADIUS_12 + 150; // Near house zone extends 1.5m from house edge
 
     // Path for Guard Zone (Rectangle minus Near House Circle)
     // Hole: Circle at (cx, teeY) with radius nearHouseRadius
@@ -107,7 +106,7 @@ export const ZonesDiagram: React.FC = () => {
                         <circle cx="12" cy="12" r="1" fill="#ffffff" />  {/* Button */}
                     </svg>
                     <div>
-                        <span className="font-semibold text-gray-900">House Zone</span>
+                        <span className="font-semibold text-icy-black">House Zone</span>
                         <p className="text-xs text-gray-500">Stones touching the house (12ft ring)</p>
                     </div>
                 </div>
@@ -115,15 +114,15 @@ export const ZonesDiagram: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded border border-blue-200" style={{ backgroundColor: ZONE_COLORS.nearHouse }} />
                     <div>
-                        <span className="font-semibold text-gray-900">Near House Zone</span>
-                        <p className="text-xs text-gray-500">Stones within 2ft of the house</p>
+                        <span className="font-semibold text-icy-black">Near House Zone</span>
+                        <p className="text-xs text-gray-500">Stones within 1.5m of the house</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded border border-purple-200" style={{ backgroundColor: ZONE_COLORS.guard }} />
+                    <div className="w-6 h-6 rounded border border-lavender-200" style={{ backgroundColor: ZONE_COLORS.guard }} />
                     <div>
-                        <span className="font-semibold text-gray-900">Guard Zone</span>
+                        <span className="font-semibold text-icy-black">Guard Zone</span>
                         <p className="text-xs text-gray-500">Stones in play but not near the house</p>
                     </div>
                 </div>

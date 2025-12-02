@@ -55,7 +55,7 @@ export const SheetStyleCarousel: React.FC<SheetStyleCarouselProps> = ({ selected
                                 className={`
                                     w-full relative rounded-xl overflow-hidden transition-all duration-300
                                     ${selectedStyleId === style.id
-                                        ? 'ring-4 ring-purple-600 scale-100 opacity-100'
+                                        ? 'ring-4 ring-lavender-600 scale-100 opacity-100'
                                         : 'ring-2 ring-gray-200 hover:ring-gray-300 scale-95 opacity-70'
                                     }
                                 `}
@@ -70,7 +70,7 @@ export const SheetStyleCarousel: React.FC<SheetStyleCarouselProps> = ({ selected
                                     <div className="flex items-center justify-between">
                                         <span className="text-white font-semibold text-sm">{style.name}</span>
                                         {selectedStyleId === style.id && (
-                                            <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                                            <div className="w-6 h-6 bg-lavender-600 rounded-full flex items-center justify-center">
                                                 <Check size={16} className="text-white" />
                                             </div>
                                         )}
