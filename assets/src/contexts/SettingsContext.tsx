@@ -174,15 +174,15 @@ interface SettingsContextType {
 
 const defaultSettings: MeasurementSettings = {
     guardZone: [
-        { id: 'g1', types: ['guard'] },
-        { id: 'g2', types: ['t-line', 'center-line'] }
+        { id: 'g1', types: ['guard', 'center-line'] }
     ],
     houseZone: [
-        { id: 'h1', types: ['t-line', 'center-line', 'closest-ring'] }
+        { id: 'h1', types: ['closest-ring'] },
+        { id: 'h2', types: ['t-line', 'center-line'] },
+        { id: 'h3', types: ['stone-to-stone'] }
     ],
     nearHouseZone: [
-        { id: 'n1', types: ['closest-ring'] },
-        { id: 'n2', types: ['t-line', 'center-line'] }
+        { id: 'n1', types: ['closest-ring', 'center-line'] }
     ]
 };
 
@@ -320,7 +320,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         return loadFromStorage(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
     });
     const [baseUnitSystem, setBaseUnitSystem] = useState<'metric' | 'imperial'>(() => {
-        const stored = loadFromStorage(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
+        const stored = loadFromStorage<UnitSystem>(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
         return stored === 'smart' ? 'metric' : stored;
     });
     const [smartUnits, setSmartUnits] = useState<SmartUnitRule[]>(() => {
