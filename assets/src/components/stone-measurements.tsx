@@ -67,12 +67,16 @@ interface MeasurementValues {
   tLine?: {
     dist: number;
     isAbove: boolean;
+    isOverlapping: boolean;
+    offsetFromCenter: number; // Distance from stone center to t-line (signed)
     lineStart: { x: number; y: number };
     lineEnd: { x: number; y: number };
   };
   centerLine?: {
     dist: number;
     isLeft: boolean;
+    isOverlapping: boolean;
+    offsetFromCenter: number; // Distance from stone center to center line (signed)
     lineStart: { x: number; y: number };
     lineEnd: { x: number; y: number };
   };
@@ -155,6 +159,8 @@ const calculateMeasurements = (
   const rawDistTee = Math.abs(deltaY) - STONE_RADIUS;
   const distTee = rawDistTee; // Allow negative numbers
   const isAboveTee = stone.y < teeLineY;
+  const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
+  const offsetFromTLine = deltaY; // Signed distance from stone center to t-line
 
   const tLineStartY = isAboveTee
     ? stonePixelY + STONE_RADIUS * scale + 2
@@ -166,6 +172,8 @@ const calculateMeasurements = (
   const rawDistCenter = Math.abs(deltaX) - STONE_RADIUS;
   const distCenter = rawDistCenter; // Allow negative numbers
   const isLeftOfCenter = stone.x < centerLineX;
+  const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
+  const offsetFromCenter = deltaX; // Signed distance from stone center to center line
 
   const cLineStartX = isLeftOfCenter
     ? stonePixelX + STONE_RADIUS * scale + 2
@@ -358,12 +366,16 @@ const calculateMeasurements = (
     tLine: {
       dist: distTee,
       isAbove: isAboveTee,
+      isOverlapping: isTLineOverlapping,
+      offsetFromCenter: offsetFromTLine,
       lineStart: { x: stonePixelX, y: tLineStartY },
       lineEnd: { x: stonePixelX, y: tLineEndY },
     },
     centerLine: {
       dist: distCenter,
       isLeft: isLeftOfCenter,
+      isOverlapping: isCenterLineOverlapping,
+      offsetFromCenter: offsetFromCenter,
       lineStart: { x: cLineStartX, y: stonePixelY },
       lineEnd: { x: cLineEndX, y: stonePixelY },
     },
@@ -595,14 +607,20 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         }
         if (toggleModeSettings.guardZone.showTLine && measurements.tLine) {
           items.push(
-            `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? "↓" : "↑"}`,
+            measurements.tLine.isOverlapping
+              ? `tline:${formatDistance(Math.abs(measurements.tLine.offsetFromCenter))}`
+              : `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? "↓" : "↑"}`
           );
         }
         if (
           toggleModeSettings.guardZone.showCenterLine &&
           measurements.centerLine
         ) {
-          items.push(`│ ${formatDistance(measurements.centerLine.dist)}`);
+          items.push(
+            measurements.centerLine.isOverlapping
+              ? `centerline:${formatDistance(Math.abs(measurements.centerLine.offsetFromCenter))}`
+              : `│ ${formatDistance(measurements.centerLine.dist)}`
+          );
         }
       } else if (measurements.isInNearHouseZone) {
         if (
@@ -617,14 +635,20 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         }
         if (toggleModeSettings.nearHouseZone.showTLine && measurements.tLine) {
           items.push(
-            `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? "↓" : "↑"}`,
+            measurements.tLine.isOverlapping
+              ? `tline:${formatDistance(Math.abs(measurements.tLine.offsetFromCenter))}`
+              : `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? "↓" : "↑"}`
           );
         }
         if (
           toggleModeSettings.nearHouseZone.showCenterLine &&
           measurements.centerLine
         ) {
-          items.push(`│ ${formatDistance(measurements.centerLine.dist)}`);
+          items.push(
+            measurements.centerLine.isOverlapping
+              ? `centerline:${formatDistance(Math.abs(measurements.centerLine.offsetFromCenter))}`
+              : `│ ${formatDistance(measurements.centerLine.dist)}`
+          );
         }
       } else {
         if (
@@ -639,14 +663,20 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         }
         if (toggleModeSettings.houseZone.showTLine && measurements.tLine) {
           items.push(
-            `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? "↓" : "↑"}`,
+            measurements.tLine.isOverlapping
+              ? `tline:${formatDistance(Math.abs(measurements.tLine.offsetFromCenter))}`
+              : `${formatDistance(measurements.tLine.dist)} ${measurements.tLine.isAbove ? "↓" : "↑"}`
           );
         }
         if (
           toggleModeSettings.houseZone.showCenterLine &&
           measurements.centerLine
         ) {
-          items.push(`│ ${formatDistance(measurements.centerLine.dist)}`);
+          items.push(
+            measurements.centerLine.isOverlapping
+              ? `centerline:${formatDistance(Math.abs(measurements.centerLine.offsetFromCenter))}`
+              : `│ ${formatDistance(measurements.centerLine.dist)}`
+          );
         }
       }
 
@@ -744,7 +774,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               {/* Measurement Lines */}
               {showTLine &&
                 measurements.tLine &&
-                displaySettings.tLine.showLine && (
+                displaySettings.tLine.showLine &&
+                !measurements.tLine.isOverlapping && (
                   <line
                     x1={measurements.tLine.lineStart.x}
                     y1={measurements.tLine.lineStart.y}
@@ -756,9 +787,47 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     opacity="0.7"
                   />
                 )}
+              {/* Progress Bar Overlay on Stone for T-Line (when overlapping) - Toggle Mode */}
+              {showTLine &&
+                measurements.tLine &&
+                measurements.tLine.isOverlapping && (() => {
+                  const barLength = STONE_RADIUS * 2 * scale; // Stone diameter in pixels
+                  const barHeight = 8;
+                  const offsetDistance = Math.abs(measurements.tLine.offsetFromCenter);
+                  const fillWidth = (offsetDistance / STONE_RADIUS) * (barLength / 2); // Half bar represents radius
+
+                  return (
+                    <g
+                      key={`tline-bar-${label.id}`}
+                      transform={`translate(${label.stoneX}, ${label.stoneY}) rotate(90)`}
+                      opacity="0.9"
+                    >
+                      {/* Bar Background */}
+                      <rect
+                        x={-barLength / 2}
+                        y={-barHeight / 2}
+                        width={barLength}
+                        height={barHeight}
+                        fill="#1f2937"
+                        fillOpacity="0.8"
+                        rx="2"
+                      />
+                      {/* Bar Fill - fills from center to show offset */}
+                      <rect
+                        x={measurements.tLine.isAbove ? 0 : -fillWidth}
+                        y={-barHeight / 2}
+                        width={fillWidth}
+                        height={barHeight}
+                        fill="#db2777"
+                        fillOpacity="0.9"
+                      />
+                    </g>
+                  );
+                })()}
               {showCenterLine &&
                 measurements.centerLine &&
-                displaySettings.centerLine.showLine && (
+                displaySettings.centerLine.showLine &&
+                !measurements.centerLine.isOverlapping && (
                   <line
                     x1={measurements.centerLine.lineStart.x}
                     y1={measurements.centerLine.lineStart.y}
@@ -770,6 +839,43 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     opacity="0.7"
                   />
                 )}
+              {/* Progress Bar Overlay on Stone for Center Line (when overlapping) - Toggle Mode */}
+              {showCenterLine &&
+                measurements.centerLine &&
+                measurements.centerLine.isOverlapping && (() => {
+                  const barLength = STONE_RADIUS * 2 * scale; // Stone diameter in pixels
+                  const barHeight = 8;
+                  const offsetDistance = Math.abs(measurements.centerLine.offsetFromCenter);
+                  const fillWidth = (offsetDistance / STONE_RADIUS) * (barLength / 2); // Half bar represents radius
+
+                  return (
+                    <g
+                      key={`centerline-bar-${label.id}`}
+                      transform={`translate(${label.stoneX}, ${label.stoneY})`}
+                      opacity="0.9"
+                    >
+                      {/* Bar Background */}
+                      <rect
+                        x={-barLength / 2}
+                        y={-barHeight / 2}
+                        width={barLength}
+                        height={barHeight}
+                        fill="#1f2937"
+                        fillOpacity="0.8"
+                        rx="2"
+                      />
+                      {/* Bar Fill - fills from center to show offset */}
+                      <rect
+                        x={measurements.centerLine.isLeft ? 0 : -fillWidth}
+                        y={-barHeight / 2}
+                        width={fillWidth}
+                        height={barHeight}
+                        fill="#db2777"
+                        fillOpacity="0.9"
+                      />
+                    </g>
+                  );
+                })()}
               {showClosestRing &&
                 measurements.closestRing &&
                 displaySettings.closestRing?.showLine &&
@@ -1086,11 +1192,29 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     {/* Label Text */}
                     {(() => {
                       const isOverlapBar = item.label.startsWith('overlap:');
+                      const isCenterLineBar = item.label.startsWith('centerline:');
+                      const isTLineBar = item.label.startsWith('tline:');
                       if (isOverlapBar) {
                         const percent = parseInt(item.label.split(':')[1]);
                         return (
                           <span className={`text-xs font-medium ${item.color}`}>
                             {percent}%
+                          </span>
+                        );
+                      }
+                      if (isCenterLineBar) {
+                        const distance = item.label.split(':')[1];
+                        return (
+                          <span className={`text-xs font-medium ${item.color}`}>
+                            {distance}
+                          </span>
+                        );
+                      }
+                      if (isTLineBar) {
+                        const distance = item.label.split(':')[1];
+                        return (
+                          <span className={`text-xs font-medium ${item.color}`}>
+                            {distance}
                           </span>
                         );
                       }
@@ -1181,9 +1305,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         // Edge detection: check if stone is too close to left/right edges
         const edgeThreshold = 60; // pixels of margin to maintain
 
-        // Offset for horizontal label: adjust if near top edge
+        // Offset for horizontal label: adjust if near top edge, or if below t-line
         const isNearTopEdge = stonePixelY < edgeThreshold;
-        const horizontalLabelOffset = isNearTopEdge ? 25 : -25;
+        const horizontalLabelOffset = (isNearTopEdge || !isAboveTee) ? 25 : -25;
 
         // Horizontal offset for tee line label based on quadrant (0-25%: right, 25-50%: left, 50-75%: right, 75-100%: left)
         const xPercent = (stone.pos.x / SHEET_WIDTH) * 100;
@@ -1425,19 +1549,23 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     transition: "opacity 0.2s ease",
                   }}
                 >
-                  {displaySettings.tLine.showLine && (
-                    <line
-                      x1={stonePixelX}
-                      y1={verticalLineStartY}
-                      x2={stonePixelX}
-                      y2={teeLinePixelY}
-                      stroke={highVisibilityTextColor}
-                      strokeWidth={strokeWidth}
-                      strokeDasharray="5,5"
-                      opacity={opacity}
-                      style={{ transition: "all 0.2s ease" }}
-                    />
-                  )}
+                  {displaySettings.tLine.showLine && (() => {
+                    const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
+                    if (isTLineOverlapping) return null;
+                    return (
+                      <line
+                        x1={stonePixelX}
+                        y1={verticalLineStartY}
+                        x2={stonePixelX}
+                        y2={teeLinePixelY}
+                        stroke={highVisibilityTextColor}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray="5,5"
+                        opacity={opacity}
+                        style={{ transition: "all 0.2s ease" }}
+                      />
+                    );
+                  })()}
                   {/* Distance label for Tee Line */}
                   {displaySettings.tLine.showDistance && (
                     <g
@@ -1454,11 +1582,54 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                         dominantBaseline="middle"
                         style={{ transition: "all 0.2s ease" }}
                       >
-                        {formatDistance(displayDistanceToTee)}{" "}
-                        {isAboveTee ? "↓" : "↑"}
+                        {(() => {
+                          const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
+                          const displayValue = isTLineOverlapping
+                            ? Math.abs(deltaY)
+                            : displayDistanceToTee;
+                          return `${formatDistance(displayValue)} ${isAboveTee ? "↓" : "↑"}`;
+                        })()}
                       </text>
                     </g>
                   )}
+
+                  {/* Progress Bar Overlay on Stone for T-Line (when overlapping) - Hover/Select Mode */}
+                  {(() => {
+                    const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
+                    if (!isTLineOverlapping) return null;
+
+                    const barLength = STONE_RADIUS * 2 * scale; // Stone diameter in pixels
+                    const barHeight = 8;
+                    const offsetDistance = Math.abs(deltaY);
+                    const fillWidth = (offsetDistance / STONE_RADIUS) * (barLength / 2); // Half bar represents radius
+
+                    return (
+                      <g
+                        transform={`translate(${stonePixelX}, ${stonePixelY}) rotate(90)`}
+                        opacity={opacity}
+                      >
+                        {/* Bar Background */}
+                        <rect
+                          x={-barLength / 2}
+                          y={-barHeight / 2}
+                          width={barLength}
+                          height={barHeight}
+                          fill="#1f2937"
+                          fillOpacity="0.8"
+                          rx="2"
+                        />
+                        {/* Bar Fill - fills from center to show offset */}
+                        <rect
+                          x={isAboveTee ? 0 : -fillWidth}
+                          y={-barHeight / 2}
+                          width={fillWidth}
+                          height={barHeight}
+                          fill="#db2777"
+                          fillOpacity="0.9"
+                        />
+                      </g>
+                    );
+                  })()}
                 </svg>
               )}
 
@@ -1864,19 +2035,23 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                       transition: "opacity 0.2s ease",
                     }}
                   >
-                    {displaySettings.centerLine.showLine && (
-                      <line
-                        x1={adjustedStartX}
-                        y1={stonePixelY}
-                        x2={adjustedEndX}
-                        y2={stonePixelY}
-                        stroke={highVisibilityTextColor}
-                        strokeWidth={strokeWidth}
-                        strokeDasharray="5,5"
-                        opacity={opacity}
-                        style={{ transition: "all 0.2s ease" }}
-                      />
-                    )}
+                    {displaySettings.centerLine.showLine && (() => {
+                      const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
+                      if (isCenterLineOverlapping) return null;
+                      return (
+                        <line
+                          x1={adjustedStartX}
+                          y1={stonePixelY}
+                          x2={adjustedEndX}
+                          y2={stonePixelY}
+                          stroke={highVisibilityTextColor}
+                          strokeWidth={strokeWidth}
+                          strokeDasharray="5,5"
+                          opacity={opacity}
+                          style={{ transition: "all 0.2s ease" }}
+                        />
+                      );
+                    })()}
                     {/* Distance label for Center Line */}
                     {displaySettings.centerLine.showDistance && (
                       <>
@@ -1894,13 +2069,57 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             dominantBaseline="middle"
                             style={{ transition: "all 0.2s ease" }}
                           >
-                            {isLeftOfCenter
-                              ? `${formatDistance(displayDistanceToCenter)} →`
-                              : `← ${formatDistance(displayDistanceToCenter)}`}
+                            {(() => {
+                              const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
+                              const displayValue = isCenterLineOverlapping
+                                ? Math.abs(deltaX)
+                                : displayDistanceToCenter;
+                              return isLeftOfCenter
+                                ? `${formatDistance(displayValue)} →`
+                                : `← ${formatDistance(displayValue)}`;
+                            })()}
                           </text>
                         </g>
                       </>
                     )}
+
+                    {/* Progress Bar Overlay on Stone for Center Line (when overlapping) - Hover/Select Mode */}
+                    {(() => {
+                      const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
+                      if (!isCenterLineOverlapping) return null;
+
+                      const barLength = STONE_RADIUS * 2 * scale; // Stone diameter in pixels
+                      const barHeight = 8;
+                      const offsetDistance = Math.abs(deltaX);
+                      const fillWidth = (offsetDistance / STONE_RADIUS) * (barLength / 2); // Half bar represents radius
+
+                      return (
+                        <g
+                          transform={`translate(${stonePixelX}, ${stonePixelY})`}
+                          opacity={opacity}
+                        >
+                          {/* Bar Background */}
+                          <rect
+                            x={-barLength / 2}
+                            y={-barHeight / 2}
+                            width={barLength}
+                            height={barHeight}
+                            fill="#1f2937"
+                            fillOpacity="0.8"
+                            rx="2"
+                          />
+                          {/* Bar Fill - fills from center to show offset */}
+                          <rect
+                            x={isLeftOfCenter ? 0 : -fillWidth}
+                            y={-barHeight / 2}
+                            width={fillWidth}
+                            height={barHeight}
+                            fill="#db2777"
+                            fillOpacity="0.9"
+                          />
+                        </g>
+                      );
+                    })()}
                   </svg>
                 );
               })()}
