@@ -1830,6 +1830,23 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           />
 
                           {/* Distance Label (cm) */}
+                          {/* Black outline */}
+                          <text
+                            x={labelX}
+                            y={labelY}
+                            fill="black"
+                            stroke="black"
+                            strokeWidth="3"
+                            fontSize={isHighlighted ? "12" : "10"}
+                            fontWeight="600"
+                            textAnchor="start"
+                            dominantBaseline="middle"
+                            opacity={opacity}
+                            style={{ transition: "all 0.2s ease" }}
+                          >
+                            {formatDistance(distanceCm)}
+                          </text>
+                          {/* Purple text on top */}
                           <text
                             x={labelX}
                             y={labelY}
@@ -2028,6 +2045,27 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           {/* Brace Label - Distance in cm */}
                           {displaySettings.guard.showDistance && (
                             <>
+                              {/* Black outline */}
+                              <text
+                                x={labelX}
+                                y={
+                                  midY +
+                                  verticalAdjustment +
+                                  (isHighlighted ? 8 : 6)
+                                }
+                                fill="black"
+                                stroke="black"
+                                strokeWidth="3"
+                                fontSize={isHighlighted ? "12" : "10"}
+                                fontWeight="600"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                opacity={opacity}
+                                style={{ transition: "all 0.2s ease" }}
+                              >
+                                {formatDistance(braceDistanceCm)}
+                              </text>
+                              {/* Purple text on top */}
                               <text
                                 x={labelX}
                                 y={
@@ -2049,6 +2087,23 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           )}
 
                           {/* Extension Line Label */}
+                          {/* Black outline */}
+                          <text
+                            x={extLabelX}
+                            y={extMidY}
+                            fill="black"
+                            stroke="black"
+                            strokeWidth="3"
+                            fontSize={fontSize}
+                            fontWeight={fontWeight}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            opacity={opacity}
+                            style={{ transition: "all 0.2s ease" }}
+                          >
+                            {100 - percentage}%
+                          </text>
+                          {/* Purple text on top */}
                           <text
                             x={extLabelX}
                             y={extMidY}
@@ -2181,6 +2236,30 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           transform={`translate(${(horizontalLineStartX + centerLinePixelX) / 2}, ${stonePixelY + horizontalLabelOffset})`}
                           opacity={opacity}
                         >
+                          {/* Black outline */}
+                          <text
+                            x="0"
+                            y="0"
+                            fill="black"
+                            stroke="black"
+                            strokeWidth="3"
+                            fontSize={fontSize}
+                            fontWeight={fontWeight}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            style={{ transition: "all 0.2s ease" }}
+                          >
+                            {(() => {
+                              const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
+                              const displayValue = isCenterLineOverlapping
+                                ? Math.abs(deltaX)
+                                : displayDistanceToCenter;
+                              return isLeftOfCenter
+                                ? `${formatDistance(displayValue)} →`
+                                : `← ${formatDistance(displayValue)}`;
+                            })()}
+                          </text>
+                          {/* Purple text on top */}
                           <text
                             x="0"
                             y="0"
@@ -2347,19 +2426,38 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
 
                             return (
-                              <text
-                                x="0"
-                                y="0"
-                                fill="#0891b2"
-                                fontSize={fontSize}
-                                fontWeight={fontWeight}
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                              >
-                                {overlapPercent1 < 25
-                                  ? formatDistance(overlapDistance)
-                                  : `${overlapPercent1}%`}
-                              </text>
+                              <>
+                                {/* Black outline */}
+                                <text
+                                  x="0"
+                                  y="0"
+                                  fill="black"
+                                  stroke="black"
+                                  strokeWidth="3"
+                                  fontSize={fontSize}
+                                  fontWeight={fontWeight}
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                >
+                                  {overlapPercent1 < 25
+                                    ? formatDistance(overlapDistance)
+                                    : `${overlapPercent1}%`}
+                                </text>
+                                {/* Cyan text on top */}
+                                <text
+                                  x="0"
+                                  y="0"
+                                  fill="#0891b2"
+                                  fontSize={fontSize}
+                                  fontWeight={fontWeight}
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                >
+                                  {overlapPercent1 < 25
+                                    ? formatDistance(overlapDistance)
+                                    : `${overlapPercent1}%`}
+                                </text>
+                              </>
                             );
                           }
 
@@ -2399,6 +2497,23 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 </g>
 
                                 {/* Percentage Text */}
+                                {/* Black outline */}
+                                <text
+                                  x={overlapPercent1 < 25 ? "20" : "10"}
+                                  y="0"
+                                  fill="black"
+                                  stroke="black"
+                                  strokeWidth="3"
+                                  fontSize={fontSize}
+                                  fontWeight={fontWeight}
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                >
+                                  {overlapPercent1 < 25
+                                    ? formatDistance(overlapDistance)
+                                    : `${overlapPercent1}%`}
+                                </text>
+                                {/* Cyan text on top */}
                                 <text
                                   x={overlapPercent1 < 25 ? "20" : "10"}
                                   y="0"
@@ -2417,6 +2532,21 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           } else {
                             return (
                               <>
+                                {/* Black outline */}
+                                <text
+                                  x="0"
+                                  y="0"
+                                  fill="black"
+                                  stroke="black"
+                                  strokeWidth="3"
+                                  fontSize={fontSize}
+                                  fontWeight={fontWeight}
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                >
+                                  {formatDistance(displayDistanceToRing)}
+                                </text>
+                                {/* Cyan text on top */}
                                 <text
                                   x="0"
                                   y="0"
@@ -2499,6 +2629,21 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           />
                           {displaySettings.stoneToStone?.showDistance && (
                             <g transform={`translate(${labelX}, ${labelY})`}>
+                              {/* Black outline */}
+                              <text
+                                x="0"
+                                y="4"
+                                textAnchor="middle"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fill="black"
+                                stroke="black"
+                                strokeWidth="3"
+                                opacity={opacity}
+                              >
+                                {formatDistance(edgeDist)}
+                              </text>
+                              {/* Green text on top */}
                               <text
                                 x="0"
                                 y="4"
