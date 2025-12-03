@@ -111,6 +111,7 @@ interface MeasurementValues {
     overlapPercent: number;
     overlapPercent1: number; // Percentage through stone
     overlapPercent2: number; // Percentage remaining
+    overlapDistance: number; // Actual overlap distance in cm
     lineStart: { x: number; y: number };
     lineEnd: { x: number; y: number };
   };
@@ -357,6 +358,7 @@ const calculateMeasurements = (
       overlapPercent,
       overlapPercent1,
       overlapPercent2,
+      overlapDistance,
       lineStart: { x: stoneEdgePixelX, y: stoneEdgePixelY },
       lineEnd: { x: ringEdgePixelX, y: ringEdgePixelY },
     };
@@ -629,7 +631,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         ) {
           items.push(
             measurements.closestRing.isOverlapping
-              ? `overlap:${measurements.closestRing.overlapPercent1}` // Special format to trigger progress bar
+              ? (measurements.closestRing.overlapPercent1 < 25
+                  ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
+                  : `overlap:${measurements.closestRing.overlapPercent1}`)
               : formatDistance(measurements.closestRing.dist),
           );
         }
@@ -657,7 +661,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         ) {
           items.push(
             measurements.closestRing.isOverlapping
-              ? `overlap:${measurements.closestRing.overlapPercent1}` // Special format to trigger progress bar
+              ? (measurements.closestRing.overlapPercent1 < 25
+                  ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
+                  : `overlap:${measurements.closestRing.overlapPercent1}`)
               : formatDistance(measurements.closestRing.dist),
           );
         }
@@ -1078,7 +1084,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
           if (showClosestRing && measurements.closestRing) {
             items.push({
               label: measurements.closestRing.isOverlapping
-                ? `overlap:${measurements.closestRing.overlapPercent1}`
+                ? (measurements.closestRing.overlapPercent1 < 25
+                    ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
+                    : `overlap:${measurements.closestRing.overlapPercent1}`)
                 : formatDistance(measurements.closestRing.dist),
               icon: measurements.closestRing.isOverlapping ? "overlap" : "dots",
               color: "text-cyan-500", // Cyan
@@ -1192,6 +1200,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     {/* Label Text */}
                     {(() => {
                       const isOverlapBar = item.label.startsWith('overlap:');
+                      const isOverlapDistBar = item.label.startsWith('overlap-dist:');
                       const isCenterLineBar = item.label.startsWith('centerline:');
                       const isTLineBar = item.label.startsWith('tline:');
                       if (isOverlapBar) {
@@ -1199,6 +1208,14 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                         return (
                           <span className={`text-xs font-medium ${item.color}`}>
                             {percent}%
+                          </span>
+                        );
+                      }
+                      if (isOverlapDistBar) {
+                        const distance = item.label.split(':')[1];
+                        return (
+                          <span className={`text-xs font-medium ${item.color}`}>
+                            {distance}
                           </span>
                         );
                       }
@@ -2234,7 +2251,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 textAnchor="middle"
                                 dominantBaseline="middle"
                               >
-                                {overlapPercent1}%
+                                {overlapPercent1 < 25
+                                  ? formatDistance(overlapDistance)
+                                  : `${overlapPercent1}%`}
                               </text>
                             );
                           }
@@ -2248,7 +2267,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             return (
                               <g>
                                 {/* Overlap Icon (Two intersecting circles) */}
-                                <g transform="translate(-16, 0)">
+                                <g transform="translate(-16, -1)">
                                   <circle
                                     cx="-3"
                                     cy="0"
@@ -2276,7 +2295,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
 
                                 {/* Percentage Text */}
                                 <text
-                                  x="10"
+                                  x={overlapPercent1 < 25 ? "20" : "10"}
                                   y="0"
                                   fill="#0891b2"
                                   fontSize={fontSize}
@@ -2284,7 +2303,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                   textAnchor="middle"
                                   dominantBaseline="middle"
                                 >
-                                  {overlapPercent1}%
+                                  {overlapPercent1 < 25
+                                    ? formatDistance(overlapDistance)
+                                    : `${overlapPercent1}%`}
                                 </text>
                               </g>
                             );
