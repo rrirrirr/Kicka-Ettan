@@ -105,6 +105,8 @@ interface MeasurementValues {
     radius: number;
     isOverlapping: boolean;
     overlapPercent: number;
+    overlapPercent1: number; // Percentage through stone
+    overlapPercent2: number; // Percentage remaining
     lineStart: { x: number; y: number };
     lineEnd: { x: number; y: number };
   };
@@ -307,6 +309,9 @@ const calculateMeasurements = (
       100,
       Math.round((overlapDistance / maxOverlap) * 100),
     );
+    // Calculate split percentages for overlap display
+    const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+    const overlapPercent2 = 100 - overlapPercent1;
 
     // Geometry
     let ux = 0;
@@ -338,10 +343,12 @@ const calculateMeasurements = (
     const ringEdgePixelY = ringEdgeY * scale;
 
     closestRing = {
-      dist: isOverlapping ? 0 : minDistToRingEdge,
+      dist: Math.max(0, minDistToRingEdge),
       radius: closestRingRadius,
       isOverlapping,
       overlapPercent,
+      overlapPercent1,
+      overlapPercent2,
       lineStart: { x: stoneEdgePixelX, y: stoneEdgePixelY },
       lineEnd: { x: ringEdgePixelX, y: ringEdgePixelY },
     };
@@ -604,7 +611,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         ) {
           items.push(
             measurements.closestRing.isOverlapping
-              ? `${measurements.closestRing.overlapPercent}%`
+              ? `overlap:${measurements.closestRing.overlapPercent1}` // Special format to trigger progress bar
               : formatDistance(measurements.closestRing.dist),
           );
         }
@@ -626,7 +633,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         ) {
           items.push(
             measurements.closestRing.isOverlapping
-              ? `${measurements.closestRing.overlapPercent}%`
+              ? `overlap:${measurements.closestRing.overlapPercent1}` // Special format to trigger progress bar
               : formatDistance(measurements.closestRing.dist),
           );
         }
@@ -779,6 +786,53 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     opacity="0.7"
                   />
                 )}
+              {/* Progress Bar Overlay on Stone (when overlapping) - Toggle Mode */}
+              {showClosestRing &&
+                measurements.closestRing &&
+                measurements.closestRing.isOverlapping && (() => {
+                  const barLength = STONE_RADIUS * 2 * scale; // Stone diameter in pixels
+                  const barHeight = 8;
+                  const fillWidth = (barLength * measurements.closestRing.overlapPercent1) / 100;
+
+                  // Calculate angle from house center to stone
+                  const deltaX = label.stoneX / scale - centerLineX;
+                  const deltaY = label.stoneY / scale - teeLineY;
+                  const distToCenterPoint = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                  const angleRad = Math.atan2(deltaY, deltaX);
+                  const angleDeg = (angleRad * 180) / Math.PI;
+
+                  // Determine which side the ring enters from
+                  const isStoneOutsideRing = distToCenterPoint > measurements.closestRing.radius;
+
+                  return (
+                    <g
+                      key={`overlap-bar-${label.id}`}
+                      transform={`translate(${label.stoneX}, ${label.stoneY}) rotate(${angleDeg})`}
+                      opacity="0.9"
+                    >
+                      {/* Bar Background */}
+                      <rect
+                        x={-barLength / 2}
+                        y={-barHeight / 2}
+                        width={barLength}
+                        height={barHeight}
+                        fill="#1f2937"
+                        fillOpacity="0.8"
+                        rx="2"
+                      />
+                      {/* Bar Fill - fills from the side where ring enters */}
+                      <rect
+                        x={isStoneOutsideRing ? -barLength / 2 : barLength / 2 - fillWidth}
+                        y={-barHeight / 2}
+                        width={fillWidth}
+                        height={barHeight}
+                        fill="#06b6d4"
+                        fillOpacity="0.9"
+                        rx="2"
+                      />
+                    </g>
+                  );
+                })()}
               {showGuard && measurements.guard && (
                 <>
                   {measurements.isTop20Percent &&
@@ -918,12 +972,13 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
           if (showClosestRing && measurements.closestRing) {
             items.push({
               label: measurements.closestRing.isOverlapping
-                ? `${measurements.closestRing.overlapPercent}%`
+                ? `overlap:${measurements.closestRing.overlapPercent1}`
                 : formatDistance(measurements.closestRing.dist),
               icon: measurements.closestRing.isOverlapping ? "overlap" : "dots",
               color: "text-cyan-500", // Cyan
               iconType: "svg",
               strokeColor: "#06b6d4",
+              isOverlap: measurements.closestRing.isOverlapping,
             });
           }
           if (showTLine && measurements.tLine) {
@@ -1029,11 +1084,24 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     </div>
 
                     {/* Label Text */}
-                    <span
-                      className={`text-xs font-medium whitespace-nowrap ${item.color}`}
-                    >
-                      {item.label}
-                    </span>
+                    {(() => {
+                      const isOverlapBar = item.label.startsWith('overlap:');
+                      if (isOverlapBar) {
+                        const percent = parseInt(item.label.split(':')[1]);
+                        return (
+                          <span className={`text-xs font-medium ${item.color}`}>
+                            {percent}%
+                          </span>
+                        );
+                      }
+                      return (
+                        <span
+                          className={`text-xs font-medium whitespace-nowrap ${item.color}`}
+                        >
+                          {item.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -1275,8 +1343,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
           }
         }
 
-        const displayDistanceToRing =
-          minDistToRingEdge < 0 ? 0 : minDistToRingEdge;
+        const displayDistanceToRing = Math.max(0, minDistToRingEdge);
 
         // Calculate start and end points for the line
         // Line goes from stone center to ring center, clipped to stone edge and ring edge.
@@ -1847,6 +1914,10 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               (() => {
                 const isOverlapping = minDistToRingEdge <= 0;
 
+                // Calculate angle from house center to stone for bar rotation
+                const angleRad = Math.atan2(deltaY, deltaX);
+                const angleDeg = (angleRad * 180) / Math.PI;
+
                 return (
                   <svg
                     style={{
@@ -1876,6 +1947,46 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                         />
                       )}
 
+                    {/* Progress Bar Overlay on Stone (when overlapping) */}
+                    {isOverlapping && (() => {
+                      const overlapDistance = Math.abs(minDistToRingEdge);
+                      const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+                      const barLength = STONE_RADIUS * 2 * scale; // Stone diameter in pixels
+                      const barHeight = 8;
+
+                      // Determine which side the ring enters from
+                      const isStoneOutsideRing = distToCenterPoint > closestRingRadius;
+                      const fillWidth = (barLength * overlapPercent1) / 100;
+
+                      return (
+                        <g
+                          transform={`translate(${stonePixelX}, ${stonePixelY}) rotate(${angleDeg})`}
+                          opacity={opacity}
+                        >
+                          {/* Bar Background */}
+                          <rect
+                            x={-barLength / 2}
+                            y={-barHeight / 2}
+                            width={barLength}
+                            height={barHeight}
+                            fill="#1f2937"
+                            fillOpacity="0.8"
+                            rx="2"
+                          />
+                          {/* Bar Fill - fills from the side where ring enters */}
+                          <rect
+                            x={isStoneOutsideRing ? -barLength / 2 : barLength / 2 - fillWidth}
+                            y={-barHeight / 2}
+                            width={fillWidth}
+                            height={barHeight}
+                            fill="#06b6d4"
+                            fillOpacity="0.9"
+                            rx="2"
+                          />
+                        </g>
+                      );
+                    })()}
+
                     {/* Distance label or Percentage label */}
                     {displaySettings.closestRing?.showDistance && (
                       <g
@@ -1890,42 +2001,33 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             closestRingRadius === BUTTON_RADIUS &&
                             distToCenterPoint < BUTTON_RADIUS + STONE_RADIUS
                           ) {
-                            // Calculate percentage on button
-                            // 100% if distToCenterPoint is 0
-                            // 0% if distToCenterPoint is BUTTON_RADIUS + STONE_RADIUS (just touching edge)
-                            const maxDist = BUTTON_RADIUS + STONE_RADIUS;
-                            const buttonPercentage = Math.max(
-                              0,
-                              Math.min(
-                                100,
-                                Math.round(
-                                  (1 - distToCenterPoint / maxDist) * 100,
-                                ),
-                              ),
-                            );
+                            // Calculate split percentages same as other rings
+                            const overlapDistance = Math.abs(minDistToRingEdge);
+                            const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
 
                             return (
-                              <>
-                                {/* Percentage Text */}
-                                <text
-                                  x="0"
-                                  y="0"
-                                  fill="#0891b2" // Cyan-600 (high visibility on white)
-                                  fontSize={fontSize}
-                                  fontWeight={fontWeight}
-                                  textAnchor="middle"
-                                  dominantBaseline="middle"
-                                >
-                                  {buttonPercentage}%
-                                </text>
-                              </>
+                              <text
+                                x="0"
+                                y="0"
+                                fill="#0891b2"
+                                fontSize={fontSize}
+                                fontWeight={fontWeight}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                              >
+                                {overlapPercent1}%
+                              </text>
                             );
                           }
 
                           // Standard logic for other rings or if not touching button
                           if (isOverlapping) {
+                            // Calculate split percentages for overlap display
+                            const overlapDistance = Math.abs(minDistToRingEdge);
+                            const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+
                             return (
-                              <>
+                              <g>
                                 {/* Overlap Icon (Two intersecting circles) */}
                                 <g transform="translate(-16, 0)">
                                   <circle
@@ -1944,7 +2046,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                     stroke="#0891b2"
                                     strokeWidth="1.5"
                                   />
-                                  {/* Intersection highlight (optional, maybe just the outlines are enough) */}
+                                  {/* Intersection highlight */}
                                   <path
                                     d="M 0,-3.3 A 4.5,4.5 0 0,0 0,3.3 A 4.5,4.5 0 0,0 0,-3.3"
                                     fill="#0891b2"
@@ -1957,30 +2059,15 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 <text
                                   x="10"
                                   y="0"
-                                  fill="#0891b2" // Cyan-600 (high visibility on white)
+                                  fill="#0891b2"
                                   fontSize={fontSize}
                                   fontWeight={fontWeight}
                                   textAnchor="middle"
                                   dominantBaseline="middle"
                                 >
-                                  {(() => {
-                                    // Calculate overlap percentage
-                                    // Maximum overlap is when stone center is on ring edge: overlap = STONE_RADIUS
-                                    // No overlap when stone edge just touches ring: overlap = 0
-                                    // minDistToRingEdge is negative when overlapping
-                                    const overlapDistance =
-                                      Math.abs(minDistToRingEdge);
-                                    const maxOverlap = STONE_RADIUS; // Max meaningful overlap
-                                    const overlapPercent = Math.min(
-                                      100,
-                                      Math.round(
-                                        (overlapDistance / maxOverlap) * 100,
-                                      ),
-                                    );
-                                    return `${overlapPercent}%`;
-                                  })()}
+                                  {overlapPercent1}%
                                 </text>
-                              </>
+                              </g>
                             );
                           } else {
                             return (
