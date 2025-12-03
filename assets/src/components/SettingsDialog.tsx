@@ -9,7 +9,7 @@ type View = 'main' | 'measurements' | 'sheet' | 'smart-units';
 type MeasurementTab = 'cycles' | 'toggle' | 'display' | 'zones';
 
 export const SettingsDialog: React.FC = () => {
-    const { isSettingsOpen, closeSettings, settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, unitSystem, updateUnitSystem, smartUnits, updateSmartUnits } = useSettings();
+    const { isSettingsOpen, closeSettings, settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, unitSystem, baseUnitSystem, updateUnitSystem, smartUnits, updateSmartUnits } = useSettings();
     const [view, setView] = useState<View>('main');
     const [measurementTab, setMeasurementTab] = useState<MeasurementTab>('cycles');
 
@@ -185,19 +185,19 @@ export const SettingsDialog: React.FC = () => {
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl min-h-[72px]">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-lavender-100 text-lavender-600 flex items-center justify-center">
-                        <span className="font-bold text-sm">{unitSystem === 'metric' ? 'CM' : 'IN'}</span>
+                        <span className="font-bold text-sm">{baseUnitSystem === 'metric' ? 'CM' : 'IN'}</span>
                     </div>
                     <div className="text-left">
-                        <h3 className="text-lg font-bold text-icy-black">Unit System</h3>
+                        <h3 className="text-lg font-bold text-icy-black">Unit System <span className="font-normal">({baseUnitSystem.charAt(0).toUpperCase() + baseUnitSystem.slice(1)})</span></h3>
                     </div>
                 </div>
                 <button
-                    onClick={() => updateUnitSystem(unitSystem === 'metric' ? 'imperial' : 'metric')}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${unitSystem === 'imperial' ? 'bg-lavender-600' : 'bg-gray-200'
+                    onClick={() => updateUnitSystem(baseUnitSystem === 'metric' ? 'imperial' : 'metric')}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${baseUnitSystem === 'imperial' ? 'bg-lavender-600' : 'bg-gray-200'
                         }`}
                 >
                     <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${unitSystem === 'imperial' ? 'translate-x-6' : 'translate-x-1'
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${baseUnitSystem === 'imperial' ? 'translate-x-6' : 'translate-x-1'
                             }`}
                     />
                 </button>
@@ -225,7 +225,7 @@ export const SettingsDialog: React.FC = () => {
                         )}
                     </div>
                     <button
-                        onClick={() => updateUnitSystem(unitSystem === 'smart' ? 'metric' : 'smart')}
+                        onClick={() => updateUnitSystem(unitSystem === 'smart' ? baseUnitSystem : 'smart')}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${unitSystem === 'smart' ? 'bg-lavender-600' : 'bg-gray-200'
                             }`}
                     >

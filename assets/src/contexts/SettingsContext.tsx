@@ -162,6 +162,7 @@ interface SettingsContextType {
     openSettings: () => void;
     closeSettings: () => void;
     unitSystem: UnitSystem;
+    baseUnitSystem: 'metric' | 'imperial';
     updateUnitSystem: (system: UnitSystem) => void;
     smartUnits: SmartUnitRule[];
     updateSmartUnits: (rules: SmartUnitRule[]) => void;
@@ -306,6 +307,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
         return loadFromStorage(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
     });
+    const [baseUnitSystem, setBaseUnitSystem] = useState<'metric' | 'imperial'>(() => {
+        const stored = loadFromStorage(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
+        return stored === 'smart' ? 'metric' : stored;
+    });
     const [smartUnits, setSmartUnits] = useState<SmartUnitRule[]>(() => {
         return loadFromStorage(STORAGE_KEYS.SMART_UNITS, defaultSmartUnits);
     });
@@ -361,6 +366,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const updateUnitSystem = (system: UnitSystem) => {
         setUnitSystem(system);
+        // Update baseUnitSystem when switching between metric and imperial
+        if (system === 'metric' || system === 'imperial') {
+            setBaseUnitSystem(system);
+        }
     };
 
     const updateSmartUnits = (rules: SmartUnitRule[]) => {
@@ -371,7 +380,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     const closeSettings = () => setIsSettingsOpen(false);
 
     return (
-        <SettingsContext.Provider value={{ settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, isSettingsOpen, openSettings, closeSettings, unitSystem, updateUnitSystem, smartUnits, updateSmartUnits }}>
+        <SettingsContext.Provider value={{ settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, isSettingsOpen, openSettings, closeSettings, unitSystem, baseUnitSystem, updateUnitSystem, smartUnits, updateSmartUnits }}>
             {children}
         </SettingsContext.Provider>
     );
