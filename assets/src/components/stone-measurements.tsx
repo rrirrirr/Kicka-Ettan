@@ -847,7 +847,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     x2={measurements.tLine.lineEnd.x}
                     y2={measurements.tLine.lineEnd.y}
                     stroke="#be185d"
-                    strokeWidth="2"
+                    strokeWidth="1"
                     strokeDasharray="5,5"
                     opacity="0.7"
                   />
@@ -875,7 +875,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                         x2={sts.lineEnd.x}
                         y2={sts.lineEnd.y}
                         stroke="#65a30d" // Poison Green (Lime-600)
-                        strokeWidth="2"
+                        strokeWidth="1"
                         strokeDasharray="4,2"
                       />
                       {displaySettings.stoneToStone?.showDistance && (
@@ -945,7 +945,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     x2={measurements.centerLine.lineEnd.x}
                     y2={measurements.centerLine.lineEnd.y}
                     stroke="#be185d"
-                    strokeWidth="2"
+                    strokeWidth="1"
                     strokeDasharray="5,5"
                     opacity="0.7"
                   />
@@ -997,7 +997,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     x2={measurements.closestRing.lineEnd.x}
                     y2={measurements.closestRing.lineEnd.y}
                     stroke="#06b6d4"
-                    strokeWidth="3"
+                    strokeWidth="1"
                     strokeDasharray="1,4"
                     strokeLinecap="round"
                     opacity="0.7"
@@ -1060,7 +1060,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                         x2={measurements.guard.top20Line.end.x}
                         y2={measurements.guard.top20Line.end.y}
                         stroke="#9333ea"
-                        strokeWidth="2"
+                        strokeWidth="1"
                         strokeDasharray="5,5"
                         opacity="0.7"
                       />
@@ -1101,7 +1101,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             0.6,
                           )}
                           stroke="#9333ea"
-                          strokeWidth="2"
+                          strokeWidth="1"
                           fill="none"
                           opacity="0.7"
                         />
@@ -1112,7 +1112,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           x2={measurements.guard.brace.stoneEdgeX}
                           y2={label.stoneY}
                           stroke="#9333ea"
-                          strokeWidth="2"
+                          strokeWidth="1"
                           strokeDasharray="5,5"
                           opacity="0.7"
                         />
@@ -1123,7 +1123,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           x2={measurements.guard.brace.stoneEdgeX}
                           y2={measurements.guard.brace.refLineY}
                           stroke="#9333ea"
-                          strokeWidth="2"
+                          strokeWidth="1"
                           strokeDasharray="5,5"
                           opacity="0.7"
                         />
@@ -1134,7 +1134,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           x2={measurements.guard.brace.verticalExtX}
                           y2={measurements.guard.hogLineY}
                           stroke="#9333ea"
-                          strokeWidth="2"
+                          strokeWidth="1"
                           strokeDasharray="5,5"
                           opacity="0.35"
                         />
@@ -1694,6 +1694,28 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                       transform={`translate(${stonePixelX + teeLineLabelHorizontalOffset}, ${(stonePixelY + teeLinePixelY) / 2})`}
                       opacity={opacity}
                     >
+                      {/* Black outline */}
+                      <text
+                        x="0"
+                        y="0"
+                        fill="black"
+                        stroke="black"
+                        strokeWidth="1"
+                        fontSize={fontSize}
+                        fontWeight={fontWeight}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        style={{ transition: "all 0.2s ease" }}
+                      >
+                        {(() => {
+                          const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
+                          const displayValue = isTLineOverlapping
+                            ? Math.abs(deltaY)
+                            : displayDistanceToTee;
+                          return `${formatDistance(displayValue)} ${isAboveTee ? "↓" : "↑"}`;
+                        })()}
+                      </text>
+                      {/* Pink text on top */}
                       <text
                         x="0"
                         y="0"
@@ -1823,7 +1845,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             x2={lineStartX}
                             y2={lineEndY}
                             stroke="#9333ea"
-                            strokeWidth="2"
+                            strokeWidth="1"
                             strokeDasharray="5,5"
                             opacity={opacity}
                             style={{ transition: "all 0.2s ease" }}
@@ -1836,7 +1858,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             y={labelY}
                             fill="black"
                             stroke="black"
-                            strokeWidth="3"
+                            strokeWidth="1"
                             fontSize={isHighlighted ? "12" : "10"}
                             fontWeight="600"
                             textAnchor="start"
@@ -1951,7 +1973,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 0.6,
                               )}
                               stroke="#9333ea"
-                              strokeWidth="2"
+                              strokeWidth="1"
                               fill="none"
                               opacity={opacity}
                               style={{ transition: "all 0.2s ease" }}
@@ -1969,7 +1991,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             }
                             y2={stonePixelY}
                             stroke="#9333ea"
-                            strokeWidth="2"
+                            strokeWidth="1"
                             strokeDasharray="5,5"
                             opacity={opacity}
                             style={{ transition: "all 0.2s ease" }}
@@ -1994,7 +2016,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 : topOfHouseY * scale
                             }
                             stroke="#9333ea"
-                            strokeWidth="2"
+                            strokeWidth="1"
                             strokeDasharray="5,5"
                             opacity={opacity}
                             style={{ transition: "all 0.2s ease" }}
@@ -2015,7 +2037,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             }
                             y2={hogLineY * scale}
                             stroke="#9333ea"
-                            strokeWidth="2"
+                            strokeWidth="1"
                             strokeDasharray="5,5"
                             opacity={parseFloat(opacity) * 0.5} // Slightly more transparent
                             style={{ transition: "all 0.2s ease" }}
@@ -2023,23 +2045,46 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
 
                           {/* Brace Label - Percentage */}
                           {displaySettings.guard.showPercentage && (
-                            <text
-                              x={labelX}
-                              y={
-                                midY +
-                                verticalAdjustment -
-                                (isHighlighted ? 8 : 6)
-                              }
-                              fill="#7e22ce" // Purple-700
-                              fontSize={fontSize}
-                              fontWeight={fontWeight}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              opacity={opacity}
-                              style={{ transition: "all 0.2s ease" }}
-                            >
-                              {percentage}%
-                            </text>
+                            <>
+                              {/* Black outline */}
+                              <text
+                                x={labelX}
+                                y={
+                                  midY +
+                                  verticalAdjustment -
+                                  (isHighlighted ? 8 : 6)
+                                }
+                                fill="black"
+                                stroke="black"
+                                strokeWidth="1"
+                                fontSize={fontSize}
+                                fontWeight={fontWeight}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                opacity={opacity}
+                                style={{ transition: "all 0.2s ease" }}
+                              >
+                                {percentage}%
+                              </text>
+                              {/* Purple text on top */}
+                              <text
+                                x={labelX}
+                                y={
+                                  midY +
+                                  verticalAdjustment -
+                                  (isHighlighted ? 8 : 6)
+                                }
+                                fill="#7e22ce" // Purple-700
+                                fontSize={fontSize}
+                                fontWeight={fontWeight}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                opacity={opacity}
+                                style={{ transition: "all 0.2s ease" }}
+                              >
+                                {percentage}%
+                              </text>
+                            </>
                           )}
 
                           {/* Brace Label - Distance in cm */}
@@ -2055,7 +2100,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 }
                                 fill="black"
                                 stroke="black"
-                                strokeWidth="3"
+                                strokeWidth="1"
                                 fontSize={isHighlighted ? "12" : "10"}
                                 fontWeight="600"
                                 textAnchor="middle"
@@ -2093,7 +2138,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             y={extMidY}
                             fill="black"
                             stroke="black"
-                            strokeWidth="3"
+                            strokeWidth="1"
                             fontSize={fontSize}
                             fontWeight={fontWeight}
                             textAnchor="middle"
@@ -2242,7 +2287,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             y="0"
                             fill="black"
                             stroke="black"
-                            strokeWidth="3"
+                            strokeWidth="1"
                             fontSize={fontSize}
                             fontWeight={fontWeight}
                             textAnchor="middle"
@@ -2359,7 +2404,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                           x2={ringEdgePixelX}
                           y2={ringEdgePixelY}
                           stroke="#06b6d4" // Cyan-500
-                          strokeWidth="3"
+                          strokeWidth="1"
                           strokeDasharray="1,4"
                           strokeLinecap="round"
                           opacity={opacity}
@@ -2433,7 +2478,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                   y="0"
                                   fill="black"
                                   stroke="black"
-                                  strokeWidth="3"
+                                  strokeWidth="1"
                                   fontSize={fontSize}
                                   fontWeight={fontWeight}
                                   textAnchor="middle"
@@ -2503,7 +2548,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                   y="0"
                                   fill="black"
                                   stroke="black"
-                                  strokeWidth="3"
+                                  strokeWidth="1"
                                   fontSize={fontSize}
                                   fontWeight={fontWeight}
                                   textAnchor="middle"
@@ -2538,7 +2583,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                   y="0"
                                   fill="black"
                                   stroke="black"
-                                  strokeWidth="3"
+                                  strokeWidth="1"
                                   fontSize={fontSize}
                                   fontWeight={fontWeight}
                                   textAnchor="middle"
@@ -2623,7 +2668,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             x2={lineEndX}
                             y2={lineEndY}
                             stroke="#65a30d" // Poison Green (Lime-600)
-                            strokeWidth="2"
+                            strokeWidth="1"
                             strokeDasharray="4,2"
                             opacity={opacity}
                           />
@@ -2638,7 +2683,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 fontWeight="bold"
                                 fill="black"
                                 stroke="black"
-                                strokeWidth="3"
+                                strokeWidth="1"
                                 opacity={opacity}
                               >
                                 {formatDistance(edgeDist)}
