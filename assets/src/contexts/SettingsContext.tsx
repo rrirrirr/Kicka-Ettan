@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type MeasurementType = 'guard' | 't-line' | 'center-line' | 'closest-ring';
+export type MeasurementType = 'guard' | 't-line' | 'center-line' | 'closest-ring' | 'stone-to-stone';
 export type UnitSystem = 'metric' | 'imperial' | 'smart';
 
 export interface SmartUnitRule {
@@ -35,6 +35,10 @@ export interface MeasurementDisplaySettings {
         showDistance: boolean;
     };
     closestRing?: {
+        showLine: boolean;
+        showDistance: boolean;
+    };
+    stoneToStone?: {
         showLine: boolean;
         showDistance: boolean;
     };
@@ -201,6 +205,10 @@ const defaultDisplaySettings: MeasurementDisplaySettings = {
         showLine: true,
         showDistance: true
     },
+    stoneToStone: {
+        showLine: true,
+        showDistance: true
+    },
     nearHouseZone: {
         showTLine: false,
         showCenterLine: false,
@@ -284,10 +292,14 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         const defaultClosestRing = defaultDisplaySettings.closestRing || { showLine: true, showDistance: true };
         const storedClosestRing = stored.closestRing || {};
 
+        const defaultStoneToStone = defaultDisplaySettings.stoneToStone || { showLine: true, showDistance: true };
+        const storedStoneToStone = stored.stoneToStone || {};
+
         return {
             ...defaultDisplaySettings,
             ...stored,
-            closestRing: { ...defaultClosestRing, ...storedClosestRing }
+            closestRing: { ...defaultClosestRing, ...storedClosestRing },
+            stoneToStone: { ...defaultStoneToStone, ...storedStoneToStone }
         };
     });
     const [toggleModeSettings, setToggleModeSettings] = useState<ToggleModeSettings>(() => {

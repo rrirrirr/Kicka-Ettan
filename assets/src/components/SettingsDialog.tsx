@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from './ui/Dialog';
 import { useSettings, MeasurementStep, MeasurementType } from '../contexts/SettingsContext';
-import { Trash2, Target, Shield, ChevronRight, ChevronLeft, Ruler, Grid } from 'lucide-react';
+import { Trash2, Target, Shield, ChevronRight, ChevronLeft, Ruler, Grid, ArrowLeftRight } from 'lucide-react';
 import { SheetStyleCarousel } from './SheetStyleCarousel';
 import { ZonesDiagram } from './ZonesDiagram';
 
@@ -41,6 +41,7 @@ export const SettingsDialog: React.FC = () => {
             case 'guard': return <Shield size={16} />;
             case 't-line': return <span className="text-xl font-bold">T</span>; // T-line icon
             case 'center-line': return <span className="text-xl font-bold">│</span>; // Thicker vertical line
+            case 'stone-to-stone': return <ArrowLeftRight size={16} />;
             default: return null;
         }
     };
@@ -90,6 +91,7 @@ export const SettingsDialog: React.FC = () => {
                 case 'guard': return 'Guard';
                 case 't-line': return 'T-Line';
                 case 'center-line': return 'Center';
+                case 'stone-to-stone': return 'Stone to Stone';
                 default: return type;
             }
         };
@@ -145,6 +147,21 @@ export const SettingsDialog: React.FC = () => {
                             title={`Toggle ${getLabel('center-line')}`}
                         >
                             {getIcon('center-line')}
+                        </button>
+
+                        {/* Stone to Stone Measurements Button */}
+                        <button
+                            onClick={() => handleToggleType(zone, index, 'stone-to-stone')}
+                            className={`
+                                flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
+                                ${step.types.includes('stone-to-stone')
+                                    ? 'bg-lavender-600 text-white hover:bg-lavender-700'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
+                                }
+                            `}
+                            title={`Toggle ${getLabel('stone-to-stone')}`}
+                        >
+                            {getIcon('stone-to-stone')}
                         </button>
 
                         {/* Closest Ring Measurements Button */}
@@ -354,6 +371,12 @@ export const SettingsDialog: React.FC = () => {
                                         {getIcon('center-line')}
                                     </div>
                                     <span className="text-gray-700">Center Line (Vertical)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                        {getIcon('stone-to-stone')}
+                                    </div>
+                                    <span className="text-gray-700">Stone to Stone</span>
                                 </div>
                             </div>
                         </div>
@@ -696,6 +719,46 @@ export const SettingsDialog: React.FC = () => {
                                             ...displaySettings,
                                             closestRing: {
                                                 showLine: displaySettings.closestRing?.showLine ?? true,
+                                                showDistance: e.target.checked
+                                            }
+                                        })}
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                    />
+                                    <span className="text-sm text-gray-700">Show Distance Label</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Stone to Stone Measurements */}
+                        <div>
+                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                                {getIcon('stone-to-stone')}
+                                Stone to Stone Measurements
+                            </h3>
+                            <div className="space-y-3 pl-2">
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={displaySettings.stoneToStone?.showLine ?? true}
+                                        onChange={(e) => updateDisplaySettings({
+                                            ...displaySettings,
+                                            stoneToStone: {
+                                                showLine: e.target.checked,
+                                                showDistance: displaySettings.stoneToStone?.showDistance ?? true
+                                            }
+                                        })}
+                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                    />
+                                    <span className="text-sm text-gray-700">Show Line</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={displaySettings.stoneToStone?.showDistance ?? true}
+                                        onChange={(e) => updateDisplaySettings({
+                                            ...displaySettings,
+                                            stoneToStone: {
+                                                showLine: displaySettings.stoneToStone?.showLine ?? true,
                                                 showDistance: e.target.checked
                                             }
                                         })}

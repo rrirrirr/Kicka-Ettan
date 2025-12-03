@@ -115,6 +115,14 @@ interface MeasurementValues {
     lineStart: { x: number; y: number };
     lineEnd: { x: number; y: number };
   };
+  stoneToStone?: {
+    closestStoneIndex: number;
+    closestStoneColor: "red" | "yellow";
+    dist: number; // Edge to edge distance in cm
+    centerDist: number; // Center to center distance in cm
+    lineStart: { x: number; y: number };
+    lineEnd: { x: number; y: number };
+  }[];
   isInGuardZone: boolean;
   isInNearHouseZone: boolean;
   isTop20Percent: boolean;
@@ -151,9 +159,45 @@ const calculateMeasurements = (
   teeLineY: number,
   topOfHouseY: number,
   hogLineY: number,
+  allStones: Array<{ pos: StonePosition; color: "red" | "yellow"; index: number }> = [],
+  currentStoneIndex: number = -1,
+  currentStoneColor: "red" | "yellow" = "red"
 ): MeasurementValues => {
   const stonePixelX = stone.x * scale;
   const stonePixelY = stone.y * scale;
+
+  // Stone to Stone Measurements
+  const stoneToStoneMeasurements: MeasurementValues["stoneToStone"] = [];
+  const MAX_STONE_DIST_CM = 15; // 15cm threshold
+
+  if (currentStoneIndex !== -1) {
+    allStones.forEach((otherStone) => {
+      if (otherStone.color === currentStoneColor && otherStone.index === currentStoneIndex) return;
+
+      const dx = otherStone.pos.x - stone.x;
+      const dy = otherStone.pos.y - stone.y;
+      const centerDist = Math.sqrt(dx * dx + dy * dy);
+      const edgeDist = Math.max(0, centerDist - (STONE_RADIUS * 2));
+
+      if (edgeDist <= MAX_STONE_DIST_CM) {
+        // Calculate line points (edge to edge)
+        const angle = Math.atan2(dy, dx);
+        const startX = stone.x + Math.cos(angle) * STONE_RADIUS;
+        const startY = stone.y + Math.sin(angle) * STONE_RADIUS;
+        const endX = otherStone.pos.x - Math.cos(angle) * STONE_RADIUS;
+        const endY = otherStone.pos.y - Math.sin(angle) * STONE_RADIUS;
+
+        stoneToStoneMeasurements.push({
+          closestStoneIndex: otherStone.index,
+          closestStoneColor: otherStone.color,
+          dist: edgeDist,
+          centerDist: centerDist,
+          lineStart: { x: startX * scale, y: startY * scale },
+          lineEnd: { x: endX * scale, y: endY * scale }
+        });
+      }
+    });
+  }
 
   // T-Line
   const deltaY = stone.y - teeLineY;
@@ -383,6 +427,7 @@ const calculateMeasurements = (
     },
     guard,
     closestRing,
+    stoneToStone: stoneToStoneMeasurements,
     isInGuardZone,
     isInNearHouseZone,
     isTop20Percent,
@@ -569,17 +614,17 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
     color: "red" | "yellow";
     index: number;
   }> = [
-    ...stones.red.map((pos, idx) => ({
-      pos,
-      color: "red" as const,
-      index: idx,
-    })),
-    ...stones.yellow.map((pos, idx) => ({
-      pos,
-      color: "yellow" as const,
-      index: idx,
-    })),
-  ];
+      ...stones.red.map((pos, idx) => ({
+        pos,
+        color: "red" as const,
+        index: idx,
+      })),
+      ...stones.yellow.map((pos, idx) => ({
+        pos,
+        color: "yellow" as const,
+        index: idx,
+      })),
+    ];
 
   // --- New Toggle Mode Logic ---
   const isToggleMode = !highlightedStone && showMeasurements;
@@ -597,6 +642,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         teeLineY,
         topOfHouseY,
         hogLineY,
+        allStones,
+        stone.index,
+        stone.color
       );
 
       // Calculate which items will be displayed to determine width
@@ -632,8 +680,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
           items.push(
             measurements.closestRing.isOverlapping
               ? (measurements.closestRing.overlapPercent1 < 25
-                  ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
-                  : `overlap:${measurements.closestRing.overlapPercent1}`)
+                ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
+                : `overlap:${measurements.closestRing.overlapPercent1}`)
               : formatDistance(measurements.closestRing.dist),
           );
         }
@@ -662,8 +710,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
           items.push(
             measurements.closestRing.isOverlapping
               ? (measurements.closestRing.overlapPercent1 < 25
-                  ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
-                  : `overlap:${measurements.closestRing.overlapPercent1}`)
+                ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
+                : `overlap:${measurements.closestRing.overlapPercent1}`)
               : formatDistance(measurements.closestRing.dist),
           );
         }
@@ -793,6 +841,50 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     opacity="0.7"
                   />
                 )}
+
+              {/* Stone to Stone Lines */}
+              {measurements.stoneToStone && displaySettings.stoneToStone?.showLine &&
+                measurements.stoneToStone.map((sts, idx) => {
+                  const dx = sts.lineEnd.x - sts.lineStart.x;
+                  const dy = sts.lineEnd.y - sts.lineStart.y;
+                  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                  const ux = dx / len;
+                  const uy = dy / len;
+                  // Perpendicular offset (25px)
+                  const offsetX = -uy * 25;
+                  const offsetY = ux * 25;
+                  const midX = (sts.lineStart.x + sts.lineEnd.x) / 2;
+                  const midY = (sts.lineStart.y + sts.lineEnd.y) / 2;
+
+                  return (
+                    <React.Fragment key={`sts-line-${label.id}-${idx}`}>
+                      <line
+                        x1={sts.lineStart.x}
+                        y1={sts.lineStart.y}
+                        x2={sts.lineEnd.x}
+                        y2={sts.lineEnd.y}
+                        stroke="#65a30d" // Poison Green (Lime-600)
+                        strokeWidth="2"
+                        strokeDasharray="4,2"
+                      />
+                      {displaySettings.stoneToStone?.showDistance && (
+                        <g transform={`translate(${midX + offsetX}, ${midY + offsetY})`}>
+                          <text
+                            x="0"
+                            y="4"
+                            textAnchor="middle"
+                            fontSize="10"
+                            fontWeight="bold"
+                            fill="#65a30d"
+                          >
+                            {formatDistance(sts.dist)}
+                          </text>
+                        </g>
+                      )}
+                    </React.Fragment>
+                  )
+                })}
+
               {/* Progress Bar Overlay on Stone for T-Line (when overlapping) - Toggle Mode */}
               {showTLine &&
                 measurements.tLine &&
@@ -1085,8 +1177,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
             items.push({
               label: measurements.closestRing.isOverlapping
                 ? (measurements.closestRing.overlapPercent1 < 25
-                    ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
-                    : `overlap:${measurements.closestRing.overlapPercent1}`)
+                  ? `overlap-dist:${formatDistance(measurements.closestRing.overlapDistance)}`
+                  : `overlap:${measurements.closestRing.overlapPercent1}`)
                 : formatDistance(measurements.closestRing.dist),
               icon: measurements.closestRing.isOverlapping ? "overlap" : "dots",
               color: "text-cyan-500", // Cyan
@@ -1368,7 +1460,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         const isInNearHouseZone =
           !isTouchingHouse &&
           distToCenterPoint <=
-            HOUSE_RADIUS_12 + STONE_RADIUS + nearHouseThreshold &&
+          HOUSE_RADIUS_12 + STONE_RADIUS + nearHouseThreshold &&
           stone.pos.y > hogLineY;
         const isInGuardZone =
           !isTouchingHouse && !isInNearHouseZone && stone.pos.y > hogLineY;
@@ -2329,6 +2421,92 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                         })()}
                       </g>
                     )}
+                  </svg>
+                );
+              })()}
+            {/* Stone to Stone Measurements */}
+            {((isHighlighted &&
+              highlightedStone?.activeTypes?.includes("stone-to-stone")) ||
+              (!isHighlighted && displaySettings.stoneToStone?.showLine)) &&
+              displaySettings.stoneToStone?.showLine &&
+              (() => {
+                const MAX_STONE_DIST_CM = 15; // 15cm threshold
+
+                return (
+                  <svg
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      width: "100%",
+                      height: "100%",
+                      pointerEvents: "none",
+                      transition: "opacity 0.2s ease",
+                    }}
+                  >
+                    {allStones.map((otherStone) => {
+                      if (otherStone.color === stone.color && otherStone.index === stone.index) return null;
+
+                      const dx = otherStone.pos.x - stone.pos.x;
+                      const dy = otherStone.pos.y - stone.pos.y;
+                      const centerDist = Math.sqrt(dx * dx + dy * dy);
+                      const edgeDist = Math.max(0, centerDist - (STONE_RADIUS * 2));
+
+                      if (edgeDist > MAX_STONE_DIST_CM) return null;
+
+                      // Calculate line points (edge to edge)
+                      const angle = Math.atan2(dy, dx);
+                      const startX = stone.pos.x + Math.cos(angle) * STONE_RADIUS;
+                      const startY = stone.pos.y + Math.sin(angle) * STONE_RADIUS;
+                      const endX = otherStone.pos.x - Math.cos(angle) * STONE_RADIUS;
+                      const endY = otherStone.pos.y - Math.sin(angle) * STONE_RADIUS;
+
+                      const lineStartX = startX * scale;
+                      const lineStartY = startY * scale;
+                      const lineEndX = endX * scale;
+                      const lineEndY = endY * scale;
+
+                      const lDx = lineEndX - lineStartX;
+                      const lDy = lineEndY - lineStartY;
+                      const len = Math.sqrt(lDx * lDx + lDy * lDy) || 1;
+                      const ux = lDx / len;
+                      const uy = lDy / len;
+                      // Perpendicular offset (25px)
+                      const offsetX = -uy * 25;
+                      const offsetY = ux * 25;
+                      const midX = (lineStartX + lineEndX) / 2;
+                      const midY = (lineStartY + lineEndY) / 2;
+
+                      return (
+                        <React.Fragment key={`sts-${stone.color}-${stone.index}-${otherStone.color}-${otherStone.index}`}>
+                          <line
+                            x1={lineStartX}
+                            y1={lineStartY}
+                            x2={lineEndX}
+                            y2={lineEndY}
+                            stroke="#65a30d" // Poison Green (Lime-600)
+                            strokeWidth="2"
+                            strokeDasharray="4,2"
+                            opacity={opacity}
+                          />
+                          {displaySettings.stoneToStone?.showDistance && (
+                            <g transform={`translate(${midX + offsetX}, ${midY + offsetY})`}>
+                              <text
+                                x="0"
+                                y="4"
+                                textAnchor="middle"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fill="#65a30d"
+                                opacity={opacity}
+                              >
+                                {formatDistance(edgeDist)}
+                              </text>
+                            </g>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </svg>
                 );
               })()}
