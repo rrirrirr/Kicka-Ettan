@@ -25,6 +25,7 @@ interface StoneMeasurementsProps {
     color: "red" | "yellow";
     index: number;
     activeTypes?: MeasurementType[];
+    stepIndex?: number;
   } | null;
   showMeasurements?: boolean;
 }
@@ -139,6 +140,10 @@ interface LabelBox {
   measurements: MeasurementValues;
   stoneColor: "red" | "yellow";
   stoneIndex: number;
+  stepInfo?: {
+    current: number;
+    total: number;
+  };
 }
 
 const LABEL_ITEM_HEIGHT = 24; // Increased from 20
@@ -591,7 +596,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
   highlightedStone,
   showMeasurements = true,
 }) => {
-  const { displaySettings, toggleModeSettings, unitSystem, smartUnits } =
+  const { displaySettings, toggleModeSettings, unitSystem, smartUnits, settings } =
     useSettings();
 
   const centerLineX = SHEET_WIDTH / 2;
@@ -659,7 +664,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
       );
 
       // Calculate which items will be displayed to determine width
-      const items = [];
+      const items: string[] = [];
+      const stepInfo: { current: number; total: number } | undefined = undefined; // No step cycling in toggle mode
+
       if (measurements.isInGuardZone) {
         if (toggleModeSettings.guardZone.showGuard && measurements.guard) {
           items.push(
@@ -751,13 +758,26 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         const textWidth = estimateTextWidth(itemText, 12);
         maxTextWidth = Math.max(maxTextWidth, textWidth);
       }
+
+      // Add extra width for step info if present
+      if (stepInfo) {
+        // "Step X/Y" approx width
+        const info = stepInfo as { current: number; total: number };
+        maxTextWidth = Math.max(maxTextWidth, estimateTextWidth(`Step ${info.current}/${info.total}`, 10));
+      }
+
       // Width = left padding + icon width + right padding + text width + right padding
       const width = Math.max(
         80,
         LABEL_PADDING_X + LABEL_ICON_WIDTH + maxTextWidth + LABEL_PADDING_X,
       );
 
-      const height = items.length * LABEL_ITEM_HEIGHT + LABEL_PADDING_Y * 2;
+      let height = items.length * LABEL_ITEM_HEIGHT + LABEL_PADDING_Y * 2;
+
+      // Add height for step info
+      if (stepInfo) {
+        height += 16; // Extra space for step indicator
+      }
 
       // Positioning Logic
       const isLeftOfCenter = stone.pos.x < centerLineX;
@@ -785,6 +805,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         measurements,
         stoneColor: stone.color,
         stoneIndex: stone.index,
+        stepInfo
       };
     });
 
@@ -1259,7 +1280,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 r="4"
                                 fill="none"
                                 stroke={item.strokeColor}
-                                strokeWidth="1.2"
+                                strokeWidth="1.5"
                               />
                               <circle
                                 cx="2.5"
@@ -1267,7 +1288,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                                 r="4"
                                 fill="none"
                                 stroke={item.strokeColor}
-                                strokeWidth="1.2"
+                                strokeWidth="1.5"
                               />
                               <path
                                 d="M 0,-2.8 A 4,4 0 0,0 0,2.8 A 4,4 0 0,0 0,-2.8"
@@ -1278,24 +1299,9 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             </g>
                           ) : (
                             <g>
-                              <circle
-                                cx="-4"
-                                cy="0"
-                                r="1.5"
-                                fill={item.strokeColor}
-                              />
-                              <circle
-                                cx="0"
-                                cy="0"
-                                r="1.5"
-                                fill={item.strokeColor}
-                              />
-                              <circle
-                                cx="4"
-                                cy="0"
-                                r="1.5"
-                                fill={item.strokeColor}
-                              />
+                              <circle cx="-3" cy="0" r="1.5" fill={item.strokeColor} />
+                              <circle cx="0" cy="0" r="1.5" fill={item.strokeColor} />
+                              <circle cx="3" cy="0" r="1.5" fill={item.strokeColor} />
                             </g>
                           )}
                         </svg>
@@ -1350,11 +1356,23 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     })()}
                   </div>
                 ))}
+                {/* Step Info Indicator */}
+                {label.stepInfo && (
+                  <div className="flex items-center justify-center w-full px-2 mt-1 pt-1 border-t border-white/10">
+                    <span className="text-[10px] text-gray-400 font-medium mr-1">
+                      Step {label.stepInfo.current}/{label.stepInfo.total}
+                    </span>
+                    <span className="text-[9px] text-gray-500 italic">
+                      (Click to next)
+                    </span>
+                  </div>
+                )}
               </div>
             </foreignObject>
           );
-        })}
-      </svg>
+        })
+        }
+      </svg >
     );
   }
 
@@ -1419,8 +1437,6 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
 
         const fontSize = isHighlighted ? "16" : "12";
         const fontWeight = isHighlighted ? "900" : "bold";
-        const strokeColor = isHighlighted ? "#9f1239" : "#be185d"; // Pink-800 : Pink-700
-        const textColor = isHighlighted ? "#831843" : "#9f1239"; // Pink-900 : Pink-800
         const highVisibilityTextColor = isHighlighted ? "#be185d" : "#db2777"; // Pink-700 : Pink-600 (high visibility on white)
 
         // Determine which side of center line the stone is on
@@ -2708,6 +2724,212 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                   </svg>
                 );
               })()}
+            {/* Step Info Indicator - Selected Stone Mode - Top of Sheet */}
+            {isHighlighted && (() => {
+              // Assuming these are defined in the component's scope or passed as props
+              // const settings = { guardZone: [], nearHouseZone: [], houseZone: [] };
+              // const isInGuardZone = false;
+              // const isInNearHouseZone = false;
+              // const SHEET_WIDTH = 1000; // Example value
+              type MeasurementStep = { types: MeasurementType[] };
+              // type MeasurementType = 'guard' | 't-line' | 'center-line' | 'closest-ring' | 'stone-to-stone';
+
+              let steps: MeasurementStep[] = [];
+              if (isInGuardZone) {
+                steps = settings.guardZone;
+              } else if (isInNearHouseZone) {
+                steps = settings.nearHouseZone;
+              } else {
+                steps = settings.houseZone;
+              }
+
+              if (steps.length <= 1) return null;
+
+              const currentStepIndex = highlightedStone.stepIndex || 0;
+              const nextStepIndex = (currentStepIndex + 1) % steps.length;
+
+              const currentStep = steps[currentStepIndex];
+              const nextStep = steps[nextStepIndex];
+
+              const ALL_MEASUREMENT_TYPES: MeasurementType[] = [
+                'guard', 't-line', 'center-line', 'closest-ring', 'stone-to-stone'
+              ];
+
+              // Helper to render icons
+              const renderIcons = (typesToRender: MeasurementType[], activeTypes: MeasurementType[], opacity: number, scale: number = 1) => {
+                return (
+                  <g transform={`scale(${scale})`}>
+                    {typesToRender.map((type, idx) => {
+                      let icon = "";
+                      let color = "";
+                      let isSvg = false;
+
+                      const isActive = activeTypes.includes(type);
+
+                      const activeColorMap: Record<MeasurementType, string> = {
+                        'guard': "#a855f7", // Purple-500
+                        't-line': "#ec4899", // Pink-500
+                        'center-line': "#ec4899", // Pink-500
+                        'closest-ring': "#06b6d4", // Cyan-500
+                        'stone-to-stone': "#65a30d", // Lime-600
+                      };
+
+                      const inactiveColor = "#4b5563"; // Gray-600
+
+                      color = isActive ? activeColorMap[type] : inactiveColor;
+
+                      switch (type) {
+                        case "guard":
+                          icon = "{";
+                          break;
+                        case "t-line":
+                          icon = "T";
+                          break;
+                        case "center-line":
+                          icon = "│";
+                          break;
+                        case "closest-ring":
+                          isSvg = true;
+                          break;
+                        case "stone-to-stone":
+                          icon = "↔";
+                          break;
+                      }
+
+                      const xOffset = idx * 24;
+
+                      if (isSvg) {
+                        return (
+                          <g key={idx} transform={`translate(${xOffset}, -8)`}>
+                            <circle cx="8" cy="8" r="1.5" fill={color} />
+                            <circle cx="11" cy="8" r="1.5" fill={color} />
+                            <circle cx="14" cy="8" r="1.5" fill={color} />
+                          </g>
+                        );
+                      }
+
+                      return (
+                        <text
+                          key={idx}
+                          x={xOffset + 10}
+                          y="0"
+                          fill={color}
+                          fontSize="14"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          opacity={opacity}
+                        >
+                          {icon}
+                        </text>
+                      );
+                    })}
+                  </g>
+                );
+              };
+
+              // Position at top of sheet for house/near-house, below top of house for guard zone
+              const topX = (SHEET_WIDTH * scale) / 2;
+              const topY = isInGuardZone ? (topOfHouseY * scale + 30) : 40;
+
+              return (
+                <svg
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    width: "100%",
+                    height: "100%",
+                    pointerEvents: "none",
+                    overflow: "visible",
+                    transition: "opacity 0.2s ease",
+                    zIndex: 50 // Ensure it's on top
+                  }}
+                >
+                  <g transform={`translate(${topX}, ${topY})`}>
+                    {/* Background pill */}
+                    <rect
+                      x="-110"
+                      y="-25"
+                      width="220"
+                      height="50"
+                      rx="25"
+                      fill="#1f2937"
+                      fillOpacity="0.95"
+                      stroke="white"
+                      strokeWidth="1"
+                      strokeOpacity="0.2"
+                      filter="drop-shadow(0 4px 6px rgb(0 0 0 / 0.3))"
+                    />
+
+                    {/* Instructional Text */}
+                    <text
+                      x="0"
+                      y="40"
+                      fill="#111827" // Gray-900
+                      fontSize="11"
+                      fontWeight="600"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      Click stone to cycle views
+                    </text>
+
+                    {/* Current Step Icons (All 5, toggled) */}
+                    <g transform="translate(-80, 0)">
+                      {renderIcons(ALL_MEASUREMENT_TYPES, currentStep.types, 1, 1)}
+                    </g>
+
+                    {/* Arrow or Close indicator */}
+                    {currentStepIndex === steps.length - 1 ? (
+                      // Last step - show close icon
+                      <>
+                        <text
+                          x="50"
+                          y="1"
+                          fill="#9ca3af"
+                          fontSize="14"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          &gt;
+                        </text>
+                        <text
+                          x="75"
+                          y="0"
+                          fill="#ef4444"
+                          fontSize="16"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          ✕
+                        </text>
+                      </>
+                    ) : (
+                      // Not last step - show next step preview
+                      <>
+                        <text
+                          x="50"
+                          y="1"
+                          fill="#9ca3af"
+                          fontSize="14"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          &gt;
+                        </text>
+                        <g transform="translate(65, 0)">
+                          {renderIcons(nextStep.types, nextStep.types, 0.5, 0.8)}
+                        </g>
+                      </>
+                    )}
+                  </g>
+                </svg>
+              );
+            })()}
           </React.Fragment>
         );
       })}
