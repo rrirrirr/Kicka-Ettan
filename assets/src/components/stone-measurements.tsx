@@ -441,8 +441,9 @@ const solveLabelCollisions = (
   scale: number,
   maxY: number,
 ) => {
-  const iterations = 10;
+  const iterations = 20; // Increased from 10
   const stoneRadiusPx = STONE_RADIUS * scale;
+  const desiredLabelGap = 20; // Minimum gap between labels
 
   for (let i = 0; i < iterations; i++) {
     for (let j = 0; j < labels.length; j++) {
@@ -453,14 +454,15 @@ const solveLabelCollisions = (
       const dy = labelA.stoneY - labelA.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
+      // Reduced attraction force to allow repulsion to win
       if (dist > MAX_DIST_FROM_STONE) {
         const angle = Math.atan2(dy, dx);
         labelA.x = labelA.stoneX - Math.cos(angle) * MAX_DIST_FROM_STONE;
         labelA.y = labelA.stoneY - Math.sin(angle) * MAX_DIST_FROM_STONE;
       } else if (dist > 50) {
         // Gentle pull towards stone if getting far
-        labelA.x += dx * 0.05;
-        labelA.y += dy * 0.05;
+        labelA.x += dx * 0.02; // Reduced from 0.05
+        labelA.y += dy * 0.02;
       }
 
       // Repulsion from other labels
@@ -475,15 +477,24 @@ const solveLabelCollisions = (
           Math.min(labelA.y + labelA.height / 2, labelB.y + labelB.height / 2) -
           Math.max(labelA.y - labelA.height / 2, labelB.y - labelB.height / 2);
 
-        if (overlapX > -10 && overlapY > -10) {
-          // Add some padding
+        // Check if they are overlapping or too close (within desiredLabelGap)
+        if (overlapX > -desiredLabelGap && overlapY > -desiredLabelGap) {
           // Push apart
           const diffX = labelA.x - labelB.x;
           const diffY = labelA.y - labelB.y;
-          const len = Math.sqrt(diffX * diffX + diffY * diffY) || 1;
+          const len = Math.sqrt(diffX * diffX + diffY * diffY) || 0.1;
 
-          const pushX = (diffX / len) * 5;
-          const pushY = (diffY / len) * 5;
+          // Calculate how much we need to move to satisfy the gap
+          // We approximate this by pushing proportional to the overlap/proximity
+          // If overlapX is positive, they are overlapping. If negative, they are close.
+          // We want to push them apart until overlapX <= -desiredLabelGap
+
+          // Simple force-based approach:
+          // Stronger push if actual overlap
+          const force = (overlapX > 0 && overlapY > 0) ? 2.0 : 0.5;
+
+          const pushX = (diffX / len) * 5 * force;
+          const pushY = (diffY / len) * 5 * force;
 
           labelA.x += pushX;
           labelA.y += pushY;
@@ -506,7 +517,7 @@ const solveLabelCollisions = (
         const distX = stone.x - closestX;
         const distY = stone.y - closestY;
         const distanceSquared = distX * distX + distY * distY;
-        const minDistance = stoneRadiusPx + 10; // Stone radius + padding
+        const minDistance = stoneRadiusPx + 15; // Stone radius + increased padding (15px)
 
         if (distanceSquared < minDistance * minDistance) {
           // Collision detected
@@ -531,8 +542,8 @@ const solveLabelCollisions = (
           const pushLen = Math.sqrt(pushX * pushX + pushY * pushY) || 1;
 
           // Strong push to clear the stone
-          labelA.x += (pushX / pushLen) * overlap * 1.2;
-          labelA.y += (pushY / pushLen) * overlap * 1.2;
+          labelA.x += (pushX / pushLen) * overlap * 1.5; // Increased multiplier
+          labelA.y += (pushY / pushLen) * overlap * 1.5;
         }
       }
 
@@ -842,8 +853,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                   />
                 )}
 
-              {/* Stone to Stone Lines */}
-              {measurements.stoneToStone && displaySettings.stoneToStone?.showLine &&
+              {/* Stone to Stone Lines - Disabled in Toggle Mode */}
+              {/* {measurements.stoneToStone && displaySettings.stoneToStone?.showLine &&
                 measurements.stoneToStone.map((sts, idx) => {
                   const dx = sts.lineEnd.x - sts.lineStart.x;
                   const dy = sts.lineEnd.y - sts.lineStart.y;
@@ -884,6 +895,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     </React.Fragment>
                   )
                 })}
+              */}
+
 
               {/* Progress Bar Overlay on Stone for T-Line (when overlapping) - Toggle Mode */}
               {showTLine &&
@@ -2466,16 +2479,11 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                       const lineEndX = endX * scale;
                       const lineEndY = endY * scale;
 
-                      const lDx = lineEndX - lineStartX;
-                      const lDy = lineEndY - lineStartY;
-                      const len = Math.sqrt(lDx * lDx + lDy * lDy) || 1;
-                      const ux = lDx / len;
-                      const uy = lDy / len;
-                      // Perpendicular offset (25px)
-                      const offsetX = -uy * 25;
-                      const offsetY = ux * 25;
-                      const midX = (lineStartX + lineEndX) / 2;
-                      const midY = (lineStartY + lineEndY) / 2;
+                      // Position label above the target stone (otherStone)
+                      const targetStoneX = otherStone.pos.x * scale;
+                      const targetStoneY = otherStone.pos.y * scale;
+                      const labelX = targetStoneX;
+                      const labelY = targetStoneY; // At center of stone
 
                       return (
                         <React.Fragment key={`sts-${stone.color}-${stone.index}-${otherStone.color}-${otherStone.index}`}>
@@ -2490,7 +2498,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                             opacity={opacity}
                           />
                           {displaySettings.stoneToStone?.showDistance && (
-                            <g transform={`translate(${midX + offsetX}, ${midY + offsetY})`}>
+                            <g transform={`translate(${labelX}, ${labelY})`}>
                               <text
                                 x="0"
                                 y="4"
