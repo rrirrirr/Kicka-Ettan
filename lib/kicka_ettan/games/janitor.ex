@@ -7,8 +7,9 @@ defmodule KickaEttan.Games.Janitor do
   alias KickaEttan.Games.GameSupervisor
   alias KickaEttan.Games.GameServer
 
-  # Clean up games that have been inactive for 24 hours
-  @cleanup_interval :timer.hours(1)  # Check every hour
+  # Clean up games that are older than 4 weeks
+  @cleanup_interval :timer.hours(24)  # Check once per day
+  @max_game_age_days 28  # 4 weeks
 
 
   def start_link(opts) do
@@ -17,9 +18,9 @@ defmodule KickaEttan.Games.Janitor do
 
   @impl true
   def init(_opts) do
-    # Schedule first cleanup
+    # Schedule first cleanup (but don't run immediately)
     schedule_cleanup()
-    {:ok, %{last_cleanup: DateTime.utc_now()}}
+    {:ok, %{last_cleanup: nil}}
   end
 
   @impl true
@@ -46,11 +47,26 @@ defmodule KickaEttan.Games.Janitor do
     {:noreply, %{state | last_cleanup: DateTime.utc_now()}}
   end
 
-  defp check_and_cleanup_game(_game_id, _game_state) do
-    # For now, we'll just keep games around
-    # In a real implementation, you'd track last activity timestamp
-    # and terminate games that have been inactive for too long
-    :ok
+  defp check_and_cleanup_game(game_id, game_state) do
+    case game_state do
+      %{created_at: nil} ->
+        # Game doesn't have a created_at timestamp, skip cleanup
+        :ok
+
+      %{created_at: created_at} ->
+        now = DateTime.utc_now()
+        age_in_days = DateTime.diff(now, created_at, :day)
+
+        if age_in_days >= @max_game_age_days do
+          Logger.info("Cleaning up game #{game_id} (age: #{age_in_days} days)")
+          GameSupervisor.terminate_game(game_id)
+        else
+          :ok
+        end
+
+      _ ->
+        :ok
+    end
   end
 
   defp schedule_cleanup do

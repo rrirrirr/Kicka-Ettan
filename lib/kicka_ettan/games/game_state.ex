@@ -14,7 +14,8 @@ defmodule KickaEttan.Games.GameState do
     phase: :placement,
     ready_for_next_round: %{},
     history: [],
-    team_colors: %{red: "#cc0000", yellow: "#e6b800"}
+    team_colors: %{red: "#cc0000", yellow: "#e6b800"},
+    created_at: nil
   ]
 
   @doc """
@@ -30,7 +31,8 @@ defmodule KickaEttan.Games.GameState do
       game_id: options[:game_id] || generate_game_id(),
       total_rounds: options[:total_rounds] || 3,
       stones_per_team: options[:stones_per_team] || 5,
-      team_colors: team_colors
+      team_colors: team_colors,
+      created_at: DateTime.utc_now()
     }
   end
 
