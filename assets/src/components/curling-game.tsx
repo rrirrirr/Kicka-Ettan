@@ -472,10 +472,22 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                         setHoveredStone(null);
                         return null;
                       }
-                      return { ...prev, stepIndex: nextStepIndex };
+                      // Load next step's types
+                      const nextStepTypes = steps[nextStepIndex]?.types || [];
+                      return {
+                        ...prev,
+                        stepIndex: nextStepIndex,
+                        activeTypes: nextStepTypes
+                      };
                     } else {
-                      // New selection
-                      return { color: myColor!, index: stoneIndex, stepIndex: 0 };
+                      // New selection - initialize with first step's types
+                      const initialTypes = steps[0]?.types || [];
+                      return {
+                        color: myColor!,
+                        index: stoneIndex,
+                        stepIndex: 0,
+                        activeTypes: initialTypes
+                      };
                     }
                   });
                 }
@@ -813,10 +825,22 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                     setHoveredStone(null);
                     return null;
                   }
-                  return { ...prev, stepIndex: nextStepIndex };
+                  // Load next step's types
+                  const nextStepTypes = steps[nextStepIndex]?.types || [];
+                  return {
+                    ...prev,
+                    stepIndex: nextStepIndex,
+                    activeTypes: nextStepTypes
+                  };
                 } else {
-                  // New selection
-                  return { color, index: i, stepIndex: 0 };
+                  // New selection - initialize with first step's types
+                  const initialTypes = steps[0]?.types || [];
+                  return {
+                    color,
+                    index: i,
+                    stepIndex: 0,
+                    activeTypes: initialTypes
+                  };
                 }
               });
             }
@@ -946,6 +970,20 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             yellow: displayYellowStones
           }}
           scale={scale}
+          isSelected={!!highlightedStone}
+          onToggleMeasurementType={(type) => {
+            if (highlightedStone) {
+              setHighlightedStone(prev => {
+                if (!prev) return null;
+                const currentTypes = prev.activeTypes || [];
+                // Toggle: add if not present, remove if present
+                const newTypes = currentTypes.includes(type)
+                  ? currentTypes.filter(t => t !== type)
+                  : [...currentTypes, type];
+                return { ...prev, activeTypes: newTypes };
+              });
+            }
+          }}
           highlightedStone={(() => {
             const targetStone = highlightedStone || hoveredStone;
 
@@ -984,10 +1022,14 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               // initialActiveTypes = steps[0]?.types || [];
             }
 
-            if (highlightedStone && targetStone === highlightedStone && highlightedStone.activeTypes) {
+            if (highlightedStone &&
+                targetStone.color === highlightedStone.color &&
+                targetStone.index === highlightedStone.index &&
+                highlightedStone.activeTypes) {
               return {
                 ...targetStone,
-                activeTypes: highlightedStone.activeTypes
+                activeTypes: highlightedStone.activeTypes,
+                stepIndex: highlightedStone.stepIndex
               };
             }
 

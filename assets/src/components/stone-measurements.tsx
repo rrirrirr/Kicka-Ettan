@@ -9,7 +9,9 @@ import {
   BUTTON_RADIUS,
   HOG_LINE_OFFSET,
   NEAR_HOUSE_THRESHOLD,
+  BACK_LINE_OFFSET,
 } from "../utils/constants";
+import { Target, Shield, ArrowLeftRight } from "lucide-react";
 
 interface StonePosition {
   x: number;
@@ -28,6 +30,8 @@ interface StoneMeasurementsProps {
     stepIndex?: number;
   } | null;
   showMeasurements?: boolean;
+  onToggleMeasurementType?: (type: MeasurementType) => void;
+  isSelected?: boolean; // true if stone is selected (not just hovered)
 }
 
 // Proper curly brace algorithm adapted from D3.js example
@@ -71,6 +75,8 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
   scale,
   highlightedStone,
   showMeasurements = true,
+  onToggleMeasurementType,
+  isSelected = false,
 }) => {
   const { displaySettings, toggleModeSettings, unitSystem, smartUnits, settings } =
     useSettings();
@@ -1493,214 +1499,214 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                 );
               })()}
             {/* Step Info Indicator - Selected Stone Mode - Top of Sheet */}
-            {isHighlighted && (() => {
-              // Assuming these are defined in the component's scope or passed as props
-              // const settings = { guardZone: [], nearHouseZone: [], houseZone: [] };
-              // const isInGuardZone = false;
-              // const isInNearHouseZone = false;
-              // const SHEET_WIDTH = 1000; // Example value
-              type MeasurementStep = { types: MeasurementType[] };
-              // type MeasurementType = 'guard' | 't-line' | 'center-line' | 'closest-ring' | 'stone-to-stone';
-
-              let steps: MeasurementStep[] = [];
-              if (isInGuardZone) {
-                steps = settings.guardZone;
-              } else if (isInNearHouseZone) {
-                steps = settings.nearHouseZone;
-              } else {
-                steps = settings.houseZone;
-              }
-
-              if (steps.length <= 1) return null;
-
-              const currentStepIndex = highlightedStone.stepIndex || 0;
-              const nextStepIndex = (currentStepIndex + 1) % steps.length;
-
-              const currentStep = steps[currentStepIndex];
-              const nextStep = steps[nextStepIndex];
-
-              const ALL_MEASUREMENT_TYPES: MeasurementType[] = [
-                'guard', 't-line', 'center-line', 'closest-ring', 'stone-to-stone'
-              ];
-
-              // Helper to render icons
-              const renderIcons = (typesToRender: MeasurementType[], activeTypes: MeasurementType[], opacity: number, scale: number = 1) => {
-                return (
-                  <g transform={`scale(${scale})`}>
-                    {typesToRender.map((type, idx) => {
-                      let icon = "";
-                      let color = "";
-                      let isSvg = false;
-
-                      const isActive = activeTypes.includes(type);
-
-                      const activeColorMap: Record<MeasurementType, string> = {
-                        'guard': "#a855f7", // Purple-500
-                        't-line': "#ec4899", // Pink-500
-                        'center-line': "#ec4899", // Pink-500
-                        'closest-ring': "#06b6d4", // Cyan-500
-                        'stone-to-stone': "#65a30d", // Lime-600
-                      };
-
-                      const inactiveColor = "#4b5563"; // Gray-600
-
-                      color = isActive ? activeColorMap[type] : inactiveColor;
-
-                      switch (type) {
-                        case "guard":
-                          icon = "{";
-                          break;
-                        case "t-line":
-                          icon = "T";
-                          break;
-                        case "center-line":
-                          icon = "│";
-                          break;
-                        case "closest-ring":
-                          isSvg = true;
-                          break;
-                        case "stone-to-stone":
-                          icon = "↔";
-                          break;
-                      }
-
-                      const xOffset = idx * 24;
-
-                      if (isSvg) {
-                        return (
-                          <g key={idx} transform={`translate(${xOffset}, -8)`}>
-                            <circle cx="8" cy="8" r="1.5" fill={color} />
-                            <circle cx="11" cy="8" r="1.5" fill={color} />
-                            <circle cx="14" cy="8" r="1.5" fill={color} />
-                          </g>
-                        );
-                      }
-
-                      return (
-                        <text
-                          key={idx}
-                          x={xOffset + 10}
-                          y="0"
-                          fill={color}
-                          fontSize="14"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          opacity={opacity}
-                        >
-                          {icon}
-                        </text>
-                      );
-                    })}
-                  </g>
-                );
-              };
-
-              // Position at top of sheet for house/near-house, below top of house for guard zone
-              const topX = (SHEET_WIDTH * scale) / 2;
-              const topY = isInGuardZone ? (topOfHouseY * scale + 30) : 40;
-
-              return (
-                <svg
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    width: "100%",
-                    height: "100%",
-                    pointerEvents: "none",
-                    overflow: "visible",
-                    transition: "opacity 0.2s ease",
-                    zIndex: 50 // Ensure it's on top
-                  }}
-                >
-                  <g transform={`translate(${topX}, ${topY})`}>
-                    {/* Background pill */}
-                    <rect
-                      x="-110"
-                      y="-25"
-                      width="220"
-                      height="50"
-                      rx="25"
-                      fill="#1f2937"
-                      fillOpacity="0.95"
-                      stroke="white"
-                      strokeWidth="1"
-                      strokeOpacity="0.2"
-                      filter="drop-shadow(0 4px 6px rgb(0 0 0 / 0.3))"
-                    />
-
-                    {/* Instructional Text */}
-                    <text
-                      x="0"
-                      y="40"
-                      fill="#111827" // Gray-900
-                      fontSize="11"
-                      fontWeight="600"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      Click stone to cycle views
-                    </text>
-
-                    {/* Current Step Icons (All 5, toggled) */}
-                    <g transform="translate(-80, 0)">
-                      {renderIcons(ALL_MEASUREMENT_TYPES, currentStep.types, 1, 1)}
-                    </g>
-
-                    {/* Arrow or Close indicator */}
-                    {currentStepIndex === steps.length - 1 ? (
-                      // Last step - show close icon
-                      <>
-                        <text
-                          x="50"
-                          y="1"
-                          fill="#9ca3af"
-                          fontSize="14"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                        >
-                          &gt;
-                        </text>
-                        <text
-                          x="75"
-                          y="0"
-                          fill="#ef4444"
-                          fontSize="16"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                        >
-                          ✕
-                        </text>
-                      </>
-                    ) : (
-                      // Not last step - show next step preview
-                      <>
-                        <text
-                          x="50"
-                          y="1"
-                          fill="#9ca3af"
-                          fontSize="14"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                        >
-                          &gt;
-                        </text>
-                        <g transform="translate(65, 0)">
-                          {renderIcons(nextStep.types, nextStep.types, 0.5, 0.8)}
-                        </g>
-                      </>
-                    )}
-                  </g>
-                </svg>
-              );
-            })()}
+            {/* MOVED OUTSIDE OF LOOP */}
           </React.Fragment>
         );
       })}
+
+      {/* Render Step Indicator Once if a stone is selected (not just hovered) */}
+      {highlightedStone && isSelected && (
+        <MeasurementStepIndicator
+          highlightedStone={highlightedStone}
+          settings={settings}
+          scale={scale}
+          sheetWidth={SHEET_WIDTH}
+          nearHouseThreshold={NEAR_HOUSE_THRESHOLD}
+          hogLineOffset={HOG_LINE_OFFSET}
+          backLineOffset={BACK_LINE_OFFSET}
+          houseRadius12={HOUSE_RADIUS_12}
+          stoneRadius={STONE_RADIUS}
+          stones={stones}
+          onToggleMeasurementType={onToggleMeasurementType}
+        />
+      )}
+    </>
+  );
+};
+
+// --- Helper Component for Step Indicator ---
+
+interface MeasurementStepIndicatorProps {
+  highlightedStone: {
+    color: "red" | "yellow";
+    index: number;
+    activeTypes?: MeasurementType[];
+    stepIndex?: number;
+  };
+  settings: any; // Using any for now to match existing usage
+  scale: number;
+  sheetWidth: number;
+  nearHouseThreshold: number;
+  hogLineOffset: number;
+  backLineOffset: number;
+  houseRadius12: number;
+  stoneRadius: number;
+  stones: { red: StonePosition[]; yellow: StonePosition[] };
+  onToggleMeasurementType?: (type: MeasurementType) => void;
+}
+
+const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
+  highlightedStone,
+  settings,
+  scale,
+  sheetWidth,
+  nearHouseThreshold,
+  hogLineOffset,
+  backLineOffset,
+  houseRadius12,
+  stoneRadius,
+  stones,
+  onToggleMeasurementType,
+}) => {
+  // Determine Zone
+  const stoneList = stones[highlightedStone.color];
+  const stonePos = stoneList[highlightedStone.index];
+
+  if (!stonePos) return null;
+
+  const centerLineX = sheetWidth / 2;
+  const teeLineY = VIEW_TOP_OFFSET;
+  const deltaX = stonePos.x - centerLineX;
+  const deltaY = stonePos.y - teeLineY;
+  const distToCenterPoint = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  const hogLineY = teeLineY - hogLineOffset;
+
+  const isTouchingHouse = distToCenterPoint <= houseRadius12 + stoneRadius;
+  const isInNearHouseZone =
+    !isTouchingHouse &&
+    distToCenterPoint <= houseRadius12 + stoneRadius + nearHouseThreshold &&
+    stonePos.y > hogLineY;
+  const isInGuardZone =
+    !isTouchingHouse && !isInNearHouseZone && stonePos.y > hogLineY;
+
+  let steps: { types: MeasurementType[] }[] = [];
+  if (isInGuardZone) {
+    steps = settings.guardZone;
+  } else if (isInNearHouseZone) {
+    steps = settings.nearHouseZone;
+  } else {
+    steps = settings.houseZone;
+  }
+
+  if (steps.length <= 1) return null;
+
+  const currentStepIndex = highlightedStone.stepIndex || 0;
+
+  const currentStep = steps[currentStepIndex];
+
+  const ALL_MEASUREMENT_TYPES: MeasurementType[] = [
+    'guard', 't-line', 'center-line', 'closest-ring', 'stone-to-stone'
+  ];
+
+  // Helper to get button content for each measurement type
+  const getButtonContent = (type: MeasurementType) => {
+    switch (type) {
+      case "guard":
+        return <Shield size={20} />;
+      case "t-line":
+        return <span className="text-2xl font-bold">T</span>;
+      case "center-line":
+        return (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3v18" />
+          </svg>
+        );
+      case "closest-ring":
+        return <Target size={20} />;
+      case "stone-to-stone":
+        return <ArrowLeftRight size={20} />;
+    }
+  };
+
+  // Helper to render buttons
+  const renderButtons = (typesToRender: MeasurementType[], activeTypes: MeasurementType[]) => {
+    return (
+      <div className="flex items-center gap-2">
+        {typesToRender.map((type) => {
+          const isActive = activeTypes.includes(type);
+
+          const colorMap: Record<MeasurementType, { active: string; activeHover: string; inactiveHover: string }> = {
+            'guard': { active: "#a855f7", activeHover: "#9333ea", inactiveHover: "#f3e8ff" }, // Purple-500 / Purple-600 / Purple-100
+            't-line': { active: "#fbbf24", activeHover: "#f59e0b", inactiveHover: "#fef3c7" }, // Amber-400 / Amber-500 / Amber-100
+            'center-line': { active: "#fbbf24", activeHover: "#f59e0b", inactiveHover: "#fef3c7" }, // Amber-400 / Amber-500 / Amber-100
+            'closest-ring': { active: "#06b6d4", activeHover: "#0891b2", inactiveHover: "#cffafe" }, // Cyan-500 / Cyan-600 / Cyan-100
+            'stone-to-stone': { active: "#65a30d", activeHover: "#4d7c0f", inactiveHover: "#ecfccb" }, // Lime-600 / Lime-700 / Lime-100
+          };
+
+          const typeColors = colorMap[type];
+          const colors = {
+            bg: isActive ? typeColors.active : "#ffffff",
+            hover: isActive ? typeColors.activeHover : typeColors.inactiveHover,
+          };
+
+          return (
+            <button
+              key={type}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onToggleMeasurementType) {
+                  onToggleMeasurementType(type);
+                }
+              }}
+              className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200 text-[var(--icy-black)]"
+              style={{
+                backgroundColor: colors.bg,
+                pointerEvents: 'auto',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.hover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bg;
+              }}
+            >
+              {getButtonContent(type)}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const backLineY = teeLineY + backLineOffset;
+
+  // Calculate top position
+  // If in guard zone, place it just below the tee line
+  // Otherwise, place it at the top of the sheet
+  const topPosition = isInGuardZone
+    ? (teeLineY * scale) + 20 // 20px below the tee line
+    : 10; // 10px from top of container
+
+  return (
+    <>
+      <div
+        style={{
+          position: 'absolute',
+          top: `${topPosition}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 50, // Ensure it's above everything
+        }}
+        className="card-gradient backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-white/50 flex items-center justify-center transition-all duration-300"
+      >
+        {/* Current Step Buttons */}
+        {renderButtons(ALL_MEASUREMENT_TYPES, highlightedStone.activeTypes || [])}
+      </div>
+
+      {/* Instructional Text - Below buttons */}
+      <div
+        style={{
+          position: 'absolute',
+          top: `${topPosition + 60}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 50,
+        }}
+        className="text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap"
+      >
+        Click stone again to cycle measurements
+      </div>
     </>
   );
 };
