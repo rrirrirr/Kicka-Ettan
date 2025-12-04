@@ -1116,8 +1116,8 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         // Fixed position: Up center, a bit above top of house
         const topOfHousePixelY = (VIEW_TOP_OFFSET - HOUSE_RADIUS_12) * scale;
         const fixedX = sheetRect.left + (sheetDimensions.width / 2);
-        // Position it 185px above the top of the house (adjustable) to maintain gap with larger size
-        const fixedY = sheetRect.top + topOfHousePixelY - 185;
+        // Position it 155px above the top of the house (adjustable) to maintain gap with larger size
+        const fixedY = sheetRect.top + topOfHousePixelY - 155;
 
         const availableTypes: MeasurementType[] = ['closest-ring', 't-line', 'center-line'];
 
@@ -1127,7 +1127,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             y={stoneGlobalY}
             fixedPosition={{ x: fixedX, y: fixedY }}
             scale={1.8}
-            size={270}
+            size={243}
             activeTypes={highlightedStone.activeTypes || []}
             availableTypes={availableTypes}
             onToggleType={(type) => {
