@@ -7,6 +7,14 @@ defmodule KickaEttan.Application do
 
   @impl true
   def start(_type, _args) do
+    # Attach Sentry logger handler for crashed processes
+    :logger.add_handler(:sentry_handler, Sentry.LoggerHandler, %{
+      config: %{metadata: [:file, :line]}
+    })
+    
+    # Attach our Telemetry logger
+    KickaEttanWeb.TelemetryLogger.setup()
+
     children = [
       # Start the Telemetry supervisor
       KickaEttanWeb.Telemetry,

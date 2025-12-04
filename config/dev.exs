@@ -23,6 +23,7 @@ config :kicka_ettan, KickaEttanWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "oetPQZUGstB0k7Ynw5R9YGPVWj49+1WDG0SR++8g14kiWBQvzNtcAN0KQR1Uy20Y",
+  signing_salt: "dev_signing_salt",
   watchers: []
 
 # ## SSL Support

@@ -7,7 +7,7 @@ defmodule KickaEttanWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_kicka_ettan_key",
-    signing_salt: "+UwZxw7n",
+    signing_salt: "session_signing_salt",
     same_site: "Lax"
   ]
 
@@ -34,7 +34,8 @@ defmodule KickaEttanWeb.Endpoint do
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
-
+  
+  use Sentry.PlugCapture
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
@@ -45,9 +46,10 @@ defmodule KickaEttanWeb.Endpoint do
   plug Plug.Session, @session_options
 
   plug Corsica,
-    origins: [~r{^http://localhost:\d+$}], # Allow any localhost port
+    origins: Application.compile_env(:kicka_ettan, :cors_origins, [~r{^http://localhost:\d+$}]),
     allow_headers: :all,
     allow_credentials: true
 
+  plug Sentry.PlugContext
   plug KickaEttanWeb.Router
 end

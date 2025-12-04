@@ -48,6 +48,13 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
+  signing_salt =
+    System.get_env("SESSION_SIGNING_SALT") ||
+      raise """
+      environment variable SESSION_SIGNING_SALT is missing.
+      You can generate one by calling: mix phx.gen.secret
+      """
+
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
@@ -63,7 +70,33 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
-    secret_key_base: secret_key_base
+
+    secret_key_base: secret_key_base,
+    signing_salt: signing_salt
+
+  if sentry_dsn = System.get_env("SENTRY_DSN") do
+    config :sentry, dsn: sentry_dsn
+  end
+
+  # Configure CORS origins from environment variable
+  # CORS_ORIGINS should be a comma-separated list of allowed origins
+  # Example: CORS_ORIGINS="https://example.com,https://www.example.com"
+  cors_origins = 
+    case System.get_env("CORS_ORIGINS") do
+      nil -> 
+        # Default to the production host if no CORS_ORIGINS specified
+        ["https://#{host}"]
+      origins_string -> 
+        origins_string
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+    end
+  
+  config :kicka_ettan, :cors_origins, cors_origins
+
+  # Force SSL in production - redirects HTTP to HTTPS
+  config :kicka_ettan, KickaEttanWeb.Endpoint,
+    force_ssl: [hsts: true]
 
   # ## SSL Support
   #
@@ -88,12 +121,4 @@ if config_env() == :prod do
   # and cert in disk or a relative path inside priv, for example
   # "priv/ssl/server.key". For all supported SSL configuration
   # options, see https://hexdocs.pm/plug/Plug.SSL.html#configure/1
-  #
-  # We also recommend setting `force_ssl` in your config/prod.exs,
-  # ensuring no data is ever sent via http, always redirecting to https:
-  #
-  #     config :kicka_ettan, KickaEttanWeb.Endpoint,
-  #       force_ssl: [hsts: true]
-  #
-  # Check `Plug.SSL` for all available options in `force_ssl`.
 end

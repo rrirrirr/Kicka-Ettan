@@ -48,7 +48,7 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
                 style={{
                     width: size,
                     height: size,
-                    borderRadius: '50%',
+                                        borderRadius: '50%',
                     backgroundColor: stoneColor,
                     border: `2px solid #777777`,
                     boxShadow: `inset 0 0 0 1px ${darkerShade}`,
@@ -98,7 +98,7 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
             style={{
                 width: size,
                 height: size,
-                borderRadius: '50%',
+                                borderRadius: '50%',
                 backgroundColor: stoneColor,
                 border: `2px solid #777777`,
                 boxShadow: `inset 0 0 0 1px ${darkerShade}`,

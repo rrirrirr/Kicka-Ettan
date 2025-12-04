@@ -3,13 +3,15 @@ defmodule KickaEttanWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug KickaEttanWeb.Plugs.RateLimit
   end
 
   scope "/api", KickaEttanWeb.API do
     pipe_through :api
 
-   resources "/games", GameController, only: [:create, :show]
+    resources "/games", GameController, only: [:create, :show]
     post "/games/:id/join", GameController, :join
+    get "/health", HealthController, :index
   end
 
   # Enable LiveDashboard in development

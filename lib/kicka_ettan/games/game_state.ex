@@ -3,6 +3,7 @@ defmodule KickaEttan.Games.GameState do
   Defines the structure and operations for the game state.
   """
   @derive Jason.Encoder
+  require Logger
   defstruct [
     game_id: nil,
     players: [],
@@ -17,6 +18,24 @@ defmodule KickaEttan.Games.GameState do
     team_colors: %{red: "#cc0000", yellow: "#e6b800"},
     created_at: nil
   ]
+
+  # Sheet and stone dimensions (matching frontend constants.ts)
+  @stone_radius 14.5      # cm - 29cm diameter / 2 (regulation curling stone)
+  @stone_diameter 29.0    # cm - regulation curling stone diameter
+  @sheet_width 475.0      # cm - sheet width
+  @hog_line_offset 640.0  # cm - from tee line (top of playable area)
+  @back_line_offset 183.0 # cm - from tee line (bottom of playable area)
+  
+  # Boundaries for stone centers (accounting for stone radius)
+  @min_x @stone_radius
+  @max_x @sheet_width - @stone_radius
+  # In the frontend view, Y increases downward from hog line
+  # minY corresponds to stone just below hog line, maxY to stone just above back line
+  @min_y @stone_radius
+  @max_y @hog_line_offset + @back_line_offset + @stone_radius
+  
+  # Max collision resolution iterations
+  @max_collision_iterations 20
 
   @doc """
   Create a new game state with the given options.
@@ -113,17 +132,16 @@ defmodule KickaEttan.Games.GameState do
       player_ready = Map.put(game_state.player_ready, player_id, true)
       new_state = %{game_state | player_ready: player_ready}
       
-      require Logger
-      Logger.info("Player #{player_id} confirmed placement. Ready map: #{inspect(player_ready)}")
+      Logger.debug("Player #{player_id} confirmed placement. Ready map: #{inspect(player_ready)}")
 
       # Check if all players have confirmed
       if all_players_ready?(new_state) do
-        Logger.info("All players ready! Transitioning to combined phase.")
+        Logger.debug("All players ready! Transitioning to combined phase.")
         # Move to combined view - resolve collisions first
         {:ok, resolved_state} = resolve_collisions(new_state)
         {:ok, %{resolved_state | phase: :combined}}
       else
-        Logger.info("Waiting for other players. Ready: #{inspect(player_ready)}")
+        Logger.debug("Waiting for other players. Ready: #{inspect(player_ready)}")
         {:ok, new_state}
       end
     else
@@ -254,95 +272,125 @@ defmodule KickaEttan.Games.GameState do
   end
   
   defp is_valid_position?(%{"x" => x, "y" => y}) when is_number(x) and is_number(y) do
-    # Add any additional position validation logic here
-    # e.g., must be within the playing field boundaries
-    # Sheet width is 475, total view height is approx 852. Using safe bounds.
-    x >= 0 and x <= 500 and y >= 0 and y <= 1000
+    # Validate position is within playable area (with some tolerance for edge cases)
+    # Using slightly larger bounds than collision clamping to allow positions near edges
+    x >= 0 and x <= @sheet_width and y >= 0 and y <= @max_y + @stone_radius
   end
   
   defp is_valid_position?(%{x: x, y: y}) when is_number(x) and is_number(y) do
     # Handle atom keys too (internal calls)
-    x >= 0 and x <= 500 and y >= 0 and y <= 1000
+    x >= 0 and x <= @sheet_width and y >= 0 and y <= @max_y + @stone_radius
   end
   
   defp is_valid_position?(_), do: false
   
   defp has_placed_all_stones?(game_state, color) do
     placed_stones = game_state.stones[color] || []
-    require Logger
-    Logger.info("Checking stones for #{color}: placed #{length(placed_stones)} / required #{game_state.stones_per_team}")
+    Logger.debug("Checking stones for #{color}: placed #{length(placed_stones)} / required #{game_state.stones_per_team}")
     length(placed_stones) >= game_state.stones_per_team
   end
   
   defp do_resolve_collisions(stones) do
-    # This is a placeholder for a more sophisticated collision resolution algorithm
-    # For now, we'll just make a small adjustment to overlapping stones
+    # Resolve stone-to-stone collisions using iterative relaxation.
+    # Algorithm:
+    # 1. For each pair of overlapping stones, push them apart along their center line
+    # 2. Clamp all stones to sheet boundaries after each iteration
+    # 3. Repeat until no overlaps remain or max iterations reached
+    #
+    # This converges for typical curling stone arrangements where overlaps
+    # are minor. For pathological cases (many stones in same spot), some
+    # overlap may remain after max iterations.
     
-    # Detect and fix collisions repeatedly until no more are found
-    fixed_point_iteration(stones, &resolve_one_iteration/1, 10)
+    fixed_point_iteration(stones, &resolve_one_iteration/1, @max_collision_iterations)
   end
   
   defp resolve_one_iteration(stones) do
+    # Step 1: Resolve all pairwise collisions
+    separated = resolve_all_collisions(stones)
+    
+    # Step 2: Clamp all stones to sheet boundaries
+    Enum.map(separated, &clamp_to_boundaries/1)
+  end
+  
+  defp resolve_all_collisions(stones) do
     # Find and resolve all pairwise collisions
-    Enum.reduce(0..(length(stones) - 1), stones, fn i, acc ->
+    stone_count = length(stones)
+    
+    Enum.reduce(0..(stone_count - 1), stones, fn i, acc ->
       stone1 = Enum.at(acc, i)
       
-      Enum.reduce(0..(length(acc) - 1), acc, fn j, inner_acc ->
-        if i != j do
-          stone2 = Enum.at(inner_acc, j)
-          
-          if stones_overlap?(stone1, stone2) do
-            # Move stones apart slightly
-            separate_stones(inner_acc, i, j)
-          else
+      Enum.reduce((i + 1)..(stone_count - 1), acc, fn j, inner_acc ->
+        stone2 = Enum.at(inner_acc, j)
+        
+        case calculate_overlap(stone1, stone2) do
+          {:overlap, overlap, nx, ny} ->
+            # Push stones apart by half the overlap each, plus small buffer
+            separate_overlapping_stones(inner_acc, i, j, overlap, nx, ny)
+          :no_overlap ->
             inner_acc
-          end
-        else
-          inner_acc
         end
       end)
     end)
   end
   
-  defp stones_overlap?(stone1, stone2) do
-    # Stone radius (14.5cm to match frontend)
-    radius = 14.5
-    
-    # Calculate distance between stone centers
-    dx = stone1["x"] - stone2["x"]
-    dy = stone1["y"] - stone2["y"]
+  defp calculate_overlap(stone1, stone2) do
+    dx = get_coord(stone1, "x") - get_coord(stone2, "x")
+    dy = get_coord(stone1, "y") - get_coord(stone2, "y")
     distance = :math.sqrt(dx * dx + dy * dy)
     
-    # Stones overlap if distance is less than twice the radius
-    distance < 2 * radius
+    # Stones overlap if distance < diameter
+    if distance < @stone_diameter do
+      # Avoid division by zero for perfectly overlapping stones
+      distance = max(distance, 0.001)
+      
+      # Unit vector from stone2 to stone1
+      nx = dx / distance
+      ny = dy / distance
+      
+      overlap = @stone_diameter - distance
+      {:overlap, overlap, nx, ny}
+    else
+      :no_overlap
+    end
   end
   
-  defp separate_stones(stones, idx1, idx2) do
+  defp separate_overlapping_stones(stones, idx1, idx2, overlap, nx, ny) do
     stone1 = Enum.at(stones, idx1)
     stone2 = Enum.at(stones, idx2)
     
-    # Calculate vector between stones
-    dx = stone1["x"] - stone2["x"]
-    dy = stone1["y"] - stone2["y"]
+    # Move each stone by half the overlap (no buffer - stones will touch exactly)
+    move_dist = overlap / 2
     
-    # Normalize the vector (make it length 1)
-    distance = max(:math.sqrt(dx * dx + dy * dy), 0.001)
-    nx = dx / distance
-    ny = dy / distance
+    # Stone1 moves in direction of normal (away from stone2)
+    stone1_new = update_position(stone1, move_dist * nx, move_dist * ny)
+    # Stone2 moves in opposite direction
+    stone2_new = update_position(stone2, -move_dist * nx, -move_dist * ny)
     
-    # Move stones apart by half the overlap
-    radius = 14.5
-    overlap = 2 * radius - distance
-    move_dist = overlap / 2 + 1  # Add a bit extra to prevent immediate re-collision
-    
-    # Update positions
-    stone1_new = Map.merge(stone1, %{"x" => stone1["x"] + nx * move_dist, "y" => stone1["y"] + ny * move_dist})
-    stone2_new = Map.merge(stone2, %{"x" => stone2["x"] - nx * move_dist, "y" => stone2["y"] - ny * move_dist})
-    
-    # Replace in list
     stones
     |> List.replace_at(idx1, stone1_new)
     |> List.replace_at(idx2, stone2_new)
+  end
+  
+  defp clamp_to_boundaries(stone) do
+    x = get_coord(stone, "x")
+    y = get_coord(stone, "y")
+    
+    clamped_x = x |> max(@min_x) |> min(@max_x)
+    clamped_y = y |> max(@min_y) |> min(@max_y)
+    
+    Map.merge(stone, %{"x" => clamped_x, "y" => clamped_y})
+  end
+  
+  defp update_position(stone, dx, dy) do
+    Map.merge(stone, %{
+      "x" => get_coord(stone, "x") + dx,
+      "y" => get_coord(stone, "y") + dy
+    })
+  end
+  
+  # Helper to get coordinate regardless of string or atom key
+  defp get_coord(stone, key) when is_binary(key) do
+    stone[key] || stone[String.to_atom(key)] || 0
   end
   
   defp fixed_point_iteration(value, _fun, 0), do: value

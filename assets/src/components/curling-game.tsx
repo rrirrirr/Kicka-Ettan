@@ -17,6 +17,7 @@ import {
   VIEW_BOTTOM_OFFSET,
   HOG_LINE_OFFSET,
   BACK_LINE_OFFSET,
+  HOG_LINE_WIDTH,
   HOUSE_RADIUS_12,
   NEAR_HOUSE_THRESHOLD
 } from '../utils/constants';
@@ -89,13 +90,14 @@ const resolveCollisions = (
 
   // Ensure we stay within bounds after collision resolution
   // Valid Y range:
-  // Min: Hog Line (VIEW_TOP_OFFSET - HOG_LINE_OFFSET)
+  // Min: Hog Line bottom edge (VIEW_TOP_OFFSET - HOG_LINE_OFFSET + HOG_LINE_WIDTH/2)
   // Max: Back Line (VIEW_TOP_OFFSET + BACK_LINE_OFFSET)
   // We allow stones to touch/overlap the back line, so we clamp center to [minY + radius, maxY + radius]
   const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET; // Should be 0 if offsets match
+  const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
   const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
 
-  const minY = hogLineY + STONE_RADIUS;
+  const minY = hogLineBottomEdge + STONE_RADIUS;
   const maxY = backLineY + STONE_RADIUS;
 
   resolvedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, resolvedX));
@@ -206,13 +208,20 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         // Use the smaller scale to ensure it fits completely
         const layoutScale = Math.min(scaleWidth, scaleHeight);
 
-        setSheetDimensions({
-          width: SHEET_WIDTH * layoutScale,
-          height: (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET) * layoutScale
+        const newWidth = SHEET_WIDTH * layoutScale;
+        const newHeight = (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET) * layoutScale;
+
+        // Only update if dimensions actually changed
+        setSheetDimensions(prev => {
+          if (prev.width === newWidth && prev.height === newHeight) {
+            return prev;
+          }
+          return { width: newWidth, height: newHeight };
         });
-        // Note: We do NOT set 'scale' here anymore. 
-        // 'scale' is updated by the ResizeObserver on the actual sheet element
-        // to ensure it matches the rendered pixels exactly.
+        setScale(prev => {
+          if (prev === layoutScale) return prev;
+          return layoutScale;
+        });
       }
     };
 
@@ -223,32 +232,14 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
     resizeObserver.observe(containerRef.current);
     updateDimensions();
 
-    return () => resizeObserver.disconnect();
-  }, [myColor]);
+    // Also listen to window resize for viewport changes that might not trigger ResizeObserver
+    window.addEventListener('resize', updateDimensions);
 
-  // Update scale based on actual rendered size of the sheet (Coordinate Mapping)
-  useEffect(() => {
-    if (!sheetRef.current) return;
-
-    const updateScale = () => {
-      if (sheetRef.current) {
-        const { width } = sheetRef.current.getBoundingClientRect();
-        if (width > 0) {
-          const newScale = width / SHEET_WIDTH;
-          setScale(newScale);
-        }
-      }
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateDimensions);
     };
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateScale();
-    });
-
-    resizeObserver.observe(sheetRef.current);
-    updateScale();
-
-    return () => resizeObserver.disconnect();
-  }, [sheetDimensions.width]); // Re-attach/re-measure if dimensions change
+  }, [myColor]);
 
   const [lastInitializedRound, setLastInitializedRound] = useState(0);
 
@@ -331,16 +322,15 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       rawY = relativeY / scale;
 
       // Clamp to sheet boundaries (accounting for stone radius)
-      // Valid Y range: Hog Line to Back Line
-      // Hog Line: We want to be strictly below it.
+      // Valid Y range: Hog Line bottom edge to Back Line
+      // Hog Line: Stone must not touch any part of the line (use bottom edge).
       // Back Line: We want to allow touching/overlapping, but not fully past.
       const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+      const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
       const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
 
-      // MinY: Center must be at least Radius away (touching). Add 1px to be strictly below?
-      // User said "still able to place above". Maybe they mean touching is bad?
-      // Let's stick to Radius for now, but ensure it's working.
-      const minY = hogLineY + STONE_RADIUS;
+      // MinY: Stone top edge must be at or below hog line bottom edge
+      const minY = hogLineBottomEdge + STONE_RADIUS;
 
       // MaxY: Allow stone to touch back line with its edge.
       // Stone center can be at backLineY + STONE_RADIUS (bottom edge touches line).
@@ -414,8 +404,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                   // Place at click location
                   // Clamp to sheet boundaries
                   const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+                  const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
                   const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
-                  const minY = hogLineY + STONE_RADIUS;
+                  const minY = hogLineBottomEdge + STONE_RADIUS;
                   const maxY = backLineY + STONE_RADIUS;
 
                   const clampedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, rawX));
@@ -687,8 +678,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
     // Clamp to sheet boundaries
     const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+    const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
     const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
-    const minY = hogLineY + STONE_RADIUS;
+    const minY = hogLineBottomEdge + STONE_RADIUS;
     const maxY = backLineY + STONE_RADIUS;
 
     const clampedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, rawX));
@@ -820,7 +812,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             style={{
               width: stonePixelSize,
               height: stonePixelSize,
-              backgroundColor: stoneColor,
+                            backgroundColor: stoneColor,
               border: `2px solid #777777`,
               boxShadow: `inset 0 0 0 1px ${darkerShade}`,
               left: pos.x * scale,
@@ -914,7 +906,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
   const renderGameBoard = (forLoupe = false) => (
     <div
-      className="relative z-10 border-x border-gray-200 md:border-none"
+      className="relative z-10"
       style={{
         width: sheetDimensions.width,
         height: sheetDimensions.height,
@@ -946,7 +938,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                 style={{
                   width: stonePixelSize,
                   height: stonePixelSize,
-                  backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
+                                    backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
                   border: `2px solid #777777`,
                   boxShadow: `inset 0 0 0 1px #00000055`, // darker shade approximation
                   left: stone.x * scale,
@@ -1135,7 +1127,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                       style={{
                         width: stonePixelSize,
                         height: stonePixelSize,
-                        borderRadius: '50%',
+                                                borderRadius: '50%',
                         backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
                         border: `2px solid #777777`,
                         boxShadow: `inset 0 0 0 1px #00000055`,
@@ -1262,7 +1254,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             style={{
               width: '100%',
               height: '100%',
-              borderRadius: '50%',
+                            borderRadius: '50%',
               backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
               border: `2px solid #777777`,
               boxShadow: `inset 0 0 0 1px #00000055`,

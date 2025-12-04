@@ -27,6 +27,15 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+# Rate Limiting (Hammer)
+config :hammer,
+  backend: {Hammer.Backend.ETS, [expiry_ms: 60_000 * 60, cleanup_interval_ms: 60_000 * 10]}
+
+config :logger_json, :backend,
+  metadata: [:request_id, :game_id, :player_id],
+  json_encoder: Jason,
+  formatter: LoggerJSON.Formatters.BasicLogger
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 

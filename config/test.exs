@@ -18,6 +18,7 @@ config :kicka_ettan, KickaEttan.Repo,
 config :kicka_ettan, KickaEttanWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "Gp9O4DY68mgZD/M0O3NSpke3cuT+FTi1TV1nTzIY1r7pP64Efx9y8gTZAAp4DirX",
+  signing_salt: "test_signing_salt",
   server: false
 
 # Print only warnings and errors during test

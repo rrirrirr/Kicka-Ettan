@@ -6,6 +6,8 @@ defmodule KickaEttan.Games.GameServer do
   require Logger
   alias KickaEttan.Games.GameState
 
+  @timeout 5000
+
   # Client API
 
   @doc """
@@ -21,7 +23,7 @@ defmodule KickaEttan.Games.GameServer do
   def get_game_state(game_id) do
     case lookup_game(game_id) do
       {:ok, game_server} ->
-        GenServer.call(game_server, :get_game_state)
+        GenServer.call(game_server, :get_game_state, @timeout)
       error ->
         error
     end
@@ -32,7 +34,7 @@ defmodule KickaEttan.Games.GameServer do
   """
   def join_game(game_id, player_id, color \\ nil) do
     with {:ok, game_server} <- lookup_game(game_id) do
-      GenServer.call(game_server, {:join_game, player_id, color})
+      GenServer.call(game_server, {:join_game, player_id, color}, @timeout)
     end
   end
 
@@ -41,7 +43,7 @@ defmodule KickaEttan.Games.GameServer do
   """
   def place_stone(game_id, player_id, stone_index, position) do
     with {:ok, game_server} <- lookup_game(game_id) do
-      GenServer.call(game_server, {:place_stone, player_id, stone_index, position})
+      GenServer.call(game_server, {:place_stone, player_id, stone_index, position}, @timeout)
     end
   end
 
@@ -50,7 +52,7 @@ defmodule KickaEttan.Games.GameServer do
   """
   def confirm_placement(game_id, player_id) do
     with {:ok, game_server} <- lookup_game(game_id) do
-      GenServer.call(game_server, {:confirm_placement, player_id})
+      GenServer.call(game_server, {:confirm_placement, player_id}, @timeout)
     end
   end
 
@@ -59,7 +61,7 @@ defmodule KickaEttan.Games.GameServer do
   """
   def ready_for_next_round(game_id, player_id) do
     with {:ok, game_server} <- lookup_game(game_id) do
-      GenServer.call(game_server, {:ready_for_next_round, player_id})
+      GenServer.call(game_server, {:ready_for_next_round, player_id}, @timeout)
     end
   end
 
@@ -67,7 +69,8 @@ defmodule KickaEttan.Games.GameServer do
 
   @impl true
   def init({game_id, options}) do
-    Logger.info("Starting game server for game #{game_id}")
+    Logger.metadata(game_id: game_id)
+    Logger.info("Starting game server")
     
     options = Map.put(options, :game_id, game_id)
     game_state = GameState.new(options)
@@ -93,7 +96,7 @@ defmodule KickaEttan.Games.GameServer do
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warning("Failed to join player #{player_id} to game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to join player", player_id: player_id, reason: reason)
         {:reply, error, game_state}
     end
   end
@@ -106,7 +109,7 @@ defmodule KickaEttan.Games.GameServer do
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warning("Failed to place stone for player #{player_id} in game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to place stone", player_id: player_id, reason: reason)
         {:reply, error, game_state}
     end
   end
@@ -119,7 +122,7 @@ defmodule KickaEttan.Games.GameServer do
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warning("Failed to confirm placement for player #{player_id} in game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to confirm placement", player_id: player_id, reason: reason)
         {:reply, error, game_state}
     end
   end
@@ -132,7 +135,7 @@ defmodule KickaEttan.Games.GameServer do
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warning("Failed to mark player #{player_id} as ready for next round in game #{game_state.game_id}: #{reason}")
+        Logger.warning("Failed to mark player ready", player_id: player_id, reason: reason)
         {:reply, error, game_state}
     end
   end

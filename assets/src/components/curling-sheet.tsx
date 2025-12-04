@@ -7,6 +7,7 @@ import {
     BUTTON_RADIUS,
     HOG_LINE_OFFSET,
     BACK_LINE_OFFSET,
+    HOG_LINE_WIDTH,
     VIEW_TOP_OFFSET,
     VIEW_BOTTOM_OFFSET,
     COLOR_ICE,
@@ -62,13 +63,12 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
     const teeY = VIEW_TOP_OFFSET;
 
     return (
-        <div className="relative select-none w-full" style={{ width, aspectRatio: `${SHEET_WIDTH}/${viewHeight}` }}>
+        <div className="relative select-none" style={{ width, height: '100%' }}>
             <svg
-                width="100%"
-                height="100%"
+                style={{ width: '100%', height: '100%' }}
                 viewBox={`0 0 ${SHEET_WIDTH} ${viewHeight}`}
                 className="bg-white block"
-                preserveAspectRatio="xMidYMid meet"
+                preserveAspectRatio="none"
             >
                 {/* Ice Background */}
                 <rect x="0" y="0" width={SHEET_WIDTH} height={viewHeight} fill={colors.ice} />
@@ -98,7 +98,7 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                     x2={SHEET_WIDTH}
                     y2={teeY - HOG_LINE_OFFSET}
                     stroke={colors.hogLine}
-                    strokeWidth="10" // Hog line is wide
+                    strokeWidth={HOG_LINE_WIDTH}
                 />
 
                 {/* Tee Line */}

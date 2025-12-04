@@ -43,6 +43,8 @@ defmodule KickaEttan.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:plug_cowboy, "~> 2.5"},
+      {:logger_json, "~> 5.1"},
+      {:sentry, "~> 10.2.0"},
       
       # CORS handling for development
       {:corsica, "~> 1.3"},
@@ -57,7 +59,10 @@ defmodule KickaEttan.MixProject do
       
       # Linting and static analysis
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      
+      # Rate limiting
+      {:hammer, "~> 6.1"}
     ]
   end
 

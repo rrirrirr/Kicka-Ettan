@@ -4,6 +4,7 @@ import {
   HOG_LINE_OFFSET,
   BACK_LINE_OFFSET,
   VIEW_TOP_OFFSET,
+  HOG_LINE_WIDTH,
 } from './constants';
 
 export interface ValidationResult {
@@ -28,8 +29,10 @@ export function validateStonePlacement(x: number, y: number): ValidationResult {
   const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
   const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
 
-  // Y boundaries: stone center must be between hog line and back line (accounting for radius)
-  const minY = hogLineY + STONE_RADIUS;
+  // Y boundaries: stone center must be between hog line (bottom edge) and back line (accounting for radius)
+  // The hog line has width, so we use the bottom edge (center + half width) as the boundary
+  const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
+  const minY = hogLineBottomEdge + STONE_RADIUS;
   const maxY = backLineY + STONE_RADIUS;
 
   // X boundaries: stone center must not exceed sidelines (accounting for radius)
@@ -80,11 +83,12 @@ export function isValidStonePlacement(x: number, y: number): boolean {
 export function getPlacementBoundaries() {
   const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
   const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
+  const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
 
   return {
     minX: STONE_RADIUS,
     maxX: SHEET_WIDTH - STONE_RADIUS,
-    minY: hogLineY + STONE_RADIUS,
+    minY: hogLineBottomEdge + STONE_RADIUS,
     maxY: backLineY + STONE_RADIUS,
     hogLineY,
     backLineY,

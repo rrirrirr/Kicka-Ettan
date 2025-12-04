@@ -10,6 +10,7 @@ import {
   HOG_LINE_OFFSET,
   BACK_LINE_OFFSET,
   VIEW_TOP_OFFSET,
+  HOG_LINE_WIDTH,
 } from './constants';
 
 describe('Stone Placement Validation', () => {
@@ -17,9 +18,10 @@ describe('Stone Placement Validation', () => {
 
   describe('getPlacementBoundaries', () => {
     it('should return correct boundary values', () => {
+      const hogLineBottomEdge = VIEW_TOP_OFFSET - HOG_LINE_OFFSET + HOG_LINE_WIDTH / 2;
       expect(boundaries.minX).toBe(STONE_RADIUS);
       expect(boundaries.maxX).toBe(SHEET_WIDTH - STONE_RADIUS);
-      expect(boundaries.minY).toBe(VIEW_TOP_OFFSET - HOG_LINE_OFFSET + STONE_RADIUS);
+      expect(boundaries.minY).toBe(hogLineBottomEdge + STONE_RADIUS);
       expect(boundaries.maxY).toBe(VIEW_TOP_OFFSET + BACK_LINE_OFFSET + STONE_RADIUS);
     });
   });
@@ -57,7 +59,8 @@ describe('Stone Placement Validation', () => {
 
     it('should reject stone when edge would cross hog line', () => {
       const x = SHEET_WIDTH / 2;
-      const y = boundaries.hogLineY + STONE_RADIUS - 0.1; // Edge would cross
+      const hogLineBottomEdge = boundaries.hogLineY + HOG_LINE_WIDTH / 2;
+      const y = hogLineBottomEdge + STONE_RADIUS - 0.1; // Edge would cross
 
       const result = validateStonePlacement(x, y);
 

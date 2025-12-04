@@ -7,23 +7,51 @@ defmodule KickaEttanWeb.API.GameController do
   Create a new game with specified options
   """
   def create(conn, params) do
-    game_options = %{
-      total_rounds: params["total_rounds"] || 3,
-      stones_per_team: params["stones_per_team"] || 5,
-      team1_color: params["team1_color"],
-      team2_color: params["team2_color"]
-    }
-    
-    case GameSupervisor.create_game(game_options) do
-      {:ok, game_id} ->
-        conn
-        |> put_status(:created)
-        |> json(%{game_id: game_id})
+    total_rounds = parse_int(params["total_rounds"] || 3)
+    stones_per_team = parse_int(params["stones_per_team"] || 5)
+
+    with :ok <- validate_bounds(total_rounds, 1, 1000, "total_rounds"),
+         :ok <- validate_bounds(stones_per_team, 1, 100, "stones_per_team") do
+      game_options = %{
+        total_rounds: total_rounds,
+        stones_per_team: stones_per_team,
+        team1_color: params["team1_color"],
+        team2_color: params["team2_color"]
+      }
       
-      {:error, reason} ->
+      case GameSupervisor.create_game(game_options) do
+        {:ok, game_id} ->
+          conn
+          |> put_status(:created)
+          |> json(%{game_id: game_id})
+        
+        {:error, reason} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{error: reason})
+      end
+    else
+      {:error, msg} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(%{error: reason})
+        |> json(%{error: msg})
+    end
+  end
+
+  defp parse_int(val) when is_integer(val), do: val
+  defp parse_int(val) when is_binary(val) do
+    case Integer.parse(val) do
+      {int, _} -> int
+      :error -> 0
+    end
+  end
+  defp parse_int(_), do: 0
+
+  defp validate_bounds(val, min, max, name) do
+    if val >= min and val <= max do
+      :ok
+    else
+      {:error, "#{name} must be between #{min} and #{max}"}
     end
   end
 

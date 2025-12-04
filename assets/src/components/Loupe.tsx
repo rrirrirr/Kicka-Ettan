@@ -1,16 +1,37 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface LoupeProps {
   x: number;
   y: number;
   scale?: number;
-  size?: number;
+  size?: number; // Can be a fixed pixel value or left undefined for responsive sizing
   content: React.ReactNode;
   offsetY?: number;
   fixedPosition?: { x: number; y: number };
   showCrosshair?: boolean;
 }
+
+// Calculate responsive loupe size based on viewport
+const getResponsiveSize = (): number => {
+  if (typeof window === "undefined") return 120;
+
+  // Use the smaller of width/height (vmin equivalent)
+  const vmin = Math.min(window.innerWidth, window.innerHeight);
+
+  // 30% of vmin, clamped between 80px and 200px
+  return Math.max(80, Math.min(200, vmin * 0.3));
+};
+
+// Calculate responsive offset based on viewport
+const getResponsiveOffset = (): number => {
+  if (typeof window === "undefined") return 100;
+
+  const vmin = Math.min(window.innerWidth, window.innerHeight);
+
+  // 25% of vmin, clamped between 70px and 150px
+  return Math.max(70, Math.min(150, vmin * 0.25));
+};
 
 // Calculate the optimal angle for loupe positioning (continuous, not stepped)
 const calculateOptimalAngle = (
@@ -110,12 +131,31 @@ export const Loupe: React.FC<LoupeProps> = ({
   x,
   y,
   scale = 2,
-  size = 120,
+  size: sizeProp,
   content,
-  offsetY = 100,
+  offsetY: offsetYProp,
   fixedPosition,
   showCrosshair = true,
 }) => {
+  // Use responsive sizing if no explicit size provided
+  const [responsiveSize, setResponsiveSize] = useState(getResponsiveSize);
+  const [responsiveOffset, setResponsiveOffset] = useState(getResponsiveOffset);
+
+  // Update size on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setResponsiveSize(getResponsiveSize());
+      setResponsiveOffset(getResponsiveOffset());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Use prop values if provided, otherwise use responsive values
+  const size = sizeProp ?? responsiveSize;
+  const offsetY = offsetYProp ?? responsiveOffset;
+
   const padding = 10;
   const loupeRadius = size / 2;
 
@@ -200,8 +240,8 @@ export const Loupe: React.FC<LoupeProps> = ({
           top: "50%",
           transform: `translate(-${x * scale}px, -${y * scale}px) scale(${scale})`,
           transformOrigin: "0 0",
-          width: "100vw", // Ensure enough space for content
-          height: "100vh",
+          width: "100dvw", // Ensure enough space for content
+          height: "100dvh", // Use dvh for mobile Safari compatibility
         }}
       >
         {content}
