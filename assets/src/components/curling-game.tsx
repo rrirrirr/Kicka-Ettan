@@ -78,9 +78,9 @@ const resolveCollisions = (
           ny /= len;
         }
 
-        // Move dropped stone out
-        resolvedX = otherStone.x + nx * (MIN_DISTANCE + 1);
-        resolvedY = otherStone.y + ny * (MIN_DISTANCE + 1);
+        // Move dropped stone to just touch the other stone (no gap)
+        resolvedX = otherStone.x + nx * MIN_DISTANCE;
+        resolvedY = otherStone.y + ny * MIN_DISTANCE;
       }
     });
 
@@ -404,7 +404,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             if (stone) {
               const distToCenter = Math.sqrt(Math.pow(rawX - stone.x, 2) + Math.pow(rawY - stone.y, 2));
 
-              // Visual radius is STONE_RADIUS (14.5). 
+              // Visual radius is STONE_RADIUS (14.5 - regulation curling stone). 
               // If click is within visual radius -> Select/Highlight
               // If click is outside visual radius (but inside target/halo) -> Place New Stone
               if (distToCenter > STONE_RADIUS) {
@@ -829,84 +829,84 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               marginTop: -stonePixelSize / 2,
               zIndex: 2,
             }}
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent sheet click
-            if (gameState.phase === 'combined' || isHistoryMode) {
-              setHighlightedStone(prev => {
-                // Determine zone
-                // const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
-                const distToCenter = Math.sqrt(Math.pow(pos.x - (SHEET_WIDTH / 2), 2) + Math.pow(pos.y - VIEW_TOP_OFFSET, 2));
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent sheet click
+              if (gameState.phase === 'combined' || isHistoryMode) {
+                setHighlightedStone(prev => {
+                  // Determine zone
+                  // const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
+                  const distToCenter = Math.sqrt(Math.pow(pos.x - (SHEET_WIDTH / 2), 2) + Math.pow(pos.y - VIEW_TOP_OFFSET, 2));
 
-                // House Stone: Touching the house (dist <= 12ft radius + stone radius)
-                const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
+                  // House Stone: Touching the house (dist <= 12ft radius + stone radius)
+                  const isHouseStone = distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS);
 
-                // Near House Stone: Not touching house, but within threshold of outer ring
-                // Distance from center <= 12ft radius + stone radius + threshold
-                const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD);
+                  // Near House Stone: Not touching house, but within threshold of outer ring
+                  // Distance from center <= 12ft radius + stone radius + threshold
+                  const isNearHouseStone = !isHouseStone && distToCenter <= (HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD);
 
-                // Guard Stone: Anything else (typically above house)
-                let steps;
-                if (isHouseStone) {
-                  steps = settings.houseZone;
-                } else if (isNearHouseStone) {
-                  steps = settings.nearHouseZone;
-                } else {
-                  steps = settings.guardZone;
-                }
-
-                if (prev?.color === color && prev?.index === i) {
-                  // Already selected - Cycle logic
-                  const nextStepIndex = prev.stepIndex + 1;
-                  if (nextStepIndex >= steps.length) {
-                    // Reached the end of steps, deselect stone
-                    setHoveredStone(null);
-                    return null;
+                  // Guard Stone: Anything else (typically above house)
+                  let steps;
+                  if (isHouseStone) {
+                    steps = settings.houseZone;
+                  } else if (isNearHouseStone) {
+                    steps = settings.nearHouseZone;
+                  } else {
+                    steps = settings.guardZone;
                   }
-                  // Load next step's types
-                  const nextStepTypes = steps[nextStepIndex]?.types || [];
-                  return {
-                    ...prev,
-                    stepIndex: nextStepIndex,
-                    activeTypes: nextStepTypes
-                  };
-                } else {
-                  // New selection - initialize with first step's types
-                  const initialTypes = steps[0]?.types || [];
-                  return {
-                    color,
-                    index: i,
-                    stepIndex: 0,
-                    activeTypes: initialTypes
-                  };
-                }
-              });
-            }
-          }}
-          onMouseEnter={() => {
-            if (gameState.phase === 'combined' || isHistoryMode) {
-              setHoveredStone({ color, index: i });
-            }
-          }}
-          onMouseLeave={() => {
-            if (gameState.phase === 'combined' || isHistoryMode) {
-              setHoveredStone(null);
-            }
-          }}
-        >
-          {/* Small handle */}
-          <div
-            style={{
-              width: stonePixelSize * 2 / 5,
-              height: stonePixelSize / 7,
-              backgroundColor: darkerShade,
-              borderRadius: stonePixelSize / 12,
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+
+                  if (prev?.color === color && prev?.index === i) {
+                    // Already selected - Cycle logic
+                    const nextStepIndex = prev.stepIndex + 1;
+                    if (nextStepIndex >= steps.length) {
+                      // Reached the end of steps, deselect stone
+                      setHoveredStone(null);
+                      return null;
+                    }
+                    // Load next step's types
+                    const nextStepTypes = steps[nextStepIndex]?.types || [];
+                    return {
+                      ...prev,
+                      stepIndex: nextStepIndex,
+                      activeTypes: nextStepTypes
+                    };
+                  } else {
+                    // New selection - initialize with first step's types
+                    const initialTypes = steps[0]?.types || [];
+                    return {
+                      color,
+                      index: i,
+                      stepIndex: 0,
+                      activeTypes: initialTypes
+                    };
+                  }
+                });
+              }
             }}
-          />
-        </div>
+            onMouseEnter={() => {
+              if (gameState.phase === 'combined' || isHistoryMode) {
+                setHoveredStone({ color, index: i });
+              }
+            }}
+            onMouseLeave={() => {
+              if (gameState.phase === 'combined' || isHistoryMode) {
+                setHoveredStone(null);
+              }
+            }}
+          >
+            {/* Small handle */}
+            <div
+              style={{
+                width: stonePixelSize * 2 / 5,
+                height: stonePixelSize / 7,
+                backgroundColor: darkerShade,
+                borderRadius: stonePixelSize / 12,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+          </div>
         </>
       );
     });
@@ -1061,9 +1061,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             }
 
             if (highlightedStone &&
-                targetStone.color === highlightedStone.color &&
-                targetStone.index === highlightedStone.index &&
-                highlightedStone.activeTypes) {
+              targetStone.color === highlightedStone.color &&
+              targetStone.index === highlightedStone.index &&
+              highlightedStone.activeTypes) {
               return {
                 ...targetStone,
                 activeTypes: highlightedStone.activeTypes,
@@ -1196,8 +1196,14 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         // Fixed position: Up center, a bit above top of house
         const topOfHousePixelY = (VIEW_TOP_OFFSET - HOUSE_RADIUS_12) * scale;
         const fixedX = sheetRect.left + (sheetDimensions.width / 2);
-        // Position it 155px above the top of the house (adjustable) to maintain gap with larger size
-        const fixedY = sheetRect.top + topOfHousePixelY - 155;
+
+        // Detect mobile viewport for responsive sizing
+        const isMobile = window.innerWidth < 768;
+        const loupeSize = isMobile ? 219 : 243; // 10% smaller on mobile (243 * 0.9 ≈ 219)
+        const loupeOffset = isMobile ? 140 : 155; // Adjust offset for smaller loupe
+
+        // Position it above the top of the house
+        const fixedY = sheetRect.top + topOfHousePixelY - loupeOffset;
 
         const availableTypes: MeasurementType[] = ['closest-ring', 't-line', 'center-line'];
 
@@ -1207,7 +1213,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             y={stoneGlobalY}
             fixedPosition={{ x: fixedX, y: fixedY }}
             scale={1.8}
-            size={243}
+            size={loupeSize}
             activeTypes={highlightedStone.activeTypes || []}
             availableTypes={availableTypes}
             onToggleType={(type) => {

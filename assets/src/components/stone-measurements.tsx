@@ -1711,18 +1711,16 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
   // Detect mobile viewport
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
-  // Calculate positioning:
-  // All viewports: Use fixed positioning for proper z-index layering
-  // Mobile: 8px from right edge of screen
-  // Desktop/Tablet: Calculate to be just outside the sheet on the right
+  // Simple positioning approach:
+  // Mobile: 8px from right edge
+  // Desktop/Tablet: 20px from right edge (gives it space from edge)
+  const rightPosition = isMobile ? '8px' : '20px';
 
-  // For desktop, we'll position it at a fixed distance from the right that puts it outside the sheet
-  // Since the sheet is centered and has max-width, we can use a media query approach or fixed value
-  // For now, use a fixed right position that works for typical desktop layouts
-  const rightPosition = isMobile ? '8px' : 'calc(50% - 237.5px - 52px)'; // 237.5px = half sheet width (475px / 2), 52px = button bar offset
+  // When above house, add more offset on desktop (60px vs 10px on mobile) to move it down
+  const topOffset = isAboveHouse ? (isMobile ? 10 : 60) : 0;
 
   const barPosition = isAboveHouse
-    ? { position: 'fixed' as const, right: rightPosition, top: `${(topOfHouseY * scale) + 10}px`, zIndex: 10001 }
+    ? { position: 'fixed' as const, right: rightPosition, top: `${(topOfHouseY * scale) + topOffset}px`, zIndex: 10001 }
     : { position: 'fixed' as const, right: rightPosition, top: '35%', transform: 'translateY(-50%)', zIndex: 10001 };
 
   return (
