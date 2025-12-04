@@ -775,23 +775,60 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       const stoneColor = gameState.team_colors ? gameState.team_colors[color] : (color === 'red' ? '#cc0000' : '#e6b800');
       const darkerShade = getBorderColor(stoneColor);
 
+      const isHighlighted = highlightedStone?.color === color && highlightedStone?.index === i;
+
       return (
-        <div
-          key={`${color}-${i}`}
-          className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${(highlightedStone?.color === color && highlightedStone?.index === i) ? 'scale-105 ring-2 ring-white/50' : ''
-            } ${(gameState.phase === 'combined' || isHistoryMode) ? 'cursor-pointer' : 'cursor-default'
-            }`}
-          style={{
-            width: stonePixelSize,
-            height: stonePixelSize,
-            backgroundColor: stoneColor,
-            border: `2px solid #777777`,
-            boxShadow: `inset 0 0 0 1px ${darkerShade}`,
-            left: pos.x * scale,
-            top: pos.y * scale,
-            marginLeft: -stonePixelSize / 2,
-            marginTop: -stonePixelSize / 2,
-          }}
+        <>
+          {/* Pulse ring animation for selected stone */}
+          {isHighlighted && (
+            <div
+              key={`${color}-${i}-pulse`}
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                left: pos.x * scale,
+                top: pos.y * scale,
+                marginLeft: -stonePixelSize / 2,
+                marginTop: -stonePixelSize / 2,
+                width: stonePixelSize,
+                height: stonePixelSize,
+                zIndex: 1,
+              }}
+            >
+              <div
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{
+                  animationDuration: '2.5s',
+                  border: '3px solid rgba(168, 85, 247, 0.6)',
+                  boxShadow: '0 0 8px rgba(168, 85, 247, 0.4)'
+                }}
+              />
+              <div
+                className="absolute inset-0 rounded-full animate-pulse"
+                style={{
+                  border: '2px solid rgba(168, 85, 247, 0.8)',
+                  boxShadow: '0 0 6px rgba(168, 85, 247, 0.5)'
+                }}
+              />
+            </div>
+          )}
+
+          <div
+            key={`${color}-${i}`}
+            className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${isHighlighted ? 'scale-105 ring-2 ring-white/50' : ''
+              } ${(gameState.phase === 'combined' || isHistoryMode) ? 'cursor-pointer' : 'cursor-default'
+              }`}
+            style={{
+              width: stonePixelSize,
+              height: stonePixelSize,
+              backgroundColor: stoneColor,
+              border: `2px solid #777777`,
+              boxShadow: `inset 0 0 0 1px ${darkerShade}`,
+              left: pos.x * scale,
+              top: pos.y * scale,
+              marginLeft: -stonePixelSize / 2,
+              marginTop: -stonePixelSize / 2,
+              zIndex: 2,
+            }}
           onClick={(e) => {
             e.stopPropagation(); // Prevent sheet click
             if (gameState.phase === 'combined' || isHistoryMode) {
@@ -870,6 +907,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             }}
           />
         </div>
+        </>
       );
     });
   };

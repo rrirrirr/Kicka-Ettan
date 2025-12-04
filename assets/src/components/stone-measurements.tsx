@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   SHEET_WIDTH,
   VIEW_TOP_OFFSET,
@@ -1301,6 +1301,26 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                               <g>
                                 {/* Overlap Icon (Two intersecting circles) */}
                                 <g transform="translate(-16, -1)">
+                                  {/* Black outline circles */}
+                                  <circle
+                                    cx="-3"
+                                    cy="0"
+                                    r="4.5"
+                                    fill="none"
+                                    stroke="black"
+                                    strokeOpacity="0.3"
+                                    strokeWidth="3"
+                                  />
+                                  <circle
+                                    cx="3"
+                                    cy="0"
+                                    r="4.5"
+                                    fill="none"
+                                    stroke="black"
+                                    strokeOpacity="0.3"
+                                    strokeWidth="3"
+                                  />
+                                  {/* Cyan circles on top */}
                                   <circle
                                     cx="-3"
                                     cy="0"
@@ -1552,12 +1572,26 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
   sheetWidth,
   nearHouseThreshold,
   hogLineOffset,
-  backLineOffset,
   houseRadius12,
   stoneRadius,
   stones,
   onToggleMeasurementType,
 }) => {
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    // Check if user has seen the toast before
+    const hasSeenToast = localStorage.getItem('hasSeenMeasurementTooltip');
+
+    if (!hasSeenToast) {
+      setShowToast(true);
+      localStorage.setItem('hasSeenMeasurementTooltip', 'true');
+    }
+  }, []);
+
+  const handleCloseToast = () => {
+    setShowToast(false);
+  };
   // Determine Zone
   const stoneList = stones[highlightedStone.color];
   const stonePos = stoneList[highlightedStone.index];
@@ -1589,11 +1623,7 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
     steps = settings.houseZone;
   }
 
-  if (steps.length <= 1) return null;
-
-  const currentStepIndex = highlightedStone.stepIndex || 0;
-
-  const currentStep = steps[currentStepIndex];
+  if (steps.length === 0) return null;
 
   const ALL_MEASUREMENT_TYPES: MeasurementType[] = [
     'guard', 't-line', 'center-line', 'closest-ring', 'stone-to-stone'
@@ -1622,7 +1652,7 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
   // Helper to render buttons
   const renderButtons = (typesToRender: MeasurementType[], activeTypes: MeasurementType[]) => {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2">
         {typesToRender.map((type) => {
           const isActive = activeTypes.includes(type);
 
@@ -1669,44 +1699,66 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
     );
   };
 
-  const backLineY = teeLineY + backLineOffset;
+  const topOfHouseY = teeLineY - houseRadius12;
 
-  // Calculate top position
-  // If in guard zone, place it just below the tee line
-  // Otherwise, place it at the top of the sheet
-  const topPosition = isInGuardZone
-    ? (teeLineY * scale) + 20 // 20px below the tee line
-    : 10; // 10px from top of container
+  // Check if stone is above the top of house line
+  const isAboveHouse = stonePos.y < topOfHouseY;
+
+  // If stone is above house, position bar just below the top of house line
+  // Otherwise use the default centered position
+  const barPosition = isAboveHouse
+    ? { position: 'absolute' as const, right: '20px', top: `${(topOfHouseY * scale) + 10}px`, zIndex: 50 }
+    : { position: 'absolute' as const, right: '20px', top: '35%', transform: 'translateY(-50%)', zIndex: 50 };
 
   return (
     <>
       <div
-        style={{
-          position: 'absolute',
-          top: `${topPosition}px`,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 50, // Ensure it's above everything
-        }}
-        className="card-gradient backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-white/50 flex items-center justify-center transition-all duration-300"
+        style={barPosition}
+        className="card-gradient backdrop-blur-md px-2 py-4 rounded-full shadow-lg border border-white/50 flex items-center justify-center transition-all duration-300"
       >
         {/* Current Step Buttons */}
         {renderButtons(ALL_MEASUREMENT_TYPES, highlightedStone.activeTypes || [])}
       </div>
 
-      {/* Instructional Text - Below buttons */}
-      <div
-        style={{
-          position: 'absolute',
-          top: `${topPosition + 60}px`,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 50,
-        }}
-        className="text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap"
-      >
-        Click stone again to cycle measurements
-      </div>
+      {/* First-time toast notification */}
+      {showToast && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+          }}
+          className="animate-fade-in"
+        >
+          <div className="bg-[var(--icy-black)] text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]">
+            <div className="flex-1 text-sm font-medium">
+              💡 Click stone again to cycle through measurements
+            </div>
+            <button
+              onClick={handleCloseToast}
+              className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-white/20 transition-colors"
+              aria-label="Close"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
