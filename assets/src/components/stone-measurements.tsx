@@ -565,6 +565,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                     pointerEvents: "none",
                     transition: "opacity 0.2s ease",
                     overflow: "visible",
+                    zIndex: 3,
                   }}
                 >
                   {/* Hog Line Reference Line */}
@@ -1036,6 +1037,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                       height: "100%",
                       pointerEvents: "none",
                       transition: "opacity 0.2s ease",
+                      zIndex: 3,
                     }}
                   >
                     {displaySettings.centerLine.showLine && (() => {
@@ -1176,6 +1178,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                       height: "100%",
                       pointerEvents: "none",
                       transition: "opacity 0.2s ease",
+                      zIndex: 3,
                     }}
                   >
                     {/* Only show line if NOT overlapping */}
@@ -1438,6 +1441,7 @@ const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
                       height: "100%",
                       pointerEvents: "none",
                       transition: "opacity 0.2s ease",
+                      zIndex: 3,
                     }}
                   >
                     {allStones.map((otherStone) => {
@@ -1704,11 +1708,22 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
   // Check if stone is above the top of house line
   const isAboveHouse = stonePos.y < topOfHouseY;
 
-  // If stone is above house, position bar just below the top of house line
-  // Otherwise use the default centered position
+  // Detect mobile viewport
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  // Calculate positioning:
+  // All viewports: Use fixed positioning for proper z-index layering
+  // Mobile: 8px from right edge of screen
+  // Desktop/Tablet: Calculate to be just outside the sheet on the right
+
+  // For desktop, we'll position it at a fixed distance from the right that puts it outside the sheet
+  // Since the sheet is centered and has max-width, we can use a media query approach or fixed value
+  // For now, use a fixed right position that works for typical desktop layouts
+  const rightPosition = isMobile ? '8px' : 'calc(50% - 237.5px - 52px)'; // 237.5px = half sheet width (475px / 2), 52px = button bar offset
+
   const barPosition = isAboveHouse
-    ? { position: 'absolute' as const, right: '20px', top: `${(topOfHouseY * scale) + 10}px`, zIndex: 50 }
-    : { position: 'absolute' as const, right: '20px', top: '35%', transform: 'translateY(-50%)', zIndex: 50 };
+    ? { position: 'fixed' as const, right: rightPosition, top: `${(topOfHouseY * scale) + 10}px`, zIndex: 10001 }
+    : { position: 'fixed' as const, right: rightPosition, top: '35%', transform: 'translateY(-50%)', zIndex: 10001 };
 
   return (
     <>
@@ -1728,7 +1743,7 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
             top: '20px',
             left: '50%',
             transform: 'translateX(-50%)',
-            zIndex: 9999,
+            zIndex: 10002,
           }}
           className="animate-fade-in"
         >
