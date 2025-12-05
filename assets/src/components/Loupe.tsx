@@ -14,13 +14,13 @@ interface LoupeProps {
 
 // Calculate responsive loupe size based on viewport
 const getResponsiveSize = (): number => {
-  if (typeof window === "undefined") return 120;
+  if (typeof window === "undefined") return 100;
 
   // Use the smaller of width/height (vmin equivalent)
   const vmin = Math.min(window.innerWidth, window.innerHeight);
 
-  // 30% of vmin, clamped between 80px and 200px
-  return Math.max(80, Math.min(200, vmin * 0.3));
+  // 22% of vmin, clamped between 80px and 150px
+  return Math.max(80, Math.min(150, vmin * 0.22));
 };
 
 // Calculate responsive offset based on viewport

@@ -1440,6 +1440,20 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
 }) => {
   const [showToast, setShowToast] = useState(false);
 
+  // Responsive mobile detection with resize listener
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 768
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     // Check if user has seen the toast before
     const hasSeenToast = localStorage.getItem('hasSeenMeasurementTooltip');
@@ -1565,9 +1579,6 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
   // Check if stone is above the top of house line
   const isAboveHouse = stonePos.y < topOfHouseY;
 
-  // Detect mobile viewport
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
   // Simple positioning approach:
   // Mobile: 8px from right edge
   // Desktop/Tablet: 20px from right edge (gives it space from edge)
@@ -1595,14 +1606,14 @@ const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> = ({
         <div
           style={{
             position: 'fixed',
-            top: '20px',
+            top: 'max(20px, env(safe-area-inset-top, 20px))',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 10002,
           }}
           className="animate-fade-in"
         >
-          <div className="bg-[var(--icy-black)] text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]">
+          <div className="bg-[var(--icy-black)] text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[280px] max-w-[90vw]">
             <div className="flex-1 text-sm font-medium">
               💡 Click stone again to cycle through measurements
             </div>

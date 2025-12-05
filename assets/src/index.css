@@ -107,7 +107,7 @@
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--background);
   background-image:
     radial-gradient(circle at 15% 50%, rgba(98, 182, 203, 0.15) 0%, transparent 25%),
