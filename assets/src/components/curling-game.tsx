@@ -1189,9 +1189,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         const topOfHousePixelY = (VIEW_TOP_OFFSET - HOUSE_RADIUS_12) * scale;
         const fixedX = sheetRect.left + (sheetDimensions.width / 2);
 
-        // Calculate responsive offset based on viewport (same formula as Loupe)
-        const vmin = Math.min(window.innerWidth, window.innerHeight);
-        const loupeOffset = Math.max(100, Math.min(180, vmin * 0.35));
+        // Calculate offset based on sheet width (scales with loupe size)
+        const loupeSize = Math.max(120, Math.min(240, sheetDimensions.width * 0.6));
+        const loupeOffset = loupeSize * 0.75; // Offset is 75% of loupe size (places it further up)
 
         // Position it above the top of the house
         const fixedY = sheetRect.top + topOfHousePixelY - loupeOffset;
@@ -1204,7 +1204,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             y={stoneGlobalY}
             fixedPosition={{ x: fixedX, y: fixedY }}
             scale={1.8}
-            // Let StoneInspector/Loupe handle responsive sizing - don't pass size
+            sheetWidth={sheetDimensions.width}
             activeTypes={highlightedStone.activeTypes || []}
             availableTypes={availableTypes}
             onToggleType={(type) => {
