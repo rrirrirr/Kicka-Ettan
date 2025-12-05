@@ -75,7 +75,7 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                         y1={verticalLineStartY}
                         x2={stonePixelX}
                         y2={teeLinePixelY}
-                        stroke="var(--color-amber-400)"
+                        stroke="var(--color-amber-500)"
                         strokeWidth={strokeWidth}
                         strokeDasharray="5,5"
                         opacity={opacity}
@@ -157,7 +157,7 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                             y={-barHeight / 2}
                             width={barLength}
                             height={barHeight}
-                            fill="var(--icy-black)"
+                            fill="var(--color-amber-500)"
                             fillOpacity="0.8"
                             rx="2"
                         />
@@ -167,7 +167,7 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                             y={-barHeight / 2}
                             width={fillWidth}
                             height={barHeight}
-                            fill="var(--color-amber-400)"
+                            fill="var(--color-amber-500)"
                             fillOpacity="0.9"
                         />
                     </g>

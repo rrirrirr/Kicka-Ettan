@@ -207,7 +207,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         // Text styling
         const fontSize = useHighlightedStyle ? "12" : "10";
         const fontWeight = useHighlightedStyle ? "bold" : "normal";
-        const highVisibilityTextColor = "var(--color-amber-400)"; // Amber-400
+        const highVisibilityTextColor = "var(--color-amber-500)"; // Amber-500 for T-Line and Center-Line
 
         // T-Line specific
         const isAboveTee = deltaY < 0;

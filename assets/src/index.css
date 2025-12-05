@@ -22,29 +22,53 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Icy Glass Palette */
-  /* Icy Glass Palette */
-  --icy-blue-dark: #252333;
-  /* Deep Lavender for text */
+  /* ===========================================
+     Core Color Palette
+     =========================================== */
+
+  /* Primary brand color - Deep Lavender */
+  --icy-black: #252333;
+  --icy-black-hover: #353345;
+  --icy-black-active: #454255;
+
+  /* Secondary/accent colors */
   --icy-blue-medium: #62B6CB;
   --icy-blue-light: #BEE9E8;
   --icy-white: #F0F8FF;
-  --icy-accent: #252333;
-  /* Deep Lavender */
-  --icy-black: #252333;
-  /* Using Deep Lavender as Black */
   --icy-red: #D22730;
-  /* Standard Red for title dot */
 
-  /* High Contrast Elements */
-  --icy-button-bg: #252333;
-  /* Deep Lavender for buttons */
+  /* ===========================================
+     Semantic Colors
+     =========================================== */
+
+  /* Destructive/Danger - Red */
+  --color-destructive: #dc2626;
+  --color-destructive-hover: #b91c1c;
+  --color-destructive-foreground: #ffffff;
+
+  /* Success - Green */
+  --color-success: #16a34a;
+  --color-success-hover: #15803d;
+  --color-success-foreground: #ffffff;
+
+  /* Warning - Amber */
+  --color-warning: #d97706;
+  --color-warning-hover: #b45309;
+  --color-warning-foreground: #ffffff;
+
+  /* Link - Uses icy-blue-medium */
+  --color-link: var(--icy-blue-medium);
+  --color-link-hover: #4da5bb;
+
+  /* ===========================================
+     Legacy Aliases (for backward compatibility)
+     =========================================== */
+  --icy-blue-dark: var(--icy-black);
+  --icy-accent: var(--icy-black);
+  --icy-button-bg: var(--icy-black);
   --icy-button-text: #ffffff;
-
-  --icy-button-hover: #353345;
-  /* Lighter Deep Lavender */
-  --icy-accent-hover: #454255;
-  /* Even lighter Deep Lavender */
+  --icy-button-hover: var(--icy-black-hover);
+  --icy-accent-hover: var(--icy-black-active);
 
   /* Lavender Theme Colors */
   --lavender-50: #f5f3ff;
@@ -113,8 +137,8 @@
   --accent: var(--icy-accent);
   --accent-foreground: #ffffff;
 
-  --destructive: var(--icy-accent);
-  --destructive-foreground: #ffffff;
+  --destructive: var(--color-destructive);
+  --destructive-foreground: var(--color-destructive-foreground);
 
   --border: #e5e5e5;
   --input: #e5e5e5;
@@ -200,17 +224,7 @@ body {
   --color-periwinkle-800: var(--periwinkle-800);
   --color-periwinkle-900: var(--periwinkle-900);
 
-  /* Semantic color mappings */
-  --color-purple-50: var(--lavender-50);
-  --color-purple-100: var(--lavender-100);
-  --color-purple-200: var(--lavender-200);
-  --color-purple-300: var(--lavender-300);
-  --color-purple-400: var(--lavender-400);
-  --color-purple-500: var(--lavender-500);
-  --color-purple-600: var(--lavender-600);
-  --color-purple-700: var(--lavender-700);
-  --color-purple-800: var(--lavender-800);
-  --color-purple-900: var(--lavender-900);
+  /* Purple is deprecated - use lavender-* directly */
 
   --color-blue-50: var(--periwinkle-50);
   --color-blue-100: var(--periwinkle-100);
@@ -267,6 +281,49 @@ body {
 
   .bg-icy-black {
     background-color: var(--icy-black);
+  }
+
+  /* ===========================================
+     Typography System
+     =========================================== */
+
+  /* Headings */
+  .heading-1 {
+    @apply text-5xl font-black tracking-tighter;
+    color: var(--icy-black);
+  }
+
+  .heading-2 {
+    @apply text-3xl font-black tracking-tighter lowercase;
+    color: var(--icy-black);
+  }
+
+  .heading-3 {
+    @apply text-2xl font-black tracking-tighter lowercase;
+    color: var(--icy-black);
+  }
+
+  .heading-4 {
+    @apply text-lg font-bold;
+    color: var(--icy-black);
+  }
+
+  /* Body text */
+  .body-text {
+    @apply text-sm text-gray-700 leading-relaxed;
+  }
+
+  .body-text-secondary {
+    @apply text-sm text-gray-600 leading-relaxed;
+  }
+
+  /* Labels and captions */
+  .label {
+    @apply text-sm font-medium text-gray-700;
+  }
+
+  .caption {
+    @apply text-xs text-gray-600;
   }
 
   /* Custom Scrollbar Styling */

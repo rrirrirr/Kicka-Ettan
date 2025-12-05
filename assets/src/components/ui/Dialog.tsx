@@ -20,13 +20,13 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, children
             onClick={onClose}
         >
             <div
-                className={`card-gradient rounded-3xl shadow-2xl p-8 max-w-lg w-full animate-in fade-in zoom-in duration-200 ${className}`}
+                className={`card-gradient rounded-2xl shadow-2xl p-8 max-w-lg w-full animate-in fade-in zoom-in duration-200 ${className}`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className={`flex justify-between items-center mb-6 ${headerClassName}`}>
                     <div className="flex items-center gap-2">
                         {backButton}
-                        <h2 className="text-3xl font-black lowercase tracking-tighter text-gray-900">{title}</h2>
+                        <h2 className="heading-2">{title}</h2>
                     </div>
                     <button
                         onClick={onClose}

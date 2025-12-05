@@ -17,19 +17,19 @@ export const Button: React.FC<ButtonProps> = ({
     const baseStyles = "font-bold flex items-center justify-center gap-2 rounded-xl lowercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 ease-out active:scale-95";
 
     const variants = {
-        primary: "bg-[var(--icy-button-bg)] text-[var(--icy-button-text)] shadow-md hover:bg-[var(--icy-button-hover)] hover:shadow-lg",
-        secondary: "bg-[var(--icy-blue-light)] hover:bg-[var(--icy-blue-medium)] text-[var(--icy-blue-dark)] shadow-md hover:shadow-lg",
-        destructive: "bg-[var(--icy-accent)] text-white shadow-md hover:bg-[var(--icy-accent-hover)] hover:shadow-lg",
-        outline: "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm",
+        primary: "bg-icy-black text-white shadow-md hover:bg-[var(--icy-black-hover)] hover:shadow-lg",
+        secondary: "bg-[var(--icy-blue-light)] hover:bg-[var(--icy-blue-medium)] text-icy-black shadow-md hover:shadow-lg",
+        destructive: "bg-[var(--color-destructive)] text-white shadow-md hover:bg-[var(--color-destructive-hover)] hover:shadow-lg",
+        outline: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm hover:shadow-md",
         ghost: "hover:bg-gray-100 text-gray-600 hover:text-gray-900",
-        icon: "hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded-lg"
+        icon: "hover:bg-gray-200 text-gray-600 hover:text-gray-900"
     };
 
     const sizes = {
         sm: "px-3 py-1.5 text-xs",
         md: "px-4 py-2 text-sm",
         lg: "px-6 py-3 text-base",
-        icon: "p-2"
+        icon: "p-2 rounded-lg"
     };
 
     return (

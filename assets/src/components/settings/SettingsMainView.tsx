@@ -36,7 +36,7 @@ export const SettingsMainView: React.FC<SettingsMainViewProps> = ({ setView }) =
             {/* Smart Units Toggle */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl min-h-[72px]">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-lavender-100 text-lavender-600 flex items-center justify-center">
                         <span className="font-bold text-lg">🧠</span>
                     </div>
                     <div className="text-left">

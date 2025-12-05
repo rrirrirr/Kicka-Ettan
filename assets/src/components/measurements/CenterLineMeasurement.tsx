@@ -156,7 +156,7 @@ export const CenterLineMeasurement: React.FC<CenterLineMeasurementProps> = ({
                         y1={stonePixelY}
                         x2={adjustedEndX}
                         y2={stonePixelY}
-                        stroke="var(--color-amber-400)"
+                        stroke="var(--color-amber-500)"
                         strokeWidth={strokeWidth}
                         strokeDasharray="5,5"
                         opacity={opacity}
@@ -244,7 +244,7 @@ export const CenterLineMeasurement: React.FC<CenterLineMeasurementProps> = ({
                             y={-barHeight / 2}
                             width={barLength}
                             height={barHeight}
-                            fill="var(--icy-black)"
+                            fill="var(--color-amber-500)"
                             fillOpacity="0.8"
                             rx="2"
                         />
@@ -254,7 +254,7 @@ export const CenterLineMeasurement: React.FC<CenterLineMeasurementProps> = ({
                             y={-barHeight / 2}
                             width={fillWidth}
                             height={barHeight}
-                            fill="var(--color-amber-400)"
+                            fill="var(--color-amber-500)"
                             fillOpacity="0.9"
                         />
                     </g>

@@ -11,8 +11,8 @@ import {
 // Define zone colors
 const ZONE_COLORS = {
     house: 'rgba(239, 68, 68, 0.3)', // Red-500 with opacity
-    nearHouse: 'rgba(59, 130, 246, 0.3)', // Blue-500 with opacity
-    guard: 'rgba(168, 85, 247, 0.3)' // Purple-500 with opacity
+    nearHouse: 'rgba(99, 102, 241, 0.3)', // Periwinkle-500 with opacity
+    guard: 'rgba(139, 92, 246, 0.3)' // Lavender-500 with opacity
 };
 
 export const ZonesDiagram: React.FC = () => {
@@ -95,7 +95,7 @@ export const ZonesDiagram: React.FC = () => {
 
             {/* Legend */}
             <div className="w-full max-w-md bg-gray-50 rounded-xl p-4 space-y-3">
-                <h3 className="font-semibold text-gray-700 mb-2">Zone Legend</h3>
+                <h3 className="heading-4 mb-2">Zone Legend</h3>
 
                 <div className="flex items-center gap-3">
                     {/* Mini House Icon */}

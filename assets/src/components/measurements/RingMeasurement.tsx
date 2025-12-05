@@ -211,7 +211,7 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                                                     cy="0"
                                                     r="4.5"
                                                     fill="none"
-                                                    stroke="var(--color-purple-600)"
+                                                    stroke="var(--color-lavender-600)"
                                                     strokeWidth="1.5"
                                                 />
                                                 {/* Intersection highlight */}

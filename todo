@@ -3,26 +3,42 @@
 make prod ready:
 3:22 - continue with logging
 21:19 - opus available
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+mix test
+    warning: Application.get_env/3 is discouraged in the module body, use Application.compile_env/3 instead
+    │
+ 50 │     origins: Application.get_env(:kicka_ettan, :cors_origins, [~r{^http://localhost:\d+$}]),
+    │                          ~
+    │
+    └─ lib/kicka_ettan_web/endpoint.ex:50:26: KickaEttanWeb.Endpoint (module)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-smart unit:
-add confirmation for reset.
-reset button color. dangerous?
-dont allow double infinite and double of the same value. this should mark them as errors. red bg color
-"Restores the standard configuration: inches for short distances, stone widths, broom lengths, and centimeters for long distances" change this
+smart units:
+"Restores the standard configuration: inches for short distances, stone widths, broom lengths, and centimeters for long distances" change this text
 
+repeatable
+-take the role of an expert in ux and ui. look through the frontend and try to formulate the feel of the website in terms of design. what does the spacings, colors, roundings, typography, animations, etc. make the user feel. write a style guide.
+-now take the role of an expert design systems and colors and ux/ui person. look through the frontend and look at how we use colors. list what colors we use and what the meaning of each color is. how do the colors fit in our design system. then look for inconsistencies when it comes to color use and what color should be changed and colors to add. add new findings to the style guide.
+-take the role of an expert design systems and ux/ui person. look through the frontend and look for inconsistencies when it comes to styling. spacing, typography, buttons, titles, colors, fonts, text. add new findings to style guide.
+-take the role of an expert animations and ux/ui person. look through the frontend code and look for how we can be more consistent with animations and what animations we can add and where. it should feel snappy with a modern and fun feeling with nice easings. it should feel fun to use this app but animations should not be overwhelming. we are looking for a consistent feel. animations should be reusable. this app will mostly be used on phones and tablets, we should have this in mind. add new findings to style guide.
 
-take the role of a senior developer and testing expert. look through frontend looking for tests we should add.
-take the role of a senior developer and testing expert. look through backend looking for tests we should add.
+(opus) take the role of a senior developer and testing expert. look through frontend looking for tests we should add.
+
 what happens on crash? should we be notified somehow. does it restart
 make sure sheet dimensions and stone dimensions are correct.
 make sure backend and frontend has same dimensions for stones and sheet
+sentry not working?
 
 text:
 add info about sheet size and stone size used
 
 features:
+e2e tests?
+cancel game in waiting screen
 
 ux/ui:
+consistency with title and button styles and fonts and text
+too much empty space between settings title and content?
 better icons for broom and stone
 only show icons/measurements available in the measurement step indicator
 add tooltips for stuff
@@ -34,11 +50,13 @@ loading game anim is on the left of screen. make it centered and make an animati
 change pointer when hovering over draggable stone
 
 bug:
-toggle measurement mode active when not toggled on
-mobile/desktop sheet not the same
+toggle measurement mode active when not toggled on. it does not use the settings
+measurement does not follow metric/imperial setting when smart units are turned on
+text should be a bit bigger in toggle measurement mode on
+move down the percentage for non brace part for guard measurement. place it around 50% of non brace part
+???mobile/desktop sheet not the same???
 
 fix:
-the smart measurements cm and inches rules should follow the metric/imperial setting. changing the mertic/imperial setting should change what unit is shown in smart units config
 
 refactor:
 dont repeat our selves
@@ -54,138 +72,3 @@ game modes:
 custom stone and sheet dimensions
 collision settings
 observer mode
-
-
-backend plan:
-
-backend Production Readiness Audit - Findings & Recommendations
-Summary
-I've completed an audit of the Elixir/Phoenix backend for production readiness. The backend is well-structured with proper separation of concerns (GameServer, GameState, GameChannel, GameSupervisor), but several issues need to be addressed before going live.
-
-🚨 Critical Issues (Must Fix Before Launch)
-1. CORS Configuration Only Allows Localhost
-File: 
-endpoint.ex
-
-plug Corsica,
-  origins: [~r{^http://localhost:\d+$}],  # ❌ Only localhost!
-  allow_headers: :all,
-  allow_credentials: true
-Impact: Frontend won't be able to connect from production domain.
-
-Fix: Configure CORS dynamically based on environment (use CORS_ORIGIN env variable in 
-runtime.exs
-).
-
-2. SSL/HTTPS Not Enforced in Production
-File: 
-runtime.exs
-
-# force_ssl: [hsts: true]  # ← Commented out!
-Impact: Credentials and game data sent in plain text over HTTP.
-
-Fix: Uncomment and enable force_ssl configuration for production.
-
-3. No Input Validation on Game Creation
-File: 
-game_controller.ex
-
-def create(conn, params) do
-  game_options = %{
-    total_rounds: params["total_rounds"] || 3,  # ❌ No validation
-    stones_per_team: params["stones_per_team"] || 5,  # ❌ No bounds
-    ...
-  }
-Impact: Malicious users could create games with 0 or 999999 rounds/stones, causing unexpected behavior or resource exhaustion.
-
-Fix: Add validation with bounds checking (e.g., 1-10 rounds, 1-8 stones).
-
-⚠️ Important Issues (Should Fix)
-4. Deprecated Sentry Configuration
-The test output shows deprecation warnings:
-
-:included_environments option is deprecated
-:backends key for logger is deprecated
-Fix: Update Sentry config to use :dsn check instead of :included_environments. Update logger configuration per the deprecation warning.
-
-5. No Rate Limiting
-No rate limiting exists on any endpoints. Users can:
-
-Create unlimited games via POST /api/games
-Spam stone placement events via WebSocket
-Fix: Add plug Hammer or similar rate limiting for REST API and WebSocket messages.
-
-6. Missing Health Check Endpoint
-No /health or /ready endpoint for load balancers or orchestration tools.
-
-Fix: Add a health check endpoint that verifies database connectivity.
-
-7. Verbose Debug Logging in Production Code
-Files:
-
-game_state.ex
- (inside functions)
-require Logger
-Logger.info("Player #{player_id} confirmed placement. Ready map: #{inspect(player_ready)}")
-These inline require Logger statements and verbose debug logs will pollute production logs.
-
-Fix: Remove inline require Logger (move to module top) and change verbose gameplay logs to :debug level.
-
-8. Incomplete Collision Resolution
-File: 
-game_state.ex
-
-defp do_resolve_collisions(stones) do
-  # This is a placeholder for a more sophisticated collision resolution algorithm
-The algorithm is marked as placeholder and limited to 10 iterations.
-
-Fix: Either document this limitation or improve the algorithm.
-
-📋 Test Coverage Issues
-9. Minimal Test Coverage
-Current tests:
-
-Only 2 tests exist (both in 
-error_json_test.exs
-)
-No tests for: GameServer, GameState, GameChannel, GameController, Janitor
-Fix: Before production, add tests for:
-
-GameState state transitions
-GameChannel join/message handling
-GameController CRUD operations
-Edge cases (full game, reconnection, collision resolution)
-📝 Minor Issues (Nice to Have)
-10. Duplicate Comments
-File: 
-game_channel.ex
-
-# Log disconnection
-# Log disconnection  # ← Duplicate
-11. Session Signing Salt Hardcoded
-The signing salt in endpoint.ex should probably be in config/env vars for security.
-
-12. No Request Timeout Configuration
-No explicit timeouts on GenServer calls which could cause issues under load.
-
-User Review Required
-IMPORTANT
-
-Before I create a detailed implementation plan for fixes, I need your input on:
-
-Scope: Which issues do you want me to address right now vs later?
-CORS: What production domain(s) should be allowed?
-Rate Limiting: What limits seem reasonable? (e.g., 10 games/hour, 100 messages/minute)
-Testing: Should I add test coverage for critical paths, or is that a separate effort?
-Verification Plan
-Once fixes are implemented, verification will include:
-
-Automated Tests
-Run existing tests: mix test
-Run Credo linter: mix credo
-Run Dialyzer (if passing): mix dialyzer
-Manual Verification
-Test CORS with production domain
-Verify SSL redirect works
-Test input validation rejection
-Check logs don't expose sensitive data

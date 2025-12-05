@@ -100,7 +100,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                 y1={hogLineY * scale}
                 x2={SHEET_WIDTH * scale}
                 y2={hogLineY * scale}
-                stroke="var(--color-purple-600)"
+                stroke="var(--color-lavender-600)"
                 strokeWidth="1"
                 opacity={opacity}
                 style={{ transition: "all 0.2s ease" }}
@@ -112,7 +112,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                 y1={topOfHouseY * scale}
                 x2={SHEET_WIDTH * scale}
                 y2={topOfHouseY * scale}
-                stroke="var(--color-purple-600)"
+                stroke="var(--color-lavender-600)"
                 strokeWidth="1"
                 opacity={opacity}
                 style={{ transition: "all 0.2s ease" }}
@@ -144,7 +144,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                                 y1={lineStartY}
                                 x2={lineStartX}
                                 y2={lineEndY}
-                                stroke="var(--color-purple-600)"
+                                stroke="var(--color-lavender-600)"
                                 strokeWidth="1"
                                 strokeDasharray="5,5"
                                 opacity={opacity}
@@ -176,7 +176,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                             <text
                                 x={labelX}
                                 y={labelY}
-                                fill="var(--color-purple-500)"
+                                fill="var(--color-lavender-500)"
                                 fontSize={useHighlightedStyle ? "12" : "10"}
                                 fontWeight="600"
                                 textAnchor="start"
@@ -273,7 +273,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                                         pointRight ? -braceWidth : braceWidth,
                                         0.6,
                                     )}
-                                    stroke="var(--color-purple-600)"
+                                    stroke="var(--color-lavender-600)"
                                     strokeWidth="1"
                                     fill="none"
                                     opacity={opacity}
@@ -291,7 +291,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                                         : stonePixelX - STONE_RADIUS * scale - 2
                                 }
                                 y2={stonePixelY}
-                                stroke="var(--color-purple-600)"
+                                stroke="var(--color-lavender-600)"
                                 strokeWidth="1"
                                 strokeDasharray="5,5"
                                 opacity={opacity}
@@ -316,7 +316,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                                         ? hogLineY * scale
                                         : topOfHouseY * scale
                                 }
-                                stroke="var(--color-purple-600)"
+                                stroke="var(--color-lavender-600)"
                                 strokeWidth="1"
                                 strokeDasharray="5,5"
                                 opacity={opacity}
@@ -337,7 +337,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                                         : stonePixelX - STONE_RADIUS * scale - 2
                                 }
                                 y2={hogLineY * scale}
-                                stroke="var(--color-purple-600)"
+                                stroke="var(--color-lavender-600)"
                                 strokeWidth="1"
                                 strokeDasharray="5,5"
                                 opacity={parseFloat(opacity) * 0.5} // Slightly more transparent
@@ -355,7 +355,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                                             verticalAdjustment -
                                             (useHighlightedStyle ? 8 : 6)
                                         }
-                                        fill="var(--color-purple-500)" // Purple-500
+                                        fill="var(--color-lavender-500)" // Purple-500
                                         fontSize={fontSize}
                                         fontWeight={fontWeight}
                                         textAnchor="middle"
@@ -379,7 +379,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                                             verticalAdjustment +
                                             (useHighlightedStyle ? 8 : 6)
                                         }
-                                        fill="var(--color-purple-500)" // Purple-500
+                                        fill="var(--color-lavender-500)" // Purple-500
                                         fontSize={useHighlightedStyle ? "12" : "10"}
                                         fontWeight="600"
                                         textAnchor="middle"
@@ -397,7 +397,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                             <text
                                 x={extLabelX}
                                 y={extMidY}
-                                fill="var(--color-purple-500)" // Purple-500
+                                fill="var(--color-lavender-500)" // Purple-500
                                 fontSize={fontSize}
                                 fontWeight={fontWeight}
                                 textAnchor="middle"

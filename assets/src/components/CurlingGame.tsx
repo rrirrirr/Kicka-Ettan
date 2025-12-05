@@ -961,7 +961,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   );
 
   return (
-    <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-3xl md:shadow-2xl bg-[var(--icy-white)] backdrop-blur-md transition-all duration-300 overflow-hidden">
+    <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-2xl md:shadow-2xl bg-[var(--icy-white)] backdrop-blur-md transition-all duration-300 overflow-hidden">
       {/* Full-height Sidelines (Mobile Only) */}
       <div
         className="absolute inset-y-0 border-x border-gray-200 md:border-none pointer-events-none z-0 left-1/2 -translate-x-1/2"
@@ -1161,7 +1161,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
       {/* Controls Area - Floating Card */}
       <div className="w-full px-3">
-        <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 relative z-20 shadow-2xl border border-white/20 my-4 rounded-3xl mb-6">
+        <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 relative z-20 shadow-2xl border border-white/20 my-4 rounded-2xl mb-6">
           <div className="flex gap-2 h-[64px]">
             {/* Persistent Menu Button */}
             <div ref={menuRef} className="relative shrink-0 flex items-center">
@@ -1302,35 +1302,37 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               {/* History Controls */}
               {isHistoryMode && (
                 <div className="w-full flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={() => setSelectedHistoryRound(Math.min((gameState.history?.length || 0) - 1, selectedHistoryRound! + 1))}
                     disabled={selectedHistoryRound === (gameState.history?.length || 0) - 1}
-                    className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
+                    variant="outline"
+                    className="w-12 h-12"
                     aria-label="Earlier Round"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={() => setSelectedHistoryRound(null)}
-                    className="flex-grow py-3 font-bold rounded-2xl shadow-md transition-all bg-[var(--icy-button-bg)] hover:brightness-110 text-[var(--icy-button-text)] flex items-center justify-center gap-2 leading-tight hover:shadow-lg active:scale-95 lowercase tracking-tight"
+                    className="flex-grow h-12"
                   >
                     <X size={20} />
                     <span>exit history</span>
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={() => setSelectedHistoryRound(Math.max(0, selectedHistoryRound! - 1))}
                     disabled={selectedHistoryRound === 0}
-                    className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
+                    variant="outline"
+                    className="w-12 h-12"
                     aria-label="Later Round"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

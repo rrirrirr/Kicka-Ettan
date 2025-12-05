@@ -114,26 +114,37 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
         }
     };
 
+    // Color class mappings for measurement types
+    const colorClassMap: Record<MeasurementType, { active: string; inactive: string }> = {
+        'guard': {
+            active: "bg-lavender-500 hover:bg-lavender-600 text-white",
+            inactive: "bg-white hover:bg-lavender-100 text-icy-black"
+        },
+        't-line': {
+            active: "bg-amber-500 hover:bg-amber-400 text-white",
+            inactive: "bg-white hover:bg-amber-100 text-icy-black"
+        },
+        'center-line': {
+            active: "bg-amber-500 hover:bg-amber-400 text-white",
+            inactive: "bg-white hover:bg-amber-100 text-icy-black"
+        },
+        'closest-ring': {
+            active: "bg-cyan-500 hover:bg-cyan-600 text-white",
+            inactive: "bg-white hover:bg-cyan-100 text-icy-black"
+        },
+        'stone-to-stone': {
+            active: "bg-lime-600 hover:bg-lime-700 text-white",
+            inactive: "bg-white hover:bg-lime-100 text-icy-black"
+        },
+    };
+
     // Helper to render buttons
     const renderButtons = (typesToRender: MeasurementType[], activeTypes: MeasurementType[]) => {
         return (
             <div className="flex flex-col gap-2">
                 {typesToRender.map((type) => {
                     const isActive = activeTypes.includes(type);
-
-                    const colorMap: Record<MeasurementType, { active: string; activeHover: string; inactiveHover: string }> = {
-                        'guard': { active: "var(--color-purple-500)", activeHover: "var(--color-purple-600)", inactiveHover: "var(--color-purple-100)" }, // Purple-500 / Purple-600 / Purple-100
-                        't-line': { active: "var(--color-amber-400)", activeHover: "var(--color-amber-500)", inactiveHover: "var(--color-amber-100)" }, // Amber-400 / Amber-500 / Amber-100
-                        'center-line': { active: "var(--color-amber-400)", activeHover: "var(--color-amber-500)", inactiveHover: "var(--color-amber-100)" }, // Amber-400 / Amber-500 / Amber-100
-                        'closest-ring': { active: "var(--color-cyan-500)", activeHover: "var(--color-cyan-600)", inactiveHover: "var(--color-cyan-100)" }, // Cyan-500 / Cyan-600 / Cyan-100
-                        'stone-to-stone': { active: "var(--color-lime-600)", activeHover: "var(--color-lime-700)", inactiveHover: "var(--color-lime-100)" }, // Lime-600 / Lime-700 / Lime-100
-                    };
-
-                    const typeColors = colorMap[type];
-                    const colors = {
-                        bg: isActive ? typeColors.active : "#ffffff",
-                        hover: isActive ? typeColors.activeHover : typeColors.inactiveHover,
-                    };
+                    const colorClasses = colorClassMap[type];
 
                     return (
                         <button
@@ -144,17 +155,8 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
                                     onToggleMeasurementType(type);
                                 }
                             }}
-                            className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200 text-[var(--icy-black)]"
-                            style={{
-                                backgroundColor: colors.bg,
-                                pointerEvents: 'auto',
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = colors.hover;
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = colors.bg;
-                            }}
+                            className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200 ${isActive ? colorClasses.active : colorClasses.inactive}`}
+                            style={{ pointerEvents: 'auto' }}
                         >
                             {getButtonContent(type)}
                         </button>
