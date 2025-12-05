@@ -43,3 +43,6 @@ ENV/
 *.swo
 *~
 server.log
+
+# personal
+todo
