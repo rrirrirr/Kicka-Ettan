@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, History, ChevronDown, ChevronUp, Info, Settings } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import GameTitle from '../components/GameTitle';
 import { Dialog, Card } from '../components/ui';
@@ -154,7 +155,24 @@ const Home = () => {
                                 onChange={(e) => setStonesPerPlayer(parseInt(e.target.value))}
                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--icy-button-bg)]"
                             />
-                            <span className="font-bold text-2xl w-8 text-center text-[var(--icy-button-bg)]">{stonesPerPlayer}</span>
+                            <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
+                                <AnimatePresence mode="popLayout" initial={false}>
+                                    <motion.span
+                                        key={stonesPerPlayer}
+                                        initial={{ opacity: 0, filter: 'blur(8px)', scale: 0.5 }}
+                                        animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+                                        exit={{ opacity: 0, filter: 'blur(8px)', scale: 1.5 }}
+                                        transition={{
+                                            opacity: { duration: 0.2 },
+                                            filter: { duration: 0.2 },
+                                            scale: { type: "spring", stiffness: 300, damping: 25 }
+                                        }}
+                                        className="font-bold text-2xl text-[var(--icy-button-bg)] absolute inset-0 flex items-center justify-center"
+                                    >
+                                        {stonesPerPlayer}
+                                    </motion.span>
+                                </AnimatePresence>
+                            </div>
                         </div>
                     </div>
 

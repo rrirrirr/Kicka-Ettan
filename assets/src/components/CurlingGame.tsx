@@ -964,11 +964,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
   return (
     <motion.div
-      className="flex flex-col h-full bg-slate-50 relative overflow-hidden select-none"
-      variants={scaleIn}
-      initial="initial"
-      animate="animate"
-      exit="exit"
+      className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-2xl md:shadow-2xl bg-[var(--icy-white)] backdrop-blur-md transition-all duration-300 overflow-hidden select-none"
     >
       {/* Full-height Sidelines (Mobile Only) */}
       <div
@@ -1259,6 +1255,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                           onDragEnd={handleStoneDragEnd}
                           onDragStart={handleStoneDrag}
                           disabled={false}
+                          draggedStoneIndex={dragState.isDragging ? dragState.stoneIndex : null}
                         />
                       )}
                     </div>

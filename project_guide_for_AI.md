@@ -228,6 +228,18 @@ TODO
 - **Mock Services**: Abstract external dependencies for easier mocking
 - **Test Coverage**: Aim for good coverage of core game logic
 
+### 11. Animation Guidelines
+
+- **Library**: Use `framer-motion` for all UI animations.
+- **Consistency**: Import shared configurations from `src/utils/animations.ts`.
+  - Use `springs.snappy` for interactive elements (buttons, toggles).
+  - Use `springs.smooth` for larger transitions (panels, modals).
+- **Patterns**:
+  - **Page Transitions**: Wrap pages in `AnimatePresence` and use `pageTransition` variants.
+  - **Exits**: Always use `AnimatePresence` when components unmount to ensure smooth exit animations.
+  - **Layout**: Use the `layout` prop for automatic reordering animations (e.g., lists, grids).
+- **Philosophy**: Animations should be "snappy" and "fun" but not overwhelming. Avoid linear easings for UI elements; prefer springs.
+
 ## Implementation Specifics for "Kicka ettan"
 
 ### Game State Structure

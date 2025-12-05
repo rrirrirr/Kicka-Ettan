@@ -157,6 +157,11 @@ body {
   background-attachment: fixed;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Remove dark mode for now to enforce Bauhaus style */
 .dark {
   --background: var(--bauhaus-white);
