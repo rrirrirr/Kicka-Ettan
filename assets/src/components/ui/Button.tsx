@@ -1,4 +1,6 @@
 import React from 'react';
+import { motion } from 'framer-motion';
+import { buttonTap, buttonHover } from '../../utils/animations';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'icon';
@@ -14,29 +16,31 @@ export const Button: React.FC<ButtonProps> = ({
     children,
     ...props
 }) => {
-    const baseStyles = "font-bold flex items-center justify-center gap-2 rounded-xl lowercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 ease-out active:scale-95";
+    const baseStyles = "font-bold flex items-center justify-center gap-2 rounded-xl lowercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 ease-out";
 
     const variants = {
-        primary: "bg-icy-black text-white shadow-md hover:bg-[var(--icy-black-hover)] hover:shadow-lg",
-        secondary: "bg-[var(--icy-blue-light)] hover:bg-[var(--icy-blue-medium)] text-icy-black shadow-md hover:shadow-lg",
+        primary: "bg-[var(--icy-button-bg)] text-[var(--icy-button-text)] shadow-md hover:bg-[var(--icy-button-hover)] hover:shadow-lg",
+        secondary: "bg-[var(--icy-blue-light)] hover:bg-[var(--icy-blue-medium)] text-[var(--icy-blue-dark)] shadow-md hover:shadow-lg",
         destructive: "bg-[var(--color-destructive)] text-white shadow-md hover:bg-[var(--color-destructive-hover)] hover:shadow-lg",
-        outline: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm hover:shadow-md",
+        outline: "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm",
         ghost: "hover:bg-gray-100 text-gray-600 hover:text-gray-900",
-        icon: "hover:bg-gray-200 text-gray-600 hover:text-gray-900"
+        icon: "hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded-lg"
     };
 
     const sizes = {
         sm: "px-3 py-1.5 text-xs",
         md: "px-4 py-2 text-sm",
         lg: "px-6 py-3 text-base",
-        icon: "p-2 rounded-lg"
+        icon: "p-2"
     };
 
     return (
-        <button
+        <motion.button
             className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
             disabled={isLoading || props.disabled}
-            {...props}
+            whileTap={buttonTap}
+            whileHover={!props.disabled ? buttonHover : undefined}
+            {...(props as any)}
         >
             {isLoading ? (
                 <>
@@ -47,6 +51,6 @@ export const Button: React.FC<ButtonProps> = ({
                     loading...
                 </>
             ) : children}
-        </button>
+        </motion.button>
     );
 };

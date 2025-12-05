@@ -44,6 +44,8 @@ import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X, Settings 
 import { Loupe } from './Loupe';
 import { StoneInspector } from './StoneInspector';
 import { MeasurementType } from '../contexts/SettingsContext';
+import { motion } from 'framer-motion';
+import { scaleIn } from '../utils/animations';
 
 // ... existing imports ...
 
@@ -961,7 +963,13 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   );
 
   return (
-    <div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-2xl md:shadow-2xl bg-[var(--icy-white)] backdrop-blur-md transition-all duration-300 overflow-hidden">
+    <motion.div
+      className="flex flex-col h-full bg-slate-50 relative overflow-hidden select-none"
+      variants={scaleIn}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+    >
       {/* Full-height Sidelines (Mobile Only) */}
       <div
         className="absolute inset-y-0 border-x border-gray-200 md:border-none pointer-events-none z-0 left-1/2 -translate-x-1/2"
@@ -1247,12 +1255,10 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                       {myColor && (
                         <StoneSelectionBar
                           stones={myStones}
-                          color={myColor}
-                          onStoneDragEnd={handleStoneDragEnd}
-                          onStoneDrag={handleStoneDrag}
-                          stoneSize={Math.max(stonePixelSize * 1.8, 44)}
-                          customColor={gameState.team_colors ? gameState.team_colors[myColor] : undefined}
-                          draggedStoneIndex={dragState.isDragging ? dragState.stoneIndex : null}
+                          myColor={myColor}
+                          onDragEnd={handleStoneDragEnd}
+                          onDragStart={handleStoneDrag}
+                          disabled={false}
                         />
                       )}
                     </div>
@@ -1355,7 +1361,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       </Dialog>
 
       <SettingsDialog />
-    </div>
+    </motion.div>
   );
 };
 

@@ -5,8 +5,8 @@ import { STONE_RADIUS, SHEET_WIDTH, VIEW_TOP_OFFSET, HOG_LINE_OFFSET, HOG_LINE_W
 
 describe('resolveCollisions', () => {
     const mockStones: StonePosition[] = [
-        { id: '1', index: 0, x: 100, y: 100, color: 'red', placed: true, rotation: 0 },
-        { id: '2', index: 1, x: 200, y: 200, color: 'yellow', placed: true, rotation: 0 },
+        { index: 0, x: 100, y: 100, placed: true },
+        { index: 1, x: 200, y: 200, placed: true },
     ];
 
     it('should return same position if no collision', () => {

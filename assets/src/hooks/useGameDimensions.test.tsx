@@ -1,5 +1,5 @@
 import { render, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useGameDimensions } from './useGameDimensions';
 import { SHEET_WIDTH, VIEW_TOP_OFFSET, VIEW_BOTTOM_OFFSET } from '../utils/constants';
 import React from 'react';
