@@ -46,7 +46,7 @@ defmodule KickaEttanWeb.Endpoint do
   plug Plug.Session, @session_options
 
   plug Corsica,
-    origins: Application.compile_env(:kicka_ettan, :cors_origins, [~r{^http://localhost:\d+$}]),
+    origins: Application.get_env(:kicka_ettan, :cors_origins, [~r{^http://localhost:\d+$}]),
     allow_headers: :all,
     allow_credentials: true
 
