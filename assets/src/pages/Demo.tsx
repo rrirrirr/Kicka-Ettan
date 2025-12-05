@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import CurlingGame from '../components/curling-game';
+import CurlingGame from '../components/CurlingGame';
 import { Channel } from 'phoenix';
+import { GameState } from '../types/game-types';
 
 const Demo = () => {
     // Mock Player ID
@@ -30,8 +31,11 @@ const Demo = () => {
             "demo-player-1": phase === 'combined',
             "demo-player-2": phase === 'combined'
         },
-        ready_for_next_round: {}
-    };
+        ready_for_next_round: {},
+        scores: { red: 0, yellow: 0 },
+        status: "playing",
+        current_turn: "red"
+    } as unknown as GameState;
 
     // Mock Channel
     const mockChannel = {

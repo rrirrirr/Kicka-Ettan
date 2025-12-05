@@ -1,25 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getChannel, getPlayerId } from '../lib/socket';
-import CurlingGame from '../components/curling-game';
+import CurlingGame from '../components/CurlingGame';
 import GameTitle from '../components/GameTitle';
 import { Share2, Copy, Check } from 'lucide-react';
 import { saveGameToHistory } from '../lib/gameHistory';
 import { Button, Card } from '../components/ui';
 
-interface Player {
-    id: string;
-    color: 'red' | 'yellow';
-}
-
-interface GameState {
-    game_id: string;
-    players: Player[];
-    current_round: number;
-    phase: string;
-    stones: { red: any[], yellow: any[] };
-    team_colors?: { red: string; yellow: string };
-}
+import { GameState } from '../types/game-types';
 
 
 

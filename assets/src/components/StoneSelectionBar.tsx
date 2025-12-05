@@ -1,5 +1,5 @@
 import React from 'react';
-import DraggableStone from './draggable-stone';
+import DraggableStone from './DraggableStone';
 
 interface StoneSelectionBarProps {
     stones: Array<{ index: number; placed: boolean }>;

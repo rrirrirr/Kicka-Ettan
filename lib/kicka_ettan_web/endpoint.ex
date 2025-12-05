@@ -4,10 +4,11 @@ defmodule KickaEttanWeb.Endpoint do
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
+  # In production, signing_salt is set via SESSION_SIGNING_SALT env var in runtime.exs
   @session_options [
     store: :cookie,
     key: "_kicka_ettan_key",
-    signing_salt: "session_signing_salt",
+    signing_salt: Application.compile_env(:kicka_ettan, KickaEttanWeb.Endpoint)[:signing_salt] || "dev_signing_salt",
     same_site: "Lax"
   ]
 

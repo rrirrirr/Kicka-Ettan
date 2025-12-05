@@ -1,5 +1,5 @@
 import React from 'react';
-import CurlingSheet from './curling-sheet';
+import CurlingSheet from './CurlingSheet';
 import {
     SHEET_WIDTH,
     HOG_LINE_OFFSET,

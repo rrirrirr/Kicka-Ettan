@@ -319,7 +319,7 @@ defmodule KickaEttan.Games.GameState do
     Enum.reduce(0..(stone_count - 1), stones, fn i, acc ->
       stone1 = Enum.at(acc, i)
       
-      Enum.reduce((i + 1)..(stone_count - 1), acc, fn j, inner_acc ->
+      Enum.reduce((i + 1)..(stone_count - 1)//1, acc, fn j, inner_acc ->
         stone2 = Enum.at(inner_acc, j)
         
         case calculate_overlap(stone1, stone2) do

@@ -2,7 +2,7 @@ import React, { useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { SHEET_STYLES } from '../contexts/SettingsContext';
-import CurlingSheet from './curling-sheet';
+import CurlingSheet from './CurlingSheet';
 
 interface SheetStyleCarouselProps {
     selectedStyleId: string;

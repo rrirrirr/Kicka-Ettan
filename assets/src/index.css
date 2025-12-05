@@ -70,6 +70,23 @@
   --periwinkle-800: #3730a3;
   --periwinkle-900: #312e81;
 
+  /* Amber - High Visibility */
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-100: #fef3c7;
+
+  /* Cyan */
+  --cyan-100: #cffafe;
+  --cyan-500: #06b6d4;
+  --cyan-600: #0891b2;
+
+  /* Lime */
+  --lime-100: #ecfccb;
+  --lime-600: #65a30d;
+  --lime-700: #4d7c0f;
+
+
+
   --radius: 1.5rem;
   /* Soft, rounded */
   --border-width: 0px;
@@ -205,6 +222,19 @@ body {
   --color-blue-700: var(--periwinkle-700);
   --color-blue-800: var(--periwinkle-800);
   --color-blue-900: var(--periwinkle-900);
+  --color-blue-900: var(--periwinkle-900);
+
+  --color-amber-400: var(--amber-400);
+  --color-amber-500: var(--amber-500);
+  --color-amber-100: var(--amber-100);
+
+  --color-cyan-100: var(--cyan-100);
+  --color-cyan-500: var(--cyan-500);
+  --color-cyan-600: var(--cyan-600);
+
+  --color-lime-100: var(--lime-100);
+  --color-lime-600: var(--lime-600);
+  --color-lime-700: var(--lime-700);
 }
 
 @layer base {

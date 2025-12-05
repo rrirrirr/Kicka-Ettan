@@ -168,6 +168,7 @@ interface SettingsContextType {
     unitSystem: UnitSystem;
     baseUnitSystem: 'metric' | 'imperial';
     updateUnitSystem: (system: UnitSystem) => void;
+    updateBaseUnitSystem: (system: 'metric' | 'imperial') => void;
     smartUnits: SmartUnitRule[];
     updateSmartUnits: (rules: SmartUnitRule[]) => void;
 }
@@ -234,7 +235,7 @@ const defaultToggleModeSettings: ToggleModeSettings = {
     }
 };
 
-const defaultSmartUnits: SmartUnitRule[] = [
+export const defaultSmartUnits: SmartUnitRule[] = [
     { maxDistance: 30.48, unit: 'imperial' }, // 0-1 ft -> Imperial
     { maxDistance: 60.96, unit: 'stone' },    // 1-2 ft -> Stone
     { maxDistance: 150, unit: 'imperial' },   // 2ft - ~5ft -> Imperial
@@ -384,6 +385,15 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
     };
 
+    const updateBaseUnitSystem = (system: 'metric' | 'imperial') => {
+        setBaseUnitSystem(system);
+        // If currently using smart units, keep it enabled
+        // If currently using metric/imperial directly, update to the new system
+        if (unitSystem !== 'smart') {
+            setUnitSystem(system);
+        }
+    };
+
     const updateSmartUnits = (rules: SmartUnitRule[]) => {
         setSmartUnits(rules);
     };
@@ -392,7 +402,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     const closeSettings = () => setIsSettingsOpen(false);
 
     return (
-        <SettingsContext.Provider value={{ settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, isSettingsOpen, openSettings, closeSettings, unitSystem, baseUnitSystem, updateUnitSystem, smartUnits, updateSmartUnits }}>
+        <SettingsContext.Provider value={{ settings, displaySettings, toggleModeSettings, sheetSettings, updateSettings, updateDisplaySettings, updateToggleModeSettings, updateSheetSettings, isSettingsOpen, openSettings, closeSettings, unitSystem, baseUnitSystem, updateUnitSystem, updateBaseUnitSystem, smartUnits, updateSmartUnits }}>
             {children}
         </SettingsContext.Provider>
     );

@@ -1,12 +1,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import CurlingSheet from './curling-sheet';
+import CurlingSheet from './CurlingSheet';
 import { Dialog } from './ui/Dialog';
 import { Button } from './ui/Button';
-import DraggableStone from './draggable-stone';
-import StoneSelectionBar from './stone-selection-bar';
-import StoneMeasurements from './stone-measurements';
+import DraggableStone from './DraggableStone';
+import StoneSelectionBar from './StoneSelectionBar';
+import { StoneMeasurements } from './StoneMeasurements';
 import { SettingsProvider, useSettings, SHEET_STYLES } from '../contexts/SettingsContext';
 import { SettingsDialog } from './SettingsDialog';
 import { Channel } from 'phoenix';
@@ -14,27 +14,22 @@ import {
   SHEET_WIDTH,
   STONE_RADIUS,
   VIEW_TOP_OFFSET,
-  VIEW_BOTTOM_OFFSET,
+
   HOG_LINE_OFFSET,
   BACK_LINE_OFFSET,
   HOG_LINE_WIDTH,
   HOUSE_RADIUS_12,
   NEAR_HOUSE_THRESHOLD
 } from '../utils/constants';
+import { resolveCollisions } from '../utils/physics';
+import { useGameDimensions } from '../hooks/useGameDimensions';
+import { GameState, StonePosition, PlayerColor } from '../types/game-types';
 
 interface CurlingGameProps {
-  gameState?: any;
+  gameState: GameState;
   playerId?: string;
   channel?: Channel;
   onShare?: () => void;
-}
-
-interface StonePosition {
-  index: number;
-  x: number;
-  y: number;
-  placed: boolean;
-  resetCount?: number;
 }
 
 type GestureState =
@@ -42,69 +37,7 @@ type GestureState =
   | { type: 'PENDING'; stoneIndex: number; startX: number; startY: number; timerId: number; source: 'pickup' | 'placement'; startTime: number }
   | { type: 'DRAGGING'; stoneIndex: number };
 
-// Helper function for collision resolution
-const resolveCollisions = (
-  currentIndex: number,
-  currentX: number,
-  currentY: number,
-  allStones: StonePosition[]
-) => {
-  const MIN_DISTANCE = STONE_RADIUS * 2;
-  let resolvedX = currentX;
-  let resolvedY = currentY;
 
-  // Iterative collision resolution
-  for (let i = 0; i < 3; i++) { // Limit iterations to prevent infinite loops
-    let collisionFound = false;
-
-    allStones.forEach(otherStone => {
-      if (otherStone.index === currentIndex || !otherStone.placed) return;
-
-      const dx = resolvedX - otherStone.x;
-      const dy = resolvedY - otherStone.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance < MIN_DISTANCE) {
-        collisionFound = true;
-        // Calculate push vector
-        let nx = dx / distance;
-        let ny = dy / distance;
-
-        // Handle exact overlap
-        if (distance === 0) {
-          nx = Math.random() * 2 - 1; // Random direction
-          ny = Math.random() * 2 - 1;
-          const len = Math.sqrt(nx * nx + ny * ny);
-          nx /= len;
-          ny /= len;
-        }
-
-        // Move dropped stone to just touch the other stone (no gap)
-        resolvedX = otherStone.x + nx * MIN_DISTANCE;
-        resolvedY = otherStone.y + ny * MIN_DISTANCE;
-      }
-    });
-
-    if (!collisionFound) break;
-  }
-
-  // Ensure we stay within bounds after collision resolution
-  // Valid Y range:
-  // Min: Hog Line bottom edge (VIEW_TOP_OFFSET - HOG_LINE_OFFSET + HOG_LINE_WIDTH/2)
-  // Max: Back Line (VIEW_TOP_OFFSET + BACK_LINE_OFFSET)
-  // We allow stones to touch/overlap the back line, so we clamp center to [minY + radius, maxY + radius]
-  const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET; // Should be 0 if offsets match
-  const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
-  const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
-
-  const minY = hogLineBottomEdge + STONE_RADIUS;
-  const maxY = backLineY + STONE_RADIUS;
-
-  resolvedX = Math.max(STONE_RADIUS, Math.min(SHEET_WIDTH - STONE_RADIUS, resolvedX));
-  resolvedY = Math.max(minY, Math.min(maxY, resolvedY));
-
-  return { x: resolvedX, y: resolvedY };
-};
 
 
 import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X, Settings } from 'lucide-react';
@@ -123,9 +56,8 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   const [showHelp, setShowHelp] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [selectedHistoryRound, setSelectedHistoryRound] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [sheetDimensions, setSheetDimensions] = useState({ width: 0, height: 0 });
-  const [scale, setScale] = useState(1);
+
+  const { containerRef, sheetDimensions, scale } = useGameDimensions();
   const [highlightedStone, setHighlightedStone] = useState<{ color: 'red' | 'yellow'; index: number; stepIndex: number; activeTypes?: MeasurementType[] } | null>(null);
   const [hoveredStone, setHoveredStone] = useState<{ color: 'red' | 'yellow'; index: number } | null>(null);
   const [showMeasurements, setShowMeasurements] = useState(false);
@@ -185,68 +117,14 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
     };
   }, []);
 
-  // Update scale and dimensions when container resizes
-  // Update dimensions when container resizes (Layout)
-  useEffect(() => {
-    if (!containerRef.current) return;
 
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth;
-        const containerHeight = containerRef.current.offsetHeight;
-
-        if (containerWidth === 0 || containerHeight === 0) return;
-
-        // Calculate available space
-        const availableWidth = containerWidth;
-        const availableHeight = containerHeight;
-
-        // Calculate scale factors for both dimensions
-        const scaleWidth = availableWidth / SHEET_WIDTH;
-        const scaleHeight = availableHeight / (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET);
-
-        // Use the smaller scale to ensure it fits completely
-        const layoutScale = Math.min(scaleWidth, scaleHeight);
-
-        const newWidth = SHEET_WIDTH * layoutScale;
-        const newHeight = (VIEW_TOP_OFFSET + VIEW_BOTTOM_OFFSET) * layoutScale;
-
-        // Only update if dimensions actually changed
-        setSheetDimensions(prev => {
-          if (prev.width === newWidth && prev.height === newHeight) {
-            return prev;
-          }
-          return { width: newWidth, height: newHeight };
-        });
-        setScale(prev => {
-          if (prev === layoutScale) return prev;
-          return layoutScale;
-        });
-      }
-    };
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateDimensions();
-    });
-
-    resizeObserver.observe(containerRef.current);
-    updateDimensions();
-
-    // Also listen to window resize for viewport changes that might not trigger ResizeObserver
-    window.addEventListener('resize', updateDimensions);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', updateDimensions);
-    };
-  }, [myColor]);
 
   const [lastInitializedRound, setLastInitializedRound] = useState(0);
 
   // Initialize stones based on game state
   useEffect(() => {
     if (gameState && playerId) {
-      const player = gameState.players.find((p: any) => p.id === playerId);
+      const player = gameState.players.find((p) => p.id === playerId);
       if (player) {
         setMyColor(player.color);
 
@@ -543,8 +421,8 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
   // Determine which stones to display (History vs Live)
   // MOVED BEFORE handleSheetPointerDown to avoid reference error
-  let displayRedStones: any[] = [];
-  let displayYellowStones: any[] = [];
+  let displayRedStones: StonePosition[] = [];
+  let displayYellowStones: StonePosition[] = [];
 
   if (isHistoryMode) {
     const historyRound = gameState.history && gameState.history[selectedHistoryRound];
@@ -751,7 +629,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
 
   // Helper to render stones
-  const renderStones = (stones: any[], color: 'red' | 'yellow') => {
+  const renderStones = (stones: StonePosition[], color: PlayerColor) => {
     // Calculate a darker shade for handle and inner border
     const getBorderColor = (hexColor: string) => {
       const r = parseInt(hexColor.slice(1, 3), 16);
@@ -763,7 +641,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       return `#${darkerR.toString(16).padStart(2, '0')}${darkerG.toString(16).padStart(2, '0')}${darkerB.toString(16).padStart(2, '0')}`;
     };
 
-    return stones.map((pos: any, i: number) => {
+    return stones.map((pos: StonePosition, i: number) => {
       const stoneColor = gameState.team_colors ? gameState.team_colors[color] : (color === 'red' ? '#cc0000' : '#e6b800');
       const darkerShade = getBorderColor(stoneColor);
 
@@ -919,7 +797,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       >
         <CurlingSheet
           width="100%"
-          round={isHistoryMode && gameState.history[selectedHistoryRound] ? gameState.history[selectedHistoryRound].round : gameState.current_round}
+          round={isHistoryMode && gameState.history?.[selectedHistoryRound] ? gameState.history[selectedHistoryRound].round : gameState.current_round}
           phase={isHistoryMode ? 'combined' : gameState.phase}
           style={SHEET_STYLES.find(s => s.id === sheetSettings.styleId)}
         />
@@ -1000,8 +878,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             yellow: displayYellowStones
           }}
           scale={scale}
-          isSelected={!!highlightedStone}
-          onToggleMeasurementType={(type) => {
+          onHighlightStone={setHighlightedStone}
+
+          onToggleMeasurementType={(type: MeasurementType) => {
             if (highlightedStone) {
               setHighlightedStone(prev => {
                 if (!prev) return null;
@@ -1071,10 +950,11 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
             return {
               ...targetStone,
-              activeTypes: step.types
+              activeTypes: step.types,
+              stepIndex: stepIndex
             };
           })()}
-          showMeasurements={showMeasurements}
+
         />
       )}
     </div>
@@ -1423,8 +1303,8 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               {isHistoryMode && (
                 <div className="w-full flex items-center gap-2">
                   <button
-                    onClick={() => setSelectedHistoryRound(Math.min(gameState.history.length - 1, selectedHistoryRound! + 1))}
-                    disabled={selectedHistoryRound === gameState.history.length - 1}
+                    onClick={() => setSelectedHistoryRound(Math.min((gameState.history?.length || 0) - 1, selectedHistoryRound! + 1))}
+                    disabled={selectedHistoryRound === (gameState.history?.length || 0) - 1}
                     className="w-12 py-3 font-bold rounded-2xl shadow-sm transition-all bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-black hover:shadow-md active:scale-95"
                     aria-label="Earlier Round"
                   >

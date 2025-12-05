@@ -66,5 +66,44 @@ defmodule KickaEttanWeb.API.GameControllerTest do
       conn = post(conn, ~p"/api/games/nonexistent/join")
       assert %{"error" => "not_found"} = json_response(conn, 422)
     end
+
+    test "returns error when joining full game", %{conn: conn} do
+      # Create game
+      conn = post(conn, ~p"/api/games", %{})
+      %{"game_id" => game_id} = json_response(conn, 201)
+
+      # Join twice (fill game)
+      post(conn, ~p"/api/games/#{game_id}/join")
+      post(conn, ~p"/api/games/#{game_id}/join")
+
+      # Third join should fail
+      conn = post(conn, ~p"/api/games/#{game_id}/join")
+      assert %{"error" => "game_full"} = json_response(conn, 422)
+    end
+  end
+
+  describe "create/2 edge cases" do
+    test "handles string values for numeric params", %{conn: conn} do
+      conn = post(conn, ~p"/api/games", %{
+        "total_rounds" => "5",
+        "stones_per_team" => "8"
+      })
+
+      assert %{"game_id" => _id} = json_response(conn, 201)
+    end
+
+    test "accepts custom team colors", %{conn: conn} do
+      conn = post(conn, ~p"/api/games", %{
+        "team1_color" => "#ff0000",
+        "team2_color" => "#0000ff"
+      })
+
+      assert %{"game_id" => _id} = json_response(conn, 201)
+    end
+
+    test "rejects invalid stones_per_team (too high)", %{conn: conn} do
+      conn = post(conn, ~p"/api/games", %{"stones_per_team" => 101})
+      assert %{"error" => "stones_per_team must be between 1 and 100"} = json_response(conn, 422)
+    end
   end
 end

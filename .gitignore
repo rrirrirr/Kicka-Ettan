@@ -8,6 +8,11 @@ erl_crash.dump
 *.ez
 /test/tmp
 
+# Environment files (secrets)
+.env
+.env.*
+!.env.example
+
 # Phoenix
 /assets/node_modules
 /priv/static/assets
@@ -37,3 +42,4 @@ ENV/
 *.swp
 *.swo
 *~
+server.log
