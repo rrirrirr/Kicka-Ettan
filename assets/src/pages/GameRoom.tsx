@@ -122,7 +122,7 @@ const GameRoom = () => {
     // Lobby View
     return (
         <div className="min-h-screen p-4">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-md mx-auto">
                 <header className="flex flex-wrap justify-between items-center mb-8 card-gradient backdrop-blur-md p-4 rounded-2xl shadow-lg gap-4">
                     <GameTitle size="small" />
                     <div className="flex gap-2 sm:gap-4 items-center">
