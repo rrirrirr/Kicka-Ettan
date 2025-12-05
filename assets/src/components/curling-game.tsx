@@ -812,7 +812,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             style={{
               width: stonePixelSize,
               height: stonePixelSize,
-                            backgroundColor: stoneColor,
+              backgroundColor: stoneColor,
               border: `2px solid #777777`,
               boxShadow: `inset 0 0 0 1px ${darkerShade}`,
               left: pos.x * scale,
@@ -938,7 +938,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                 style={{
                   width: stonePixelSize,
                   height: stonePixelSize,
-                                    backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
+                  backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
                   border: `2px solid #777777`,
                   boxShadow: `inset 0 0 0 1px #00000055`, // darker shade approximation
                   left: stone.x * scale,
@@ -1127,7 +1127,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                       style={{
                         width: stonePixelSize,
                         height: stonePixelSize,
-                                                borderRadius: '50%',
+                        borderRadius: '50%',
                         backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
                         border: `2px solid #777777`,
                         boxShadow: `inset 0 0 0 1px #00000055`,
@@ -1189,10 +1189,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         const topOfHousePixelY = (VIEW_TOP_OFFSET - HOUSE_RADIUS_12) * scale;
         const fixedX = sheetRect.left + (sheetDimensions.width / 2);
 
-        // Detect mobile viewport for responsive sizing
-        const isMobile = window.innerWidth < 768;
-        const loupeSize = isMobile ? 219 : 243; // 10% smaller on mobile (243 * 0.9 ≈ 219)
-        const loupeOffset = isMobile ? 140 : 155; // Adjust offset for smaller loupe
+        // Calculate responsive offset based on viewport (same formula as Loupe)
+        const vmin = Math.min(window.innerWidth, window.innerHeight);
+        const loupeOffset = Math.max(100, Math.min(180, vmin * 0.35));
 
         // Position it above the top of the house
         const fixedY = sheetRect.top + topOfHousePixelY - loupeOffset;
@@ -1205,7 +1204,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             y={stoneGlobalY}
             fixedPosition={{ x: fixedX, y: fixedY }}
             scale={1.8}
-            size={loupeSize}
+            // Let StoneInspector/Loupe handle responsive sizing - don't pass size
             activeTypes={highlightedStone.activeTypes || []}
             availableTypes={availableTypes}
             onToggleType={(type) => {
@@ -1254,7 +1253,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             style={{
               width: '100%',
               height: '100%',
-                            borderRadius: '50%',
+              borderRadius: '50%',
               backgroundColor: gameState.team_colors ? gameState.team_colors[myColor] : (myColor === 'red' ? '#cc0000' : '#e6b800'),
               border: `2px solid #777777`,
               boxShadow: `inset 0 0 0 1px #00000055`,
@@ -1283,7 +1282,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       {/* Controls Area - Floating Card */}
       <div className="w-full px-3">
         <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 relative z-20 shadow-2xl border border-white/20 my-4 rounded-3xl mb-6">
-          <div className="flex gap-2 min-h-[64px]">
+          <div className="flex gap-2 h-[64px]">
             {/* Persistent Menu Button */}
             <div ref={menuRef} className="relative shrink-0 flex items-center">
               <button
