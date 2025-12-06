@@ -6,6 +6,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'icon';
     size?: 'sm' | 'md' | 'lg' | 'icon';
     isLoading?: boolean;
+    noHoverAnimation?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -13,6 +14,7 @@ export const Button: React.FC<ButtonProps> = ({
     variant = 'primary',
     size = 'md',
     isLoading = false,
+    noHoverAnimation = false,
     children,
     ...props
 }) => {
@@ -39,7 +41,7 @@ export const Button: React.FC<ButtonProps> = ({
             className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
             disabled={isLoading || props.disabled}
             whileTap={buttonTap}
-            whileHover={!props.disabled ? buttonHover : undefined}
+            whileHover={!props.disabled && size !== 'lg' && !noHoverAnimation ? buttonHover : undefined}
             {...(props as any)}
         >
             {isLoading ? (

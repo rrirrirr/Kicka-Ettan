@@ -105,7 +105,8 @@ export const buttonTap = {
     transition: { duration: 0.1 }
 };
 
+// NOTE: Never use y-translate (jump up) animations for buttons - use scale instead
 export const buttonHover = {
-    y: -2,
+    scale: 1.02,
     transition: { duration: 0.2 }
 };

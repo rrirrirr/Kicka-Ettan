@@ -1251,6 +1251,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                     <Button
                       onClick={handleConfirmPlacement}
                       className="flex-grow h-12 text-base"
+                      noHoverAnimation
                     >
                       finish placement
                     </Button>
@@ -1284,6 +1285,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                     onClick={handleNextRound}
                     variant="destructive"
                     className="flex-grow h-12 text-base"
+                    noHoverAnimation
                   >
                     start new round
                   </Button>
