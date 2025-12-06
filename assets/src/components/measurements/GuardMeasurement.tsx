@@ -252,10 +252,11 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                         ? braceX + braceWidth + 20
                         : braceX - braceWidth - 20;
 
-                    // Label Position (Extension Line)
-                    const extLineStartY = topOfHouseY * scale;
-                    const extLineEndY = hogLineY * scale;
-                    const extMidY = (extLineStartY + extLineEndY) / 2;
+                    // Label Position (Extension Line - non-brace part)
+                    // Non-brace part: if closer to hog, it's stone→house; if closer to house, it's hog→stone
+                    const extLineNonBraceStartY = isCloserToHog ? stonePixelY : hogLineY * scale;
+                    const extLineNonBraceEndY = isCloserToHog ? topOfHouseY * scale : stonePixelY;
+                    const extMidY = (extLineNonBraceStartY + extLineNonBraceEndY) / 2;
                     const extLabelX = placeBraceOnRight
                         ? stonePixelX + STONE_RADIUS * scale + 35
                         : stonePixelX - STONE_RADIUS * scale - 35;

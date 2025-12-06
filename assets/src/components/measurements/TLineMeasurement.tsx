@@ -10,7 +10,7 @@ interface TLineMeasurementProps {
     isHighlighted: boolean;
     highlightedStone: any;
     shouldShowInToggle: boolean;
-    isTouchingHouse: boolean;
+
     fontSize: string;
     fontWeight: string;
     highVisibilityTextColor: string;
@@ -33,7 +33,7 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
     isHighlighted,
     highlightedStone,
     shouldShowInToggle,
-    isTouchingHouse,
+
     fontSize,
     fontWeight,
     highVisibilityTextColor,
@@ -90,32 +90,7 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                     transform={`translate(${stonePixelX + teeLineLabelHorizontalOffset}, ${(stonePixelY + teeLinePixelY) / 2})`}
                     opacity={opacity}
                 >
-                    {/* Black outline - only for house zone */}
-                    {isTouchingHouse && (
-                        <text
-                            x="0"
-                            y="0"
-                            fill="black"
-                            fillOpacity="0.3"
-                            stroke="black"
-                            strokeOpacity="0.3"
-                            strokeWidth="3"
-                            fontSize={fontSize}
-                            fontWeight={fontWeight}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            style={{ transition: "all 0.2s ease" }}
-                        >
-                            {(() => {
-                                const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
-                                const displayValue = isTLineOverlapping
-                                    ? Math.abs(deltaY)
-                                    : displayDistanceToTee;
-                                return `${formatDistance(displayValue)} ${isAboveTee ? "↓" : "↑"}`;
-                            })()}
-                        </text>
-                    )}
-                    {/* Pink text on top */}
+                    {/* Text label */}
                     <text
                         x="0"
                         y="0"

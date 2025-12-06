@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Target, ArrowLeftRight } from 'lucide-react';
-import { MeasurementType } from '../../contexts/SettingsContext';
+import { MeasurementType, ZONE_AVAILABLE_TYPES } from '../../contexts/SettingsContext';
 import { StonePosition } from '../../types/game-types';
 import { VIEW_TOP_OFFSET } from '../../utils/constants';
 
@@ -90,9 +90,7 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
 
     if (steps.length === 0) return null;
 
-    const ALL_MEASUREMENT_TYPES: MeasurementType[] = [
-        'guard', 't-line', 'center-line', 'closest-ring', 'stone-to-stone'
-    ];
+
 
     // Helper to get button content for each measurement type
     const getButtonContent = (type: MeasurementType) => {
@@ -138,17 +136,17 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
         },
     };
 
-    // Collect all unique available types from the steps
-    const availableTypes = new Set<MeasurementType>();
-    if (steps) {
-        steps.forEach(step => {
-            if (step.types) {
-                step.types.forEach((t: MeasurementType) => availableTypes.add(t));
-            }
-        });
+    // Use central config for available types per zone
+    let zoneKey: 'guardZone' | 'nearHouseZone' | 'houseZone';
+    if (isInGuardZone) {
+        zoneKey = 'guardZone';
+    } else if (isInNearHouseZone) {
+        zoneKey = 'nearHouseZone';
+    } else {
+        zoneKey = 'houseZone';
     }
 
-    const typesToShow = ALL_MEASUREMENT_TYPES.filter(t => availableTypes.has(t));
+    const typesToShow = ZONE_AVAILABLE_TYPES[zoneKey];
 
     // Helper to render buttons
     const renderButtons = (typesToRender: MeasurementType[], activeTypes: MeasurementType[]) => {

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useSettings, MeasurementType } from '../contexts/SettingsContext';
+import { useSettings, MeasurementType, ZONE_AVAILABLE_TYPES } from '../contexts/SettingsContext';
 import { StonePosition } from '../types/game-types';
 import {
   SHEET_WIDTH,
@@ -160,24 +160,36 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         const distToCenterPoint = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
         // Zone Classification using utility
-        const { zone, isTouchingHouse } = classifyStoneZone(stone.pos.x, stone.pos.y);
+        const { zone } = classifyStoneZone(stone.pos.x, stone.pos.y);
         const isInGuardZone = zone === 'guard';
         const isInNearHouseZone = zone === 'near-house';
 
-        // Determine which toggle settings to use
+        // Determine which toggle settings to use and zone key for available types
         let toggleSettingsForZone;
+        let zoneKey: 'guardZone' | 'nearHouseZone' | 'houseZone';
         if (isInGuardZone) {
           toggleSettingsForZone = toggleModeSettings.guardZone;
+          zoneKey = 'guardZone';
         } else if (isInNearHouseZone) {
           toggleSettingsForZone = toggleModeSettings.nearHouseZone;
+          zoneKey = 'nearHouseZone';
         } else {
           toggleSettingsForZone = toggleModeSettings.houseZone;
+          zoneKey = 'houseZone';
         }
 
-        const shouldShowGuardInToggle = 'showGuard' in toggleSettingsForZone ? (toggleSettingsForZone as any).showGuard : false;
-        const shouldShowTLineInToggle = toggleSettingsForZone.showTLine;
-        const shouldShowCenterLineInToggle = toggleSettingsForZone.showCenterLine;
-        const shouldShowClosestRingInToggle = 'showClosestRing' in toggleSettingsForZone ? (toggleSettingsForZone as any).showClosestRing : true;
+        // Get available types for this zone
+        const availableTypesForZone = ZONE_AVAILABLE_TYPES[zoneKey];
+
+        // Only show measurement if it's available for this zone AND enabled in toggle settings
+        const shouldShowGuardInToggle = availableTypesForZone.includes('guard') &&
+          ('showGuard' in toggleSettingsForZone ? (toggleSettingsForZone as any).showGuard : false);
+        const shouldShowTLineInToggle = availableTypesForZone.includes('t-line') &&
+          toggleSettingsForZone.showTLine;
+        const shouldShowCenterLineInToggle = availableTypesForZone.includes('center-line') &&
+          toggleSettingsForZone.showCenterLine;
+        const shouldShowClosestRingInToggle = availableTypesForZone.includes('closest-ring') &&
+          ('showClosestRing' in toggleSettingsForZone ? (toggleSettingsForZone as any).showClosestRing : false);
 
         // Closest Ring Logic
         const rings = [BUTTON_RADIUS, HOUSE_RADIUS_4, HOUSE_RADIUS_8, HOUSE_RADIUS_12];
@@ -323,7 +335,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               isHighlighted={isHighlighted}
               highlightedStone={highlightedStone}
               shouldShowInToggle={shouldShowTLineInToggle}
-              isTouchingHouse={isTouchingHouse}
+
               fontSize={fontSize}
               fontWeight={fontWeight}
               highVisibilityTextColor={highVisibilityTextColor}
@@ -347,7 +359,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               isHighlighted={isHighlighted}
               highlightedStone={highlightedStone}
               shouldShowInToggle={shouldShowCenterLineInToggle}
-              isTouchingHouse={isTouchingHouse}
+
               fontSize={fontSize}
               fontWeight={fontWeight}
               highVisibilityTextColor={highVisibilityTextColor}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSettings, MeasurementStep, MeasurementType } from '../../contexts/SettingsContext';
+import { useSettings, MeasurementStep, MeasurementType, ZONE_AVAILABLE_TYPES } from '../../contexts/SettingsContext';
 import { Trash2, Target, Shield, ArrowLeftRight } from 'lucide-react';
 import { ZonesDiagram } from '../ZonesDiagram';
 
@@ -80,84 +80,23 @@ export const SettingsMeasurementsView: React.FC = () => {
                     <span className="font-bold text-gray-400 w-6">{index + 1}.</span>
 
                     <div className="flex gap-2">
-                        {/* Guard Measurements Button */}
-                        {zone === 'guardZone' && (
+                        {/* Render buttons for all available types in this zone */}
+                        {ZONE_AVAILABLE_TYPES[zone].map((type) => (
                             <button
-                                onClick={() => handleToggleType(zone, index, 'guard')}
+                                key={type}
+                                onClick={() => handleToggleType(zone, index, type)}
                                 className={`
                                     flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
-                                    ${step.types.includes('guard')
+                                    ${step.types.includes(type)
                                         ? 'bg-lavender-600 text-white hover:bg-lavender-700'
                                         : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
                                     }
                                 `}
-                                title={`Toggle ${getLabel('guard')}`}
+                                title={`Toggle ${getLabel(type)}`}
                             >
-                                {getIcon('guard')}
+                                {getIcon(type)}
                             </button>
-                        )}
-
-                        {/* T-Line Measurements Button */}
-                        <button
-                            onClick={() => handleToggleType(zone, index, 't-line')}
-                            className={`
-                                flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
-                                ${step.types.includes('t-line')
-                                    ? 'bg-lavender-600 text-white hover:bg-lavender-700'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
-                                }
-                            `}
-                            title={`Toggle ${getLabel('t-line')}`}
-                        >
-                            {getIcon('t-line')}
-                        </button>
-
-                        {/* Center Line Measurements Button */}
-                        <button
-                            onClick={() => handleToggleType(zone, index, 'center-line')}
-                            className={`
-                                flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
-                                ${step.types.includes('center-line')
-                                    ? 'bg-lavender-600 text-white hover:bg-lavender-700'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
-                                }
-                            `}
-                            title={`Toggle ${getLabel('center-line')}`}
-                        >
-                            {getIcon('center-line')}
-                        </button>
-
-                        {/* Stone to Stone Measurements Button */}
-                        <button
-                            onClick={() => handleToggleType(zone, index, 'stone-to-stone')}
-                            className={`
-                                flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
-                                ${step.types.includes('stone-to-stone')
-                                    ? 'bg-lavender-600 text-white hover:bg-lavender-700'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
-                                }
-                            `}
-                            title={`Toggle ${getLabel('stone-to-stone')}`}
-                        >
-                            {getIcon('stone-to-stone')}
-                        </button>
-
-                        {/* Closest Ring Measurements Button */}
-                        {(zone === 'houseZone' || zone === 'nearHouseZone') && (
-                            <button
-                                onClick={() => handleToggleType(zone, index, 'closest-ring')}
-                                className={`
-                                    flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200
-                                    ${step.types.includes('closest-ring')
-                                        ? 'bg-lavender-600 text-white hover:bg-lavender-700'
-                                        : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-lavender-600'
-                                    }
-                                `}
-                                title={`Toggle ${getLabel('closest-ring')}`}
-                            >
-                                {getIcon('closest-ring')}
-                            </button>
-                        )}
+                        ))}
                     </div>
                 </div>
 
@@ -311,139 +250,83 @@ export const SettingsMeasurementsView: React.FC = () => {
                 )}
 
                 {
-                    measurementTab === 'toggle' && (
-                        <div className="space-y-6">
-                            <p className="text-sm text-gray-600 mb-4">
-                                Configure which measurements are shown when the measurement toggle is ON (without selecting a stone).
-                            </p>
+                    measurementTab === 'toggle' && (() => {
+                        // Helper to get toggle setting key for a measurement type
+                        const getToggleKey = (type: MeasurementType): string => {
+                            switch (type) {
+                                case 'guard': return 'showGuard';
+                                case 't-line': return 'showTLine';
+                                case 'center-line': return 'showCenterLine';
+                                case 'closest-ring': return 'showClosestRing';
+                                case 'stone-to-stone': return 'showStoneToStone';
+                                default: return '';
+                            }
+                        };
 
-                            <div className="bg-gray-50 p-4 rounded-xl">
-                                <h3 className="font-semibold text-gray-700 mb-3">Guard Zone Defaults</h3>
-                                <div className="space-y-3">
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('guard')}
-                                            Show Guard Measurement
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.guardZone.showGuard}
-                                            onChange={(e) => updateToggleModeSettings('guardZone', 'showGuard', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('t-line')}
-                                            Show T-Line
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.guardZone.showTLine}
-                                            onChange={(e) => updateToggleModeSettings('guardZone', 'showTLine', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('center-line')}
-                                            Show Center Line
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.guardZone.showCenterLine}
-                                            onChange={(e) => updateToggleModeSettings('guardZone', 'showCenterLine', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
+                        // Helper to get label for a measurement type
+                        const getToggleLabel = (type: MeasurementType): string => {
+                            switch (type) {
+                                case 'guard': return 'Show Guard Measurement';
+                                case 't-line': return 'Show T-Line';
+                                case 'center-line': return 'Show Center Line';
+                                case 'closest-ring': return 'Show Closest Ring';
+                                case 'stone-to-stone': return 'Show Stone to Stone';
+                                default: return '';
+                            }
+                        };
+
+                        // Helper to get setting value
+                        const getToggleValue = (zone: 'guardZone' | 'nearHouseZone' | 'houseZone', type: MeasurementType): boolean => {
+                            const key = getToggleKey(type);
+                            const zoneSettings = toggleModeSettings[zone] as any;
+                            return zoneSettings?.[key] ?? false;
+                        };
+
+                        // Render a toggle checkbox for a zone/type
+                        const renderToggleCheckbox = (zone: 'guardZone' | 'nearHouseZone' | 'houseZone', type: MeasurementType) => (
+                            <label key={type} className="flex items-center justify-between">
+                                <span className="text-gray-600 flex items-center gap-2">
+                                    {getIcon(type)}
+                                    {getToggleLabel(type)}
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    checked={getToggleValue(zone, type)}
+                                    onChange={(e) => updateToggleModeSettings(zone, getToggleKey(type), e.target.checked)}
+                                    className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                />
+                            </label>
+                        );
+
+                        return (
+                            <div className="space-y-6">
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Configure which measurements are shown when the measurement toggle is ON (without selecting a stone).
+                                </p>
+
+                                <div className="bg-gray-50 p-4 rounded-xl">
+                                    <h3 className="font-semibold text-gray-700 mb-3">Guard Zone Defaults</h3>
+                                    <div className="space-y-3">
+                                        {ZONE_AVAILABLE_TYPES.guardZone.map(type => renderToggleCheckbox('guardZone', type))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 p-4 rounded-xl">
+                                    <h3 className="font-semibold text-gray-700 mb-3">Near House Zone Defaults</h3>
+                                    <div className="space-y-3">
+                                        {ZONE_AVAILABLE_TYPES.nearHouseZone.map(type => renderToggleCheckbox('nearHouseZone', type))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 p-4 rounded-xl">
+                                    <h3 className="font-semibold text-gray-700 mb-3">House Zone Defaults</h3>
+                                    <div className="space-y-3">
+                                        {ZONE_AVAILABLE_TYPES.houseZone.map(type => renderToggleCheckbox('houseZone', type))}
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="bg-gray-50 p-4 rounded-xl">
-                                <h3 className="font-semibold text-gray-700 mb-3">Near House Zone Defaults</h3>
-                                <div className="space-y-3">
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('closest-ring')}
-                                            Show Closest Ring
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.nearHouseZone?.showClosestRing ?? true}
-                                            onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showClosestRing', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('t-line')}
-                                            Show T-Line
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.nearHouseZone?.showTLine ?? false}
-                                            onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showTLine', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('center-line')}
-                                            Show Center Line
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.nearHouseZone?.showCenterLine ?? false}
-                                            onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showCenterLine', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="bg-gray-50 p-4 rounded-xl">
-                                <h3 className="font-semibold text-gray-700 mb-3">House Zone Defaults</h3>
-                                <div className="space-y-3">
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('closest-ring')}
-                                            Show Closest Ring
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.houseZone.showClosestRing ?? true}
-                                            onChange={(e) => updateToggleModeSettings('houseZone', 'showClosestRing', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('t-line')}
-                                            Show T-Line
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.houseZone.showTLine}
-                                            onChange={(e) => updateToggleModeSettings('houseZone', 'showTLine', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                            {getIcon('center-line')}
-                                            Show Center Line
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={toggleModeSettings.houseZone.showCenterLine}
-                                            onChange={(e) => updateToggleModeSettings('houseZone', 'showCenterLine', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    )
+                        );
+                    })()
                 }
 
                 {

@@ -10,7 +10,7 @@ interface CenterLineMeasurementProps {
     isHighlighted: boolean;
     highlightedStone: any;
     shouldShowInToggle: boolean;
-    isTouchingHouse: boolean;
+
     fontSize: string;
     fontWeight: string;
     highVisibilityTextColor: string;
@@ -39,7 +39,7 @@ export const CenterLineMeasurement: React.FC<CenterLineMeasurementProps> = ({
     isHighlighted,
     highlightedStone,
     shouldShowInToggle,
-    isTouchingHouse,
+
     fontSize,
     fontWeight,
     highVisibilityTextColor,
@@ -171,34 +171,7 @@ export const CenterLineMeasurement: React.FC<CenterLineMeasurementProps> = ({
                         transform={`translate(${(horizontalLineStartX + centerLinePixelX) / 2}, ${stonePixelY + horizontalLabelOffset})`}
                         opacity={opacity}
                     >
-                        {/* Black outline - only for house zone */}
-                        {isTouchingHouse && (
-                            <text
-                                x="0"
-                                y="0"
-                                fill="black"
-                                fillOpacity="0.3"
-                                stroke="black"
-                                strokeOpacity="0.3"
-                                strokeWidth="3"
-                                fontSize={fontSize}
-                                fontWeight={fontWeight}
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                                style={{ transition: "all 0.2s ease" }}
-                            >
-                                {(() => {
-                                    const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
-                                    const displayValue = isCenterLineOverlapping
-                                        ? Math.abs(deltaX)
-                                        : displayDistanceToCenter;
-                                    return isLeftOfCenter
-                                        ? `${formatDistance(displayValue)} →`
-                                        : `← ${formatDistance(displayValue)}`;
-                                })()}
-                            </text>
-                        )}
-                        {/* Yellow text on top */}
+                        {/* Text label */}
                         <text
                             x="0"
                             y="0"

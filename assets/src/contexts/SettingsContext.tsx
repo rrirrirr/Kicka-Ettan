@@ -3,6 +3,13 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 export type MeasurementType = 'guard' | 't-line' | 'center-line' | 'closest-ring' | 'stone-to-stone';
 export type UnitSystem = 'metric' | 'imperial' | 'smart';
 
+// Central configuration for which measurement types are available per zone
+export const ZONE_AVAILABLE_TYPES: Record<'guardZone' | 'nearHouseZone' | 'houseZone', MeasurementType[]> = {
+    guardZone: ['guard', 'center-line', 'stone-to-stone'],
+    nearHouseZone: ['closest-ring', 't-line', 'center-line', 'stone-to-stone'],
+    houseZone: ['closest-ring', 't-line', 'center-line', 'stone-to-stone']
+};
+
 export interface SmartUnitRule {
     maxDistance: number; // in cm
     unit: 'metric' | 'imperial' | 'stone' | 'broom';
