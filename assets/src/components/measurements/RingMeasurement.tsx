@@ -21,7 +21,7 @@ interface RingMeasurementProps {
     stoneEdgePixelY: number;
     ringEdgePixelX: number;
     ringEdgePixelY: number;
-    textYOffset: number;
+
     displayDistanceToRing: number;
     deltaX: number;
     deltaY: number;
@@ -46,7 +46,7 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
     stoneEdgePixelY,
     ringEdgePixelX,
     ringEdgePixelY,
-    textYOffset,
+
     displayDistanceToRing,
     deltaX,
     deltaY
@@ -159,117 +159,144 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                     })()}
 
                     {/* Distance label or Percentage label */}
-                    {displaySettings.closestRing?.showDistance && (
-                        <g
-                            transform={`translate(${isOverlapping ? stonePixelX : (stoneEdgePixelX + ringEdgePixelX) / 2}, ${isOverlapping ? stonePixelY + (STONE_RADIUS * scale) + 20 : (stoneEdgePixelY + ringEdgePixelY) / 2 + textYOffset})`}
-                            style={{ transition: "all 0.2s ease" }}
-                            opacity={opacity}
-                        >
-                            {(() => {
-                                // Special handling for Button (closestRingRadius === BUTTON_RADIUS)
-                                // If touching/overlapping the button (distToCenterPoint < BUTTON_RADIUS + STONE_RADIUS)
-                                if (
-                                    closestRingRadius === BUTTON_RADIUS &&
-                                    distToCenterPoint < BUTTON_RADIUS + STONE_RADIUS
-                                ) {
-                                    // Calculate split percentages same as other rings
-                                    const overlapDistance = Math.abs(minDistToRingEdge);
-                                    const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+                    {displaySettings.closestRing?.showDistance && (() => {
+                        // Calculate label position at ring edge with directional offset
+                        // Direction: from house center towards stone (normalized)
+                        const distToRing = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                        const dirX = distToRing > 0 ? deltaX / distToRing : 0;
+                        const dirY = distToRing > 0 ? deltaY / distToRing : 0;
 
-                                    return (
-                                        <>
-                                            {/* Cyan text (no outline needed) */}
-                                            <text
-                                                x="0"
-                                                y="0"
-                                                fill="var(--color-cyan-600)"
-                                                fontSize={fontSize}
-                                                fontWeight={fontWeight}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                            >
-                                                {overlapPercent1 < 25
-                                                    ? formatDistance(overlapDistance)
-                                                    : `${overlapPercent1}%`}
-                                            </text>
-                                        </>
-                                    );
-                                }
+                        // Determine if stone is outside or inside the ring
+                        const isStoneOutsideRing = distToCenterPoint > closestRingRadius;
 
-                                // Standard logic for other rings or if not touching button
-                                if (isOverlapping) {
-                                    // Calculate split percentages for overlap display
-                                    const overlapDistance = Math.abs(minDistToRingEdge);
-                                    const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+                        // Offset amount in pixels (extends past the ring edge)
+                        const labelOffset = 20;
 
-                                    return (
-                                        <g>
-                                            {/* Overlap Icon (Two intersecting circles) */}
-                                            <g transform="translate(-16, -1)">
-                                                {/* Cyan circles (no outline) */}
-                                                <circle
-                                                    cx="-3"
-                                                    cy="0"
-                                                    r="4.5"
-                                                    fill="none"
-                                                    stroke="var(--color-cyan-600)"
-                                                    strokeWidth="1.5"
-                                                />
-                                                <circle
-                                                    cx="3"
-                                                    cy="0"
-                                                    r="4.5"
-                                                    fill="none"
-                                                    stroke="var(--color-lavender-600)"
-                                                    strokeWidth="1.5"
-                                                />
-                                                {/* Intersection highlight */}
-                                                <path
-                                                    d="M 0,-3.3 A 4.5,4.5 0 0,0 0,3.3 A 4.5,4.5 0 0,0 0,-3.3"
+                        // Direction multiplier:
+                        // - Stone OUTSIDE ring: line goes inward, so offset should be INWARD (negate direction)
+                        // - Stone INSIDE ring: line goes outward, so offset should be OUTWARD (keep direction)
+                        const directionMultiplier = isStoneOutsideRing ? -1 : 1;
+
+                        // Position: ring edge + offset in direction the line is going
+                        const labelX = isOverlapping
+                            ? stonePixelX
+                            : ringEdgePixelX + dirX * labelOffset * directionMultiplier;
+                        const labelY = isOverlapping
+                            ? stonePixelY + (STONE_RADIUS * scale) + 20
+                            : ringEdgePixelY + dirY * labelOffset * directionMultiplier;
+
+                        return (
+                            <g
+                                transform={`translate(${labelX}, ${labelY})`}
+                                style={{ transition: "all 0.2s ease" }}
+                                opacity={opacity}
+                            >
+                                {(() => {
+                                    // Special handling for Button (closestRingRadius === BUTTON_RADIUS)
+                                    // If touching/overlapping the button (distToCenterPoint < BUTTON_RADIUS + STONE_RADIUS)
+                                    if (
+                                        closestRingRadius === BUTTON_RADIUS &&
+                                        distToCenterPoint < BUTTON_RADIUS + STONE_RADIUS
+                                    ) {
+                                        // Calculate split percentages same as other rings
+                                        const overlapDistance = Math.abs(minDistToRingEdge);
+                                        const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+
+                                        return (
+                                            <>
+                                                {/* Cyan text (no outline needed) */}
+                                                <text
+                                                    x="0"
+                                                    y="0"
                                                     fill="var(--color-cyan-600)"
-                                                    fillOpacity="0.3"
-                                                    stroke="none"
-                                                />
-                                            </g>
+                                                    fontSize={fontSize}
+                                                    fontWeight={fontWeight}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    {overlapPercent1 < 25
+                                                        ? formatDistance(overlapDistance)
+                                                        : `${overlapPercent1}%`}
+                                                </text>
+                                            </>
+                                        );
+                                    }
 
-                                            {/* Percentage Text */}
-                                            {/* Cyan text (no outline) */}
-                                            <text
-                                                x={overlapPercent1 < 25 ? "20" : "10"}
-                                                y="0"
-                                                fill="var(--color-cyan-600)"
-                                                fontSize={fontSize}
-                                                fontWeight={fontWeight}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                            >
-                                                {overlapPercent1 < 25
-                                                    ? formatDistance(overlapDistance)
-                                                    : `${overlapPercent1}%`}
-                                            </text>
-                                        </g>
-                                    );
-                                } else {
-                                    return (
-                                        <>
-                                            {/* Cyan text (no outline) */}
-                                            <text
-                                                x="0"
-                                                y="0"
-                                                fill="var(--color-cyan-600)" // Cyan-600 (high visibility on white)
-                                                fontSize={fontSize}
-                                                fontWeight={fontWeight}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                            >
-                                                {formatDistance(displayDistanceToRing)}
-                                            </text>
-                                        </>
-                                    );
-                                }
-                            })()}
-                        </g>
-                    )}
+                                    // Standard logic for other rings or if not touching button
+                                    if (isOverlapping) {
+                                        // Calculate split percentages for overlap display
+                                        const overlapDistance = Math.abs(minDistToRingEdge);
+                                        const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+
+                                        return (
+                                            <g>
+                                                {/* Overlap Icon (Two intersecting circles) */}
+                                                <g transform="translate(-16, -1)">
+                                                    {/* Cyan circles (no outline) */}
+                                                    <circle
+                                                        cx="-3"
+                                                        cy="0"
+                                                        r="4.5"
+                                                        fill="none"
+                                                        stroke="var(--color-cyan-600)"
+                                                        strokeWidth="1.5"
+                                                    />
+                                                    <circle
+                                                        cx="3"
+                                                        cy="0"
+                                                        r="4.5"
+                                                        fill="none"
+                                                        stroke="var(--color-lavender-600)"
+                                                        strokeWidth="1.5"
+                                                    />
+                                                    {/* Intersection highlight */}
+                                                    <path
+                                                        d="M 0,-3.3 A 4.5,4.5 0 0,0 0,3.3 A 4.5,4.5 0 0,0 0,-3.3"
+                                                        fill="var(--color-cyan-600)"
+                                                        fillOpacity="0.3"
+                                                        stroke="none"
+                                                    />
+                                                </g>
+
+                                                {/* Percentage Text */}
+                                                {/* Cyan text (no outline) */}
+                                                <text
+                                                    x={overlapPercent1 < 25 ? "20" : "10"}
+                                                    y="0"
+                                                    fill="var(--color-cyan-600)"
+                                                    fontSize={fontSize}
+                                                    fontWeight={fontWeight}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    {overlapPercent1 < 25
+                                                        ? formatDistance(overlapDistance)
+                                                        : `${overlapPercent1}%`}
+                                                </text>
+                                            </g>
+                                        );
+                                    } else {
+                                        return (
+                                            <>
+                                                {/* Cyan text (no outline) */}
+                                                <text
+                                                    x="0"
+                                                    y="0"
+                                                    fill="var(--color-cyan-600)" // Cyan-600 (high visibility on white)
+                                                    fontSize={fontSize}
+                                                    fontWeight={fontWeight}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    {formatDistance(displayDistanceToRing)}
+                                                </text>
+                                            </>
+                                        );
+                                    }
+                                })()}
+                            </g>
+                        );
+                    })()}
                 </svg>
             );
         })()

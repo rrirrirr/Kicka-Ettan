@@ -224,14 +224,66 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
 
         // T-Line specific
         const isAboveTee = deltaY < 0;
-        const teeLineLabelHorizontalOffset = 45;
+
+        // Dynamic T-Line label offset based on stone X position
+        // X position as percentage of sheet width (0-100)
+        const stoneXPercent = (stone.pos.x / SHEET_WIDTH) * 100;
+
+        // Zone logic (left to right):
+        // - First 25%: Inside (to the right, +45)
+        // - Second 25%: Outside (to the left, -45)
+        // - Third 25%: Outside (to the right, +45)
+        // - Last 25%: Inside (to the left, -45)
+        let teeLineLabelHorizontalOffset: number;
+        if (stoneXPercent < 25) {
+          // First 25%: Inside (right)
+          teeLineLabelHorizontalOffset = 45;
+        } else if (stoneXPercent < 50) {
+          // Second 25%: Outside (left)
+          teeLineLabelHorizontalOffset = -45;
+        } else if (stoneXPercent < 75) {
+          // Third 25%: Outside (right)
+          teeLineLabelHorizontalOffset = 45;
+        } else {
+          // Last 25%: Inside (left)
+          teeLineLabelHorizontalOffset = -45;
+        }
+
         const verticalLineStartY = isAboveTee
           ? stonePixelY + STONE_RADIUS * scale
           : stonePixelY - STONE_RADIUS * scale;
 
         // Center Line specific
         const isLeftOfCenter = deltaX < 0;
-        const horizontalLabelOffset = 25;
+
+        // Dynamic label offset based on stone Y position
+        // Total visible height: hogLineY (0) to backLineY (teeLineY + BACK_LINE_OFFSET)
+        const backLineY = teeLineY + 183; // BACK_LINE_OFFSET = 183
+        const totalVisibleHeight = backLineY - hogLineY;
+        const stoneYPercent = ((stone.pos.y - hogLineY) / totalVisibleHeight) * 100;
+
+        // Zone logic:
+        // - Top 15%: Label Under (+25)
+        // - 15% to T-Line: Label Above (-25)
+        // - Below T-Line to Last 5%: Label Under (+25)
+        // - Last 5%: Label Above (-25)
+        const teeLinePercent = ((teeLineY - hogLineY) / totalVisibleHeight) * 100; // ~78%
+
+        let horizontalLabelOffset: number;
+        if (stoneYPercent < 15) {
+          // Top 15%: Under
+          horizontalLabelOffset = 25;
+        } else if (stoneYPercent < teeLinePercent) {
+          // 15% to T-Line: Above
+          horizontalLabelOffset = -25;
+        } else if (stoneYPercent > 95) {
+          // Last 5%: Above
+          horizontalLabelOffset = -25;
+        } else {
+          // Below T-Line to 95%: Under
+          horizontalLabelOffset = 25;
+        }
+
         const horizontalLineStartX = isLeftOfCenter
           ? stonePixelX + STONE_RADIUS * scale
           : stonePixelX - STONE_RADIUS * scale;
@@ -239,8 +291,6 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         // Guard specific
         const xPercent = (stone.pos.x / SHEET_WIDTH) * 100;
 
-        // Text Y Offset for Ring Measurement
-        const textYOffset = -15;
 
         return (
           <React.Fragment key={`${stone.color}-${stone.index}`}>
@@ -336,7 +386,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               stoneEdgePixelY={stoneEdgePixelY}
               ringEdgePixelX={ringEdgePixelX}
               ringEdgePixelY={ringEdgePixelY}
-              textYOffset={textYOffset}
+
               displayDistanceToRing={displayDistanceToRing}
               deltaX={deltaX}
               deltaY={deltaY}
