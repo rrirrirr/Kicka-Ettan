@@ -18,6 +18,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
         setTimeout(() => setView('main'), 300); // Reset view after animation
     };
 
+    const handleEscape = () => {
+        if (view !== 'main') {
+            setView('main'); // Go back to main view
+        } else {
+            handleClose(); // Close the dialog
+        }
+    };
+
     const getTitle = () => {
         switch (view) {
             case 'measurements': return 'Measurements';
@@ -31,8 +39,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
         <Dialog
             isOpen={isSettingsOpen}
             onClose={handleClose}
+            onEscape={handleEscape}
             title={getTitle()}
-            className="w-full h-full md:h-[85vh] md:max-w-4xl md:w-full md:rounded-2xl fixed inset-0 md:relative md:inset-auto flex flex-col !p-0 overflow-hidden"
+            fullScreen
+            className="!p-0 overflow-hidden"
             headerClassName="shrink-0 px-6 py-6"
             backButton={view !== 'main' ? (
                 <button

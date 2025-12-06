@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import CurlingSheet from './CurlingSheet';
 import { Dialog } from './ui/Dialog';
+import { BottomSheet } from './ui/BottomSheet';
 import { Button } from './ui/Button';
 import DraggableStone from './DraggableStone';
 import StoneSelectionBar from './StoneSelectionBar';
@@ -45,7 +46,6 @@ import { Loupe } from './Loupe';
 import { StoneInspector } from './StoneInspector';
 import { MeasurementType } from '../contexts/SettingsContext';
 import { motion } from 'framer-motion';
-import { scaleIn } from '../utils/animations';
 
 // ... existing imports ...
 
@@ -72,23 +72,6 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   // const [dragMode, setDragMode] = useState<'follow' | 'stay'>('follow'); // Removed unused dragMode
   const gestureState = useRef<GestureState>({ type: 'IDLE' });
   const isHistoryMode = selectedHistoryRound !== null;
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    if (!showMenu) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showMenu]);
 
   // Close menu with Escape key
   useEffect(() => {
@@ -1168,7 +1151,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         <div className="w-full max-w-md card-gradient backdrop-blur-md p-4 shrink-0 relative z-20 shadow-2xl border border-white/20 my-4 rounded-2xl mb-6">
           <div className="flex gap-2 h-[64px]">
             {/* Persistent Menu Button */}
-            <div ref={menuRef} className="relative shrink-0 flex items-center">
+            <div className="relative shrink-0 flex items-center">
               <button
                 onClick={() => {
                   setShowMenu(!showMenu);
@@ -1181,32 +1164,37 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                 <Menu size={24} />
               </button>
 
-              {showMenu && (
-                <div className="absolute bottom-16 left-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 min-w-[220px] z-50 animate-in fade-in slide-in-from-bottom-2">
+              {/* Menu Bottom Sheet */}
+              <BottomSheet
+                isOpen={showMenu}
+                onClose={() => setShowMenu(false)}
+                title="menu"
+              >
+                <div className="flex flex-col gap-1">
                   {onShare && (
                     <button
                       onClick={() => {
                         onShare();
                         setShowMenu(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                      className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
                     >
-                      <Share2 size={16} />
+                      <Share2 size={22} className="text-gray-600" />
                       Share
                     </button>
                   )}
                   <button
                     onClick={() => {
                       if (gameState.history && gameState.history.length > 0) {
-                        setSelectedHistoryRound(0); // Start at most recent round
+                        setSelectedHistoryRound(0);
                       } else {
                         alert("No history available yet.");
                       }
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
                   >
-                    <HistoryIcon size={16} />
+                    <HistoryIcon size={22} className="text-gray-600" />
                     History
                   </button>
                   <button
@@ -1214,9 +1202,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                       setShowHelp(true);
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
                   >
-                    <Info size={16} />
+                    <Info size={22} className="text-gray-600" />
                     Help
                   </button>
                   <button
@@ -1224,21 +1212,21 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                       openSettings();
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
                   >
-                    <Settings size={16} />
+                    <Settings size={22} className="text-gray-600" />
                     Settings
                   </button>
-                  <div className="h-px bg-gray-200 my-1" />
+                  <div className="h-px bg-gray-200 my-2" />
                   <button
                     onClick={() => window.location.href = '/'}
-                    className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded flex items-center gap-2"
+                    className="w-full text-left px-4 py-4 hover:bg-red-50 active:bg-red-100 text-red-600 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
                   >
-                    <LogOut size={16} />
+                    <LogOut size={22} />
                     Exit Game
                   </button>
                 </div>
-              )}
+              </BottomSheet>
             </div>
 
             {/* Contextual Controls */}
