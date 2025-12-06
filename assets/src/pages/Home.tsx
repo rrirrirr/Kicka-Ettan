@@ -214,30 +214,32 @@ const Home = () => {
                                 onClose={() => setShowColorPicker(null)}
                                 title="select color"
                             >
-                                <div className="grid grid-cols-4 gap-4 mb-4">
-                                    {PRESET_COLORS.map(color => {
-                                        const otherTeamColor = showColorPicker === 'team1' ? team2Color : team1Color;
-                                        const isTaken = color.toUpperCase() === otherTeamColor.toUpperCase();
+                                <div className="p-4">
+                                    <div className="grid grid-cols-4 gap-4 place-items-center w-fit mx-auto">
+                                        {PRESET_COLORS.map(color => {
+                                            const otherTeamColor = showColorPicker === 'team1' ? team2Color : team1Color;
+                                            const isTaken = color.toUpperCase() === otherTeamColor.toUpperCase();
 
-                                        return (
-                                            <button
-                                                key={color}
-                                                onClick={() => {
-                                                    if (isTaken) return;
-                                                    if (showColorPicker === 'team1') setTeam1Color(color);
-                                                    else setTeam2Color(color);
-                                                    setShowColorPicker(null);
-                                                }}
-                                                className={`w-12 h-12 rounded-full shadow-sm ring-2 animate-glow ${isTaken
-                                                    ? 'ring-red-400 opacity-40 cursor-not-allowed'
-                                                    : 'ring-transparent hover:ring-gray-300'
-                                                    }`}
-                                                style={{ backgroundColor: color }}
-                                                disabled={isTaken}
-                                                title={isTaken ? 'Already taken by other team' : ''}
-                                            />
-                                        );
-                                    })}
+                                            return (
+                                                <button
+                                                    key={color}
+                                                    onClick={() => {
+                                                        if (isTaken) return;
+                                                        if (showColorPicker === 'team1') setTeam1Color(color);
+                                                        else setTeam2Color(color);
+                                                        setShowColorPicker(null);
+                                                    }}
+                                                    className={`w-12 h-12 rounded-full shadow-md ring-2 animate-glow transition-transform ${isTaken
+                                                        ? 'ring-red-400 opacity-40 cursor-not-allowed'
+                                                        : 'ring-transparent hover:ring-gray-400 hover:scale-110'
+                                                        }`}
+                                                    style={{ backgroundColor: color }}
+                                                    disabled={isTaken}
+                                                    title={isTaken ? 'Already taken by other team' : ''}
+                                                />
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </Dialog>
                         )}
