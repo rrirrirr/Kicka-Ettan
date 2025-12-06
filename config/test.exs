@@ -16,6 +16,7 @@ config :kicka_ettan, KickaEttan.Repo,
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :kicka_ettan, KickaEttanWeb.Endpoint,
+  url: [host: "localhost"],
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "Gp9O4DY68mgZD/M0O3NSpke3cuT+FTi1TV1nTzIY1r7pP64Efx9y8gTZAAp4DirX",
   signing_salt: "test_signing_salt",

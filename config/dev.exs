@@ -17,6 +17,7 @@ config :kicka_ettan, KickaEttan.Repo,
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
 config :kicka_ettan, KickaEttanWeb.Endpoint,
+  url: [host: "localhost"],
   # Binding to all interfaces allows access from other machines on the local network.
   http: [ip: {0, 0, 0, 0}, port: 4000],
   check_origin: false,

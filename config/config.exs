@@ -13,7 +13,6 @@ config :kicka_ettan,
 
 # Configures the endpoint
 config :kicka_ettan, KickaEttanWeb.Endpoint,
-  url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [json: KickaEttanWeb.ErrorJSON],
