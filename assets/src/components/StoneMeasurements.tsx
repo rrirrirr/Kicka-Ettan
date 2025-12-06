@@ -338,6 +338,8 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               ringEdgePixelY={ringEdgePixelY}
               textYOffset={textYOffset}
               displayDistanceToRing={displayDistanceToRing}
+              deltaX={deltaX}
+              deltaY={deltaY}
             />
 
             <StoneToStoneMeasurement

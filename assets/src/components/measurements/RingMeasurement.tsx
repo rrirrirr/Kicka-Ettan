@@ -23,6 +23,8 @@ interface RingMeasurementProps {
     ringEdgePixelY: number;
     textYOffset: number;
     displayDistanceToRing: number;
+    deltaX: number;
+    deltaY: number;
 }
 
 export const RingMeasurement: React.FC<RingMeasurementProps> = ({
@@ -45,7 +47,9 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
     ringEdgePixelX,
     ringEdgePixelY,
     textYOffset,
-    displayDistanceToRing
+    displayDistanceToRing,
+    deltaX,
+    deltaY
 }) => {
     const shouldShow = (isHighlighted && highlightedStone?.activeTypes?.includes("closest-ring")) ||
         (!isHighlighted && shouldShowInToggle);
@@ -83,7 +87,7 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                         height: "100%",
                         pointerEvents: "none",
                         transition: "opacity 0.2s ease",
-                        zIndex: 3,
+                        zIndex: 10,
                     }}
                 >
                     {/* Only show line if NOT overlapping */}
@@ -116,9 +120,14 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
 
                         // We need angleDeg.
                         // angleRad = Math.atan2(deltaY, deltaX)
-                        // I'll add deltaX/deltaY to props.
-                        // For now, placeholder:
-                        const angleDeg = 0; // Placeholder, need to fix props
+                        // This gives us the angle of the vector from the button center to the stone.
+                        // We want the bar to be perpendicular to the tangent of the circle at that point?
+                        // No, the bar measures the overlap distance radially.
+                        // So the bar itself should be aligned with the radius.
+                        // Default bar is horizontal.
+                        // If angle is 0 (stone to right), bar should be horizontal. Correct.
+                        // If angle is 90 (stone below), bar should be vertical. Correct.
+                        const angleDeg = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
 
                         return (
                             <g

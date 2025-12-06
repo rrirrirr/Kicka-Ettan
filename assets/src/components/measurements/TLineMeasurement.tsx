@@ -64,6 +64,7 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                 height: "100%",
                 pointerEvents: "none",
                 transition: "opacity 0.2s ease",
+                zIndex: 10,
             }}
         >
             {displaySettings.tLine.showLine && (() => {
@@ -144,7 +145,10 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                 const barLength = STONE_RADIUS * 2 * scale; // Stone diameter in pixels
                 const barHeight = 8;
                 const offsetDistance = Math.abs(deltaY);
-                const fillWidth = (offsetDistance / STONE_RADIUS) * (barLength / 2); // Half bar represents radius
+                // Fill represents "amount of stone OFF the line" (Offset).
+                // Touch (offset=R) -> Full fill (offset bar). Center (offset=0) -> 0 fill.
+                // Wait, original logic: fillWidth = (offsetDistance / STONE_RADIUS) * (barLength / 2);
+                const fillWidth = (offsetDistance / STONE_RADIUS) * (barLength / 2);
 
                 return (
                     <g
@@ -157,11 +161,10 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                             y={-barHeight / 2}
                             width={barLength}
                             height={barHeight}
-                            fill="var(--color-amber-500)"
+                            fill="var(--icy-black)"
                             fillOpacity="0.8"
                             rx="2"
                         />
-                        {/* Bar Fill - fills from center to show offset */}
                         <rect
                             x={isAboveTee ? 0 : -fillWidth}
                             y={-barHeight / 2}
