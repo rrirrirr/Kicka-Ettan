@@ -41,11 +41,12 @@ type GestureState =
 
 
 
-import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X, Settings } from 'lucide-react';
+import { Menu, History as HistoryIcon, Info, LogOut, Share2, Ruler, X, Settings, Undo2 } from 'lucide-react';
 import { Loupe } from './Loupe';
 import { StoneInspector } from './StoneInspector';
 import { MeasurementType } from '../contexts/SettingsContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { RoundStartOverlay } from './RoundStartOverlay';
 
 // ... existing imports ...
 
@@ -58,6 +59,10 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   const [showHelp, setShowHelp] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [selectedHistoryRound, setSelectedHistoryRound] = useState<number | null>(null);
+  const [showRoundStartOverlay, setShowRoundStartOverlay] = useState(false);
+  const [waitingMinTimeElapsed, setWaitingMinTimeElapsed] = useState(true);
+  const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const prevRoundRef = useRef<number>(gameState.current_round);
 
   const { containerRef, sheetDimensions, scale } = useGameDimensions();
   const [highlightedStone, setHighlightedStone] = useState<{ color: 'red' | 'yellow'; index: number; stepIndex: number; activeTypes?: MeasurementType[] } | null>(null);
@@ -136,6 +141,15 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       }
     }
   }, [gameState, playerId]);
+
+  // Detect round transition and show overlay for BOTH players
+  useEffect(() => {
+    if (gameState && gameState.current_round > prevRoundRef.current) {
+      // Round has increased - show the overlay
+      setShowRoundStartOverlay(true);
+      prevRoundRef.current = gameState.current_round;
+    }
+  }, [gameState?.current_round]);
 
   const updateStonePosition = useCallback((index: number, x: number, y: number, placed: boolean) => {
     setMyStones(prev => prev.map(s =>
@@ -562,6 +576,15 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   const handleConfirmPlacement = () => {
     if (!channel) return;
 
+    // Start minimum wait timer to prevent flash
+    setWaitingMinTimeElapsed(false);
+    if (waitingTimerRef.current) {
+      clearTimeout(waitingTimerRef.current);
+    }
+    waitingTimerRef.current = setTimeout(() => {
+      setWaitingMinTimeElapsed(true);
+    }, 500);
+
     // Send all stone placements
     const placementPromises = myStones.filter(s => s.placed).map(stone => {
       return new Promise((resolve, reject) => {
@@ -595,9 +618,26 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   const handleNextRound = () => {
     setHighlightedStone(null);
     setHoveredStone(null);
+    // Overlay will be triggered by useEffect when round changes
     if (channel) {
       channel.push("ready_for_next_round", {});
     }
+  };
+
+  const handleRoundOverlayComplete = () => {
+    setShowRoundStartOverlay(false);
+  };
+
+  const handleCancelPlacement = () => {
+    if (!channel) return;
+
+    channel.push("cancel_placement", {})
+      .receive("ok", () => {
+        setIsReady(false);
+      })
+      .receive("error", (reasons: any) => {
+        console.error("Failed to cancel placement", reasons);
+      });
   };
 
   if (!gameState || !playerId || !myColor) {
@@ -852,8 +892,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
 
       {/* Render Red and Yellow stones (Live or History) */}
-      {renderStones(displayRedStones, 'red')}
-      {renderStones(displayYellowStones, 'yellow')}
+      {/* Skip rendering own color during placement phase (myStones handles that) */}
+      {!(gameState.phase === 'placement' && !isReady && myColor === 'red') && renderStones(displayRedStones, 'red')}
+      {!(gameState.phase === 'placement' && !isReady && myColor === 'yellow') && renderStones(displayYellowStones, 'yellow')}
 
       {/* Measurement lines in combined phase or history mode */}
       {(gameState.phase === 'combined' || isHistoryMode) && (
@@ -1260,20 +1301,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                 </div>
               )}
 
-              {/* Placement Phase - Waiting */}
-              {isReady && gameState.phase === 'placement' && (
-                <div className="w-full flex flex-col gap-2">
-                  <div className="w-full p-4 bg-[var(--icy-blue-light)]/20 text-[var(--icy-blue-dark)] font-bold rounded-2xl text-center animate-pulse border border-[var(--icy-blue-light)]/30 lowercase tracking-tight mb-2">
-                    waiting for opponent...
-                  </div>
-                  <Button
-                    onClick={() => window.location.href = '/'}
-                    className="w-full h-12 text-sm bg-white/20 hover:bg-white/30 text-white border border-white/40"
-                  >
-                    cancel & go back
-                  </Button>
-                </div>
-              )}
+
 
               {gameState.phase === 'combined' && !isHistoryMode && (
                 <div className="w-full flex gap-2">
@@ -1295,6 +1323,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
                     variant="destructive"
                     className="flex-grow h-12 text-base"
                     noHoverAnimation
+                    noTapAnimation
                   >
                     start new round
                   </Button>
@@ -1357,6 +1386,56 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       </Dialog>
 
       <SettingsDialog />
+
+      {/* Waiting for Opponent Overlay - Centered on screen */}
+      <AnimatePresence>
+        {isReady && (gameState.phase === 'placement' || !waitingMinTimeElapsed) && (
+          <motion.div
+            key="waiting-overlay"
+            className="fixed inset-0 z-[90] flex items-center justify-center pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.4 } }}
+          >
+            {/* Backdrop - lighter to show sheet */}
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+
+            {/* Content */}
+            <motion.div
+              className="relative z-10 flex flex-col items-center text-center px-8 gap-6 pointer-events-auto"
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10, transition: { duration: 0.3 } }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <h2
+                className="text-4xl md:text-5xl font-bold text-white lowercase tracking-tight animate-pulse"
+                style={{
+                  textShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                waiting for opponent...
+              </h2>
+
+              <Button
+                onClick={handleCancelPlacement}
+                className="h-12 px-6 bg-[var(--icy-dark)] hover:bg-[var(--icy-dark)]/90 text-[var(--icy-white)] border border-[var(--icy-blue-light)]/30 shadow-lg backdrop-blur-md transition-all duration-200 flex items-center gap-2"
+                noHoverAnimation
+              >
+                <Undo2 className="w-4 h-4" />
+                edit placement
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Round Start Overlay */}
+      <RoundStartOverlay
+        isVisible={showRoundStartOverlay}
+        roundNumber={gameState.current_round + 1}
+        onComplete={handleRoundOverlayComplete}
+      />
     </motion.div>
   );
 };

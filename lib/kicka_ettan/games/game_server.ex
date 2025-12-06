@@ -57,6 +57,15 @@ defmodule KickaEttan.Games.GameServer do
   end
 
   @doc """
+  Cancel stone placement confirmation.
+  """
+  def cancel_placement(game_id, player_id) do
+    with {:ok, game_server} <- lookup_game(game_id) do
+      GenServer.call(game_server, {:cancel_placement, player_id}, @timeout)
+    end
+  end
+
+  @doc """
   Mark player as ready for the next round.
   """
   def ready_for_next_round(game_id, player_id) do
@@ -123,6 +132,19 @@ defmodule KickaEttan.Games.GameServer do
       
       {:error, reason} = error ->
         Logger.warning("Failed to confirm placement", player_id: player_id, reason: reason)
+        {:reply, error, game_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:cancel_placement, player_id}, _from, game_state) do
+    case GameState.cancel_placement(game_state, player_id) do
+      {:ok, new_state} ->
+        broadcast_update(new_state)
+        {:reply, {:ok, new_state}, new_state}
+      
+      {:error, reason} = error ->
+        Logger.warning("Failed to cancel placement", player_id: player_id, reason: reason)
         {:reply, error, game_state}
     end
   end

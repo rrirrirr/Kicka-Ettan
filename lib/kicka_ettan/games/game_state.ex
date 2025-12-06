@@ -151,6 +151,23 @@ defmodule KickaEttan.Games.GameState do
   end
 
   @doc """
+  Revoke confirmation of stone placement.
+  """
+  def cancel_placement(game_state, player_id) do
+    if game_state.phase == :placement do
+      with player when not is_nil(player) <- find_player(game_state, player_id) do
+        player_ready = Map.put(game_state.player_ready, player_id, false)
+        Logger.debug("Player #{player_id} canceled placement. Ready map: #{inspect(player_ready)}")
+        {:ok, %{game_state | player_ready: player_ready}}
+      else
+        nil -> {:error, :player_not_found}
+      end
+    else
+      {:error, :invalid_phase}
+    end
+  end
+
+  @doc """
   Check if all players have confirmed their stone placements.
   """
   def all_players_ready?(game_state) do

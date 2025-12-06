@@ -142,6 +142,43 @@ defmodule KickaEttan.Games.GameStateTest do
     end
   end
 
+  describe "cancel_placement/2" do
+    setup do
+      state = GameState.new(stones_per_team: 2)
+      {:ok, state} = GameState.join_game(state, "p1", "red")
+      {:ok, state} = GameState.join_game(state, "p2", "yellow")
+      %{state: state}
+    end
+
+    test "marks previously ready player as not ready", %{state: state} do
+      {:ok, state} = GameState.place_stone(state, "p1", 0, %{"x" => 100, "y" => 200})
+      {:ok, state} = GameState.place_stone(state, "p1", 1, %{"x" => 150, "y" => 250})
+      {:ok, state} = GameState.confirm_placement(state, "p1")
+      assert state.player_ready["p1"] == true
+
+      {:ok, new_state} = GameState.cancel_placement(state, "p1")
+      assert new_state.player_ready["p1"] == false
+    end
+
+    test "returns error if not in placement phase", %{state: state} do
+      # Transition to combined phase first
+      {:ok, state} = GameState.place_stone(state, "p1", 0, %{"x" => 100, "y" => 200})
+      {:ok, state} = GameState.place_stone(state, "p1", 1, %{"x" => 150, "y" => 250})
+      {:ok, state} = GameState.confirm_placement(state, "p1")
+      
+      {:ok, state} = GameState.place_stone(state, "p2", 0, %{"x" => 300, "y" => 400})
+      {:ok, state} = GameState.place_stone(state, "p2", 1, %{"x" => 350, "y" => 450})
+      {:ok, state} = GameState.confirm_placement(state, "p2")
+      
+      assert state.phase == :combined
+      assert {:error, :invalid_phase} = GameState.cancel_placement(state, "p1")
+    end
+
+    test "returns error for unknown player", %{state: state} do
+      assert {:error, :player_not_found} = GameState.cancel_placement(state, "unknown")
+    end
+  end
+
   describe "resolve_collisions/1" do
     test "separates overlapping stones" do
       state = GameState.new(stones_per_team: 2)

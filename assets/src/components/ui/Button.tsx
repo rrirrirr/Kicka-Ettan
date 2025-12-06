@@ -7,6 +7,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     size?: 'sm' | 'md' | 'lg' | 'icon';
     isLoading?: boolean;
     noHoverAnimation?: boolean;
+    noTapAnimation?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -15,6 +16,7 @@ export const Button: React.FC<ButtonProps> = ({
     size = 'md',
     isLoading = false,
     noHoverAnimation = false,
+    noTapAnimation = false,
     children,
     ...props
 }) => {
@@ -40,7 +42,7 @@ export const Button: React.FC<ButtonProps> = ({
         <motion.button
             className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
             disabled={isLoading || props.disabled}
-            whileTap={buttonTap}
+            whileTap={noTapAnimation ? undefined : buttonTap}
             whileHover={!props.disabled && size !== 'lg' && !noHoverAnimation ? buttonHover : undefined}
             {...(props as any)}
         >
@@ -56,3 +58,4 @@ export const Button: React.FC<ButtonProps> = ({
         </motion.button>
     );
 };
+

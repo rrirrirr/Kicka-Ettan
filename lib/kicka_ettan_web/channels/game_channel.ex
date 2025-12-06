@@ -66,6 +66,21 @@ defmodule KickaEttanWeb.GameChannel do
   end
 
   @impl true
+  def handle_in("cancel_placement", _params, socket) do
+    with :ok <- check_rate_limit(socket) do
+      game_id = socket.assigns.game_id
+      player_id = socket.assigns.player_id
+
+      case GameServer.cancel_placement(game_id, player_id) do
+        {:ok, _state} -> {:reply, :ok, socket}
+        {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+      end
+    else
+      {:error, :rate_limit_exceeded} -> {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+    end
+  end
+
+  @impl true
   def handle_in("ready_for_next_round", _params, socket) do
     with :ok <- check_rate_limit(socket) do
       game_id = socket.assigns.game_id
