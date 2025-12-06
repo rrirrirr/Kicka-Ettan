@@ -14,7 +14,11 @@ export const SettingsMeasurementsView: React.FC = () => {
             case 'closest-ring': return <Target size={16} />;
             case 'guard': return <Shield size={16} />;
             case 't-line': return <span className="text-xl font-bold">T</span>; // T-line icon
-            case 'center-line': return <span className="text-xl font-bold">│</span>; // Thicker vertical line
+            case 'center-line': return (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 4.5v15" />
+                </svg>
+            ); // Thicker vertical line
             case 'stone-to-stone': return <ArrowLeftRight size={16} />;
             default: return null;
         }

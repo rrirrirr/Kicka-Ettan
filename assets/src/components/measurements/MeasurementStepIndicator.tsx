@@ -100,11 +100,11 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
             case "guard":
                 return <Shield size={20} />;
             case "t-line":
-                return <span className="text-2xl font-bold">T</span>;
+                return <span className="text-xl font-bold">T</span>;
             case "center-line":
                 return (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 3v18" />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 4.5v15" />
                     </svg>
                 );
             case "closest-ring":
@@ -137,6 +137,18 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
             inactive: "bg-white hover:bg-lime-100 text-icy-black"
         },
     };
+
+    // Collect all unique available types from the steps
+    const availableTypes = new Set<MeasurementType>();
+    if (steps) {
+        steps.forEach(step => {
+            if (step.types) {
+                step.types.forEach((t: MeasurementType) => availableTypes.add(t));
+            }
+        });
+    }
+
+    const typesToShow = ALL_MEASUREMENT_TYPES.filter(t => availableTypes.has(t));
 
     // Helper to render buttons
     const renderButtons = (typesToRender: MeasurementType[], activeTypes: MeasurementType[]) => {
@@ -190,7 +202,7 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
                 className="card-gradient backdrop-blur-md px-2 py-4 rounded-full shadow-lg border border-white/50 flex items-center justify-center transition-all duration-300"
             >
                 {/* Current Step Buttons */}
-                {renderButtons(ALL_MEASUREMENT_TYPES, highlightedStone.activeTypes || [])}
+                {renderButtons(typesToShow, highlightedStone.activeTypes || [])}
             </div>
         </>
     );

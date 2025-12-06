@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getChannel, getPlayerId } from '../lib/socket';
 import CurlingGame from '../components/CurlingGame';
 import GameTitle from '../components/GameTitle';
-import { Share2, Copy, Check } from 'lucide-react';
+import { Share2, Copy, Check, ArrowLeft } from 'lucide-react';
 import { saveGameToHistory } from '../lib/gameHistory';
 import { Button, Card } from '../components/ui';
 
@@ -161,6 +161,15 @@ const GameRoom = () => {
                     >
                         <Share2 size={18} />
                         invite team
+                    </Button>
+
+                    <Button
+                        variant="ghost"
+                        onClick={() => window.location.href = '/'}
+                        className="w-full mt-4 text-gray-500 hover:text-red-600 hover:bg-red-50 relative z-10 transition-colors duration-200"
+                    >
+                        <ArrowLeft size={18} />
+                        leave lobby
                     </Button>
                 </Card>
             </div>

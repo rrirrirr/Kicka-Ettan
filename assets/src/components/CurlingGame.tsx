@@ -940,7 +940,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               stepIndex: stepIndex
             };
           })()}
-
+          isSelected={!!highlightedStone}
         />
       )}
     </div>
@@ -1262,8 +1262,16 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
               {/* Placement Phase - Waiting */}
               {isReady && gameState.phase === 'placement' && (
-                <div className="w-full p-4 bg-[var(--icy-blue-light)]/20 text-[var(--icy-blue-dark)] font-bold rounded-2xl text-center animate-pulse border border-[var(--icy-blue-light)]/30 lowercase tracking-tight">
-                  waiting for opponent...
+                <div className="w-full flex flex-col gap-2">
+                  <div className="w-full p-4 bg-[var(--icy-blue-light)]/20 text-[var(--icy-blue-dark)] font-bold rounded-2xl text-center animate-pulse border border-[var(--icy-blue-light)]/30 lowercase tracking-tight mb-2">
+                    waiting for opponent...
+                  </div>
+                  <Button
+                    onClick={() => window.location.href = '/'}
+                    className="w-full h-12 text-sm bg-white/20 hover:bg-white/30 text-white border border-white/40"
+                  >
+                    cancel & go back
+                  </Button>
                 </div>
               )}
 

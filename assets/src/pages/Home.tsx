@@ -79,7 +79,6 @@ const Home = () => {
             navigate(`/game/${data.game_id}`);
         } catch (err) {
             setError('Failed to create game. Please try again.');
-        } finally {
             setIsLoading(false);
         }
     };

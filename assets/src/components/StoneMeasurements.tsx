@@ -37,6 +37,7 @@ interface StoneMeasurementsProps {
   } | null) => void;
   onToggleMeasurementType?: (type: MeasurementType) => void;
   showMeasurements?: boolean;
+  isSelected?: boolean;
 }
 
 export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
@@ -46,6 +47,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
   onHighlightStone,
   onToggleMeasurementType,
   showMeasurements = true,
+  isSelected = false,
 }) => {
   const {
     settings,
@@ -353,7 +355,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
       })}
 
       {/* Render Step Indicator Once if a stone is selected (not just hovered) */}
-      {highlightedStone && (
+      {highlightedStone && isSelected && (
         <MeasurementStepIndicator
           highlightedStone={highlightedStone}
           settings={settings}
