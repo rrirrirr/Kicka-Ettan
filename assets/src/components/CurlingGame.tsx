@@ -863,6 +863,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
             yellow: displayYellowStones
           }}
           scale={scale}
+          showMeasurements={showMeasurements}
           onHighlightStone={setHighlightedStone}
 
           onToggleMeasurementType={(type: MeasurementType) => {

@@ -36,6 +36,7 @@ interface StoneMeasurementsProps {
     stepIndex: number;
   } | null) => void;
   onToggleMeasurementType?: (type: MeasurementType) => void;
+  showMeasurements?: boolean;
 }
 
 export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
@@ -44,6 +45,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
   highlightedStone,
   onHighlightStone,
   onToggleMeasurementType,
+  showMeasurements = true,
 }) => {
   const {
     settings,
@@ -56,6 +58,17 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
 
   // Helper to format distance based on settings
   const formatDistance = (cm: number): string => {
+    // Helper to format as metric
+    const formatMetric = () => `${Math.round(cm)}cm`;
+
+    // Helper to format as imperial
+    const formatImperial = () => {
+      const inches = cm / 2.54;
+      const feet = Math.floor(inches / 12);
+      const remainingInches = Math.round(inches % 12);
+      return feet > 0 ? `${feet}'${remainingInches}"` : `${remainingInches}"`;
+    };
+
     // Check for Smart Units first
     if (unitSystem === 'smart') {
       // Find the first matching rule
@@ -63,12 +76,9 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
       if (rule) {
         switch (rule.unit) {
           case 'metric':
-            return `${Math.round(cm)}cm`;
           case 'imperial':
-            const inches = cm / 2.54;
-            const feet = Math.floor(inches / 12);
-            const remainingInches = Math.round(inches % 12);
-            return feet > 0 ? `${feet}'${remainingInches}"` : `${remainingInches}"`;
+            // Use baseUnitSystem preference for metric/imperial rules
+            return baseUnitSystem === 'imperial' ? formatImperial() : formatMetric();
           case 'stone':
             const stones = cm / (STONE_RADIUS * 2);
             return `${stones.toFixed(1)} stones`;
@@ -80,13 +90,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
     }
 
     // Fallback to base unit system
-    if (baseUnitSystem === 'imperial') {
-      const inches = cm / 2.54;
-      const feet = Math.floor(inches / 12);
-      const remainingInches = Math.round(inches % 12);
-      return feet > 0 ? `${feet}'${remainingInches}"` : `${remainingInches}"`;
-    }
-    return `${Math.round(cm)}cm`;
+    return baseUnitSystem === 'imperial' ? formatImperial() : formatMetric();
   };
 
   // Combine all stones into a single array for rendering
@@ -138,6 +142,10 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
 
         // Skip rendering measurements for non-highlighted stones if a stone IS highlighted
         if (isSelected && !isHighlighted) return null;
+
+        // Skip toggle-mode measurements when showMeasurements is false
+        // Only render measurements for highlighted stone (click-selected) when toggle is off
+        if (!showMeasurements && !isHighlighted) return null;
 
         const stonePixelX = stone.pos.x * scale;
         const stonePixelY = stone.pos.y * scale;
@@ -195,8 +203,11 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         const ringEdgePixelX = ringEdgeX * scale;
         const ringEdgePixelY = ringEdgeY * scale;
 
-        const stoneEdgePixelX = (stone.pos.x - Math.cos(angle) * STONE_RADIUS) * scale;
-        const stoneEdgePixelY = (stone.pos.y - Math.sin(angle) * STONE_RADIUS) * scale;
+        // Stone edge: draw from inner edge if stone is outside ring, outer edge if inside ring
+        const isStoneOutsideRing = distToCenterPoint > closestRingRadius;
+        const edgeDirection = isStoneOutsideRing ? -1 : 1; // -1 = toward center, +1 = away from center
+        const stoneEdgePixelX = (stone.pos.x + edgeDirection * Math.cos(angle) * STONE_RADIUS) * scale;
+        const stoneEdgePixelY = (stone.pos.y + edgeDirection * Math.sin(angle) * STONE_RADIUS) * scale;
 
 
         // Display values
@@ -204,9 +215,9 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
         const displayDistanceToCenter = Math.abs(deltaX) - STONE_RADIUS;
         const displayDistanceToRing = Math.abs(minDistToRingEdge);
 
-        // Text styling
-        const fontSize = useHighlightedStyle ? "12" : "10";
-        const fontWeight = useHighlightedStyle ? "bold" : "normal";
+        // Text styling - toggle mode uses slightly larger font for readability
+        const fontSize = useHighlightedStyle ? "14" : "13";
+        const fontWeight = useHighlightedStyle ? "bold" : "600";
         const highVisibilityTextColor = "var(--color-amber-500)"; // Amber-500 for T-Line and Center-Line
 
         // T-Line specific
