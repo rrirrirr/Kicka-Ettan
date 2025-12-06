@@ -72,7 +72,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, child
                         )}
 
                         {/* Content */}
-                        <div className="px-4 pb-8 overflow-y-auto">
+                        <div className="px-5 pb-10 md:px-6 md:pb-8 overflow-y-auto" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
                             {children}
                         </div>
                     </motion.div>

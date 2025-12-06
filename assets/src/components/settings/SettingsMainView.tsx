@@ -48,7 +48,7 @@ export const SettingsMainView: React.FC<SettingsMainViewProps> = ({ setView }) =
                         {unitSystem === 'smart' && (
                             <button
                                 onClick={() => setView('smart-units')}
-                                className="text-sm text-lavender-600 font-medium hover:text-lavender-700"
+                                className="px-3 py-2 min-h-[44px] text-sm text-lavender-600 font-semibold hover:text-lavender-700 hover:bg-lavender-50 rounded-lg transition-colors active:scale-[0.98]"
                             >
                                 Configure
                             </button>

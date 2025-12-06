@@ -49,7 +49,7 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, onEscape, title
         : "fixed inset-0 z-[1000] flex items-center justify-center p-4";
 
     const dialogClasses = fullScreen
-        ? `relative z-10 card-gradient shadow-2xl p-8 w-full h-full flex flex-col md:rounded-3xl md:max-w-4xl md:max-h-[90vh] ${className}`
+        ? `relative z-10 card-gradient shadow-2xl p-8 w-full h-full flex flex-col md:rounded-3xl md:max-w-md md:max-h-[90vh] ${className}`
         : `relative z-10 card-gradient rounded-3xl shadow-2xl p-8 max-w-lg w-full flex flex-col max-h-[90vh] ${className}`;
 
     return createPortal(

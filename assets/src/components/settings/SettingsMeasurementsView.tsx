@@ -71,8 +71,8 @@ export const SettingsMeasurementsView: React.FC = () => {
         };
 
         return (
-            <div key={step.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl mb-2">
-                <div className="flex-grow flex gap-3 items-center">
+            <div key={step.id} className="flex items-center gap-3 mb-2">
+                <div className="flex-grow flex gap-3 items-center p-3 bg-gray-50 rounded-xl">
                     <span className="font-bold text-gray-400 w-6">{index + 1}.</span>
 
                     <div className="flex gap-2">
@@ -160,7 +160,7 @@ export const SettingsMeasurementsView: React.FC = () => {
                 {settings[zone].length > 1 && (
                     <button
                         onClick={() => handleRemoveStep(zone, index)}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-icy-black hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                         aria-label="Remove step"
                     >
                         <Trash2 size={16} />
@@ -274,33 +274,31 @@ export const SettingsMeasurementsView: React.FC = () => {
                             {settings.guardZone.map((step, index) => renderStep(step, index, 'guardZone'))}
                             <button
                                 onClick={() => handleAddStep('guardZone')}
-                                className="text-sm text-lavender-600 font-medium hover:text-lavender-700 flex items-center gap-1"
+                                className="mt-3 w-full min-h-[48px] py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-medium hover:border-lavender-500 hover:text-lavender-600 transition-colors flex items-center justify-center gap-2"
                             >
                                 + Add Step
                             </button>
 
-
-                            <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                            <h3 className="mt-8 font-semibold text-gray-700 flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-500" />
                                 Near House Zone (&lt; 1.5m from house)
                             </h3>
                             {settings.nearHouseZone.map((step, index) => renderStep(step, index, 'nearHouseZone'))}
                             <button
                                 onClick={() => handleAddStep('nearHouseZone')}
-                                className="text-sm text-lavender-600 font-medium hover:text-lavender-700 flex items-center gap-1"
+                                className="mt-3 w-full min-h-[48px] py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-medium hover:border-lavender-500 hover:text-lavender-600 transition-colors flex items-center justify-center gap-2"
                             >
                                 + Add Step
                             </button>
 
-
-                            <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                            <h3 className="mt-8 font-semibold text-gray-700 flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-red-500" />
                                 House Zone
                             </h3>
                             {settings.houseZone.map((step, index) => renderStep(step, index, 'houseZone'))}
                             <button
                                 onClick={() => handleAddStep('houseZone')}
-                                className="text-sm text-lavender-600 font-medium hover:text-lavender-700 flex items-center gap-1"
+                                className="mt-3 w-full min-h-[48px] py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-medium hover:border-lavender-500 hover:text-lavender-600 transition-colors flex items-center justify-center gap-2"
                             >
                                 + Add Step
                             </button>
@@ -308,359 +306,365 @@ export const SettingsMeasurementsView: React.FC = () => {
                     </div>
                 )}
 
-                {measurementTab === 'toggle' && (
-                    <div className="space-y-6">
-                        <p className="text-sm text-gray-600 mb-4">
-                            Configure which measurements are shown when the measurement toggle is ON (without selecting a stone).
-                        </p>
+                {
+                    measurementTab === 'toggle' && (
+                        <div className="space-y-6">
+                            <p className="text-sm text-gray-600 mb-4">
+                                Configure which measurements are shown when the measurement toggle is ON (without selecting a stone).
+                            </p>
 
-                        <div className="bg-gray-50 p-4 rounded-xl">
-                            <h3 className="font-semibold text-gray-700 mb-3">Guard Zone Defaults</h3>
-                            <div className="space-y-3">
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('guard')}
-                                        Show Guard Measurement
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.guardZone.showGuard}
-                                        onChange={(e) => updateToggleModeSettings('guardZone', 'showGuard', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('t-line')}
-                                        Show T-Line
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.guardZone.showTLine}
-                                        onChange={(e) => updateToggleModeSettings('guardZone', 'showTLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('center-line')}
-                                        Show Center Line
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.guardZone.showCenterLine}
-                                        onChange={(e) => updateToggleModeSettings('guardZone', 'showCenterLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3">Guard Zone Defaults</h3>
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('guard')}
+                                            Show Guard Measurement
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.guardZone.showGuard}
+                                            onChange={(e) => updateToggleModeSettings('guardZone', 'showGuard', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('t-line')}
+                                            Show T-Line
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.guardZone.showTLine}
+                                            onChange={(e) => updateToggleModeSettings('guardZone', 'showTLine', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('center-line')}
+                                            Show Center Line
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.guardZone.showCenterLine}
+                                            onChange={(e) => updateToggleModeSettings('guardZone', 'showCenterLine', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3">Near House Zone Defaults</h3>
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('closest-ring')}
+                                            Show Closest Ring
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.nearHouseZone?.showClosestRing ?? true}
+                                            onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showClosestRing', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('t-line')}
+                                            Show T-Line
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.nearHouseZone?.showTLine ?? false}
+                                            onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showTLine', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('center-line')}
+                                            Show Center Line
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.nearHouseZone?.showCenterLine ?? false}
+                                            onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showCenterLine', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3">House Zone Defaults</h3>
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('closest-ring')}
+                                            Show Closest Ring
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.houseZone.showClosestRing ?? true}
+                                            onChange={(e) => updateToggleModeSettings('houseZone', 'showClosestRing', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('t-line')}
+                                            Show T-Line
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.houseZone.showTLine}
+                                            onChange={(e) => updateToggleModeSettings('houseZone', 'showTLine', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                    <label className="flex items-center justify-between">
+                                        <span className="text-gray-600 flex items-center gap-2">
+                                            {getIcon('center-line')}
+                                            Show Center Line
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={toggleModeSettings.houseZone.showCenterLine}
+                                            onChange={(e) => updateToggleModeSettings('houseZone', 'showCenterLine', e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                    </label>
+                                </div>
                             </div>
                         </div>
+                    )
+                }
 
-                        <div className="bg-gray-50 p-4 rounded-xl">
-                            <h3 className="font-semibold text-gray-700 mb-3">Near House Zone Defaults</h3>
-                            <div className="space-y-3">
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('closest-ring')}
-                                        Show Closest Ring
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.nearHouseZone?.showClosestRing ?? true}
-                                        onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showClosestRing', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('t-line')}
-                                        Show T-Line
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.nearHouseZone?.showTLine ?? false}
-                                        onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showTLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('center-line')}
-                                        Show Center Line
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.nearHouseZone?.showCenterLine ?? false}
-                                        onChange={(e) => updateToggleModeSettings('nearHouseZone', 'showCenterLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
+                {
+                    measurementTab === 'display' && (
+                        <div className="space-y-6">
+                            {/* Guard Measurements */}
+                            <div>
+                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                                    {getIcon('guard')}
+                                    Guard Measurements
+                                </h3>
+                                <div className="space-y-3 pl-2">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.guard.showBraceLine}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                guard: { ...displaySettings.guard, showBraceLine: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Brace Line</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.guard.showPercentage}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                guard: { ...displaySettings.guard, showPercentage: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Percentage</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.guard.showDistance}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                guard: { ...displaySettings.guard, showDistance: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Distance (cm)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.guard.showBroomLength}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                guard: { ...displaySettings.guard, showBroomLength: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Broom Length (for distances &gt; 1.5m)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+
+                            {/* T-Line Measurements */}
+                            <div>
+                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                                    {getIcon('t-line')}
+                                    T-Line Measurements
+                                </h3>
+                                <div className="space-y-3 pl-2">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.tLine.showLine}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                tLine: { ...displaySettings.tLine, showLine: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Line</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.tLine.showDistance}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                tLine: { ...displaySettings.tLine, showDistance: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Distance Label</span>
+                                    </label>
+                                </div>
+                            </div>
+
+
+                            {/* Center Line Measurements */}
+                            <div>
+                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                                    {getIcon('center-line')}
+                                    Center Line Measurements
+                                </h3>
+                                <div className="space-y-3 pl-2">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.centerLine.showLine}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                centerLine: { ...displaySettings.centerLine, showLine: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Line</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.centerLine.showDistance}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                centerLine: { ...displaySettings.centerLine, showDistance: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Distance Label</span>
+                                    </label>
+                                </div>
+                            </div>
+
+
+                            {/* Closest Ring Measurements */}
+                            <div>
+                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                                    {getIcon('closest-ring')}
+                                    Closest Ring Measurements
+                                </h3>
+                                <div className="space-y-3 pl-2">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.closestRing?.showLine ?? true}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                closestRing: {
+                                                    showLine: e.target.checked,
+                                                    showDistance: displaySettings.closestRing?.showDistance ?? true
+                                                }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Line</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.closestRing?.showDistance ?? true}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                closestRing: {
+                                                    showLine: displaySettings.closestRing?.showLine ?? true,
+                                                    showDistance: e.target.checked
+                                                }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Distance Label</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Stone to Stone Measurements */}
+                            <div>
+                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                                    {getIcon('stone-to-stone')}
+                                    Stone to Stone Measurements
+                                </h3>
+                                <div className="space-y-3 pl-2">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.stoneToStone?.showLine ?? true}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                stoneToStone: {
+                                                    showLine: e.target.checked,
+                                                    showDistance: displaySettings.stoneToStone?.showDistance ?? true
+                                                }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Line</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={displaySettings.stoneToStone?.showDistance ?? true}
+                                            onChange={(e) => updateDisplaySettings({
+                                                ...displaySettings,
+                                                stoneToStone: {
+                                                    showLine: displaySettings.stoneToStone?.showLine ?? true,
+                                                    showDistance: e.target.checked
+                                                }
+                                            })}
+                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Show Distance Label</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
+                    )
+                }
 
-                        <div className="bg-gray-50 p-4 rounded-xl">
-                            <h3 className="font-semibold text-gray-700 mb-3">House Zone Defaults</h3>
-                            <div className="space-y-3">
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('closest-ring')}
-                                        Show Closest Ring
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.houseZone.showClosestRing ?? true}
-                                        onChange={(e) => updateToggleModeSettings('houseZone', 'showClosestRing', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('t-line')}
-                                        Show T-Line
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.houseZone.showTLine}
-                                        onChange={(e) => updateToggleModeSettings('houseZone', 'showTLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
-                                <label className="flex items-center justify-between">
-                                    <span className="text-gray-600 flex items-center gap-2">
-                                        {getIcon('center-line')}
-                                        Show Center Line
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={toggleModeSettings.houseZone.showCenterLine}
-                                        onChange={(e) => updateToggleModeSettings('houseZone', 'showCenterLine', e.target.checked)}
-                                        className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                </label>
-                            </div>
+                {
+                    measurementTab === 'zones' && (
+                        <div className="h-full">
+                            <ZonesDiagram />
                         </div>
-                    </div>
-                )}
-
-                {measurementTab === 'display' && (
-                    <div className="space-y-6">
-                        {/* Guard Measurements */}
-                        <div>
-                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
-                                {getIcon('guard')}
-                                Guard Measurements
-                            </h3>
-                            <div className="space-y-3 pl-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.guard.showBraceLine}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            guard: { ...displaySettings.guard, showBraceLine: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Brace Line</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.guard.showPercentage}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            guard: { ...displaySettings.guard, showPercentage: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Percentage</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.guard.showDistance}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            guard: { ...displaySettings.guard, showDistance: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Distance (cm)</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.guard.showBroomLength}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            guard: { ...displaySettings.guard, showBroomLength: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Broom Length (for distances &gt; 1.5m)</span>
-                                </label>
-                            </div>
-                        </div>
-
-
-                        {/* T-Line Measurements */}
-                        <div>
-                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
-                                {getIcon('t-line')}
-                                T-Line Measurements
-                            </h3>
-                            <div className="space-y-3 pl-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.tLine.showLine}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            tLine: { ...displaySettings.tLine, showLine: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Line</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.tLine.showDistance}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            tLine: { ...displaySettings.tLine, showDistance: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Distance Label</span>
-                                </label>
-                            </div>
-                        </div>
-
-
-                        {/* Center Line Measurements */}
-                        <div>
-                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
-                                {getIcon('center-line')}
-                                Center Line Measurements
-                            </h3>
-                            <div className="space-y-3 pl-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.centerLine.showLine}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            centerLine: { ...displaySettings.centerLine, showLine: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Line</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.centerLine.showDistance}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            centerLine: { ...displaySettings.centerLine, showDistance: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Distance Label</span>
-                                </label>
-                            </div>
-                        </div>
-
-
-                        {/* Closest Ring Measurements */}
-                        <div>
-                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
-                                {getIcon('closest-ring')}
-                                Closest Ring Measurements
-                            </h3>
-                            <div className="space-y-3 pl-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.closestRing?.showLine ?? true}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            closestRing: {
-                                                showLine: e.target.checked,
-                                                showDistance: displaySettings.closestRing?.showDistance ?? true
-                                            }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Line</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.closestRing?.showDistance ?? true}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            closestRing: {
-                                                showLine: displaySettings.closestRing?.showLine ?? true,
-                                                showDistance: e.target.checked
-                                            }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Distance Label</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Stone to Stone Measurements */}
-                        <div>
-                            <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
-                                {getIcon('stone-to-stone')}
-                                Stone to Stone Measurements
-                            </h3>
-                            <div className="space-y-3 pl-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.stoneToStone?.showLine ?? true}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            stoneToStone: {
-                                                showLine: e.target.checked,
-                                                showDistance: displaySettings.stoneToStone?.showDistance ?? true
-                                            }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Line</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={displaySettings.stoneToStone?.showDistance ?? true}
-                                        onChange={(e) => updateDisplaySettings({
-                                            ...displaySettings,
-                                            stoneToStone: {
-                                                showLine: displaySettings.stoneToStone?.showLine ?? true,
-                                                showDistance: e.target.checked
-                                            }
-                                        })}
-                                        className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Show Distance Label</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {measurementTab === 'zones' && (
-                    <div className="h-full">
-                        <ZonesDiagram />
-                    </div>
-                )}
-            </div>
-        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 };
