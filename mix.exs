@@ -9,7 +9,12 @@ defmodule KickaEttan.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      releases: [
+        kicka_ettan: [
+          validate_compile_env: false
+        ]
+      ]
     ]
   end
 
