@@ -11,26 +11,29 @@ export const SettingsMainView: React.FC<SettingsMainViewProps> = ({ setView }) =
 
     return (
         <div className="space-y-4">
-            {/* Unit System Toggle */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl min-h-[72px]">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-lavender-100 text-lavender-600 flex items-center justify-center">
-                        <span className="font-bold text-sm">{baseUnitSystem === 'metric' ? 'CM' : 'IN'}</span>
-                    </div>
-                    <div className="text-left">
-                        <h3 className="text-lg font-bold text-icy-black">Unit System <span className="font-normal">({baseUnitSystem.charAt(0).toUpperCase() + baseUnitSystem.slice(1)})</span></h3>
-                    </div>
-                </div>
-                <button
-                    onClick={() => updateBaseUnitSystem(baseUnitSystem === 'metric' ? 'imperial' : 'metric')}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${baseUnitSystem === 'imperial' ? 'bg-lavender-600' : 'bg-gray-200'
-                        }`}
-                >
-                    <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${baseUnitSystem === 'imperial' ? 'translate-x-6' : 'translate-x-1'
+            {/* Unit System Segmented Control */}
+            <div className="p-4 bg-gray-50 rounded-xl">
+                <h3 className="text-lg font-bold text-icy-black mb-3">Unit System</h3>
+                <div className="flex rounded-xl bg-gray-200 p-1">
+                    <button
+                        onClick={() => updateBaseUnitSystem('metric')}
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${baseUnitSystem === 'metric'
+                                ? 'bg-white text-lavender-700 shadow-md'
+                                : 'text-gray-500 hover:text-gray-700'
                             }`}
-                    />
-                </button>
+                    >
+                        Metric (cm)
+                    </button>
+                    <button
+                        onClick={() => updateBaseUnitSystem('imperial')}
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${baseUnitSystem === 'imperial'
+                                ? 'bg-white text-lavender-700 shadow-md'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        Imperial (in)
+                    </button>
+                </div>
             </div>
 
             {/* Smart Units Toggle */}
