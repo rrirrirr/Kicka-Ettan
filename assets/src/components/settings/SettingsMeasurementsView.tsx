@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSettings, MeasurementStep, MeasurementType, ZONE_AVAILABLE_TYPES } from '../../contexts/SettingsContext';
-import { Trash2, Target, Shield, ArrowLeftRight } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import { TargetIcon, GuardIcon, StoneToStoneIcon } from '../icons/Icons';
 import { ZonesDiagram } from '../ZonesDiagram';
 
 type MeasurementTab = 'cycles' | 'toggle' | 'display' | 'zones';
@@ -11,15 +12,15 @@ export const SettingsMeasurementsView: React.FC = () => {
 
     const getIcon = (type: MeasurementType) => {
         switch (type) {
-            case 'closest-ring': return <Target size={16} />;
-            case 'guard': return <Shield size={16} />;
+            case 'closest-ring': return <TargetIcon size={16} />;
+            case 'guard': return <GuardIcon size={16} />;
             case 't-line': return <span className="text-xl font-bold">T</span>; // T-line icon
             case 'center-line': return (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 4.5v15" />
                 </svg>
             ); // Thicker vertical line
-            case 'stone-to-stone': return <ArrowLeftRight size={16} />;
+            case 'stone-to-stone': return <StoneToStoneIcon size={16} />;
             default: return null;
         }
     };

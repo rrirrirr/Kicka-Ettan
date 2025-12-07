@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import CurlingSheet from './CurlingSheet';
 import { Dialog } from './ui/Dialog';
@@ -47,11 +47,13 @@ import { StoneInspector } from './StoneInspector';
 import { MeasurementType } from '../contexts/SettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RoundStartOverlay } from './RoundStartOverlay';
+import { TutorialProvider } from '../contexts/TutorialContext';
+import { PhaseTutorial } from './tutorial';
 
 // ... existing imports ...
 
 const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGameProps) => {
-  const { settings, openSettings, sheetSettings } = useSettings();
+  const { settings, openSettings, sheetSettings, isSettingsOpen } = useSettings();
   const [myStones, setMyStones] = useState<StonePosition[]>([]);
   const [myColor, setMyColor] = useState<'red' | 'yellow' | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -62,7 +64,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   const [showRoundStartOverlay, setShowRoundStartOverlay] = useState(false);
   const [waitingMinTimeElapsed, setWaitingMinTimeElapsed] = useState(true);
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const prevRoundRef = useRef<number>(gameState.current_round);
+  const prevRoundRef = useRef<number>(gameState.current_round === 1 ? 0 : gameState.current_round);
 
   const { containerRef, sheetDimensions, scale } = useGameDimensions();
   const [highlightedStone, setHighlightedStone] = useState<{ color: 'red' | 'yellow'; index: number; stepIndex: number; activeTypes?: MeasurementType[] } | null>(null);
@@ -78,13 +80,34 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
   const gestureState = useRef<GestureState>({ type: 'IDLE' });
   const isHistoryMode = selectedHistoryRound !== null;
 
-  // Close menu with Escape key
-  useEffect(() => {
-    if (!showMenu) return;
 
+  // Handle Escape key logic (Close menu / Deselect stone)
+  useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setShowMenu(false);
+        console.log('Escape pressed', { showMenu, isSettingsOpen, showHelp, showRoundStartOverlay, highlightedStone });
+
+        // Priority 1: Menu
+        if (showMenu) {
+          console.log('Closing menu');
+          setShowMenu(false);
+          return;
+        }
+
+        // Priority 2: Dialogs/Overlays (Settings, Help, Round Start)
+        // These typically handle their own close logic or block interaction
+        if (isSettingsOpen || showHelp || showRoundStartOverlay) {
+          console.log('Blocked by overlay');
+          return;
+        }
+
+        // Priority 3: Deselect stone
+        if (highlightedStone) {
+          console.log('Deselecting stone');
+          setHighlightedStone(null);
+        } else {
+          console.log('No stone to deselect');
+        }
       }
     };
 
@@ -92,7 +115,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [showMenu]);
+  }, [showMenu, isSettingsOpen, showHelp, showRoundStartOverlay, highlightedStone]);
 
   // Lock body scroll to prevent "double scroll" on mobile
   useEffect(() => {
@@ -150,6 +173,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       prevRoundRef.current = gameState.current_round;
     }
   }, [gameState?.current_round]);
+
 
   const updateStonePosition = useCallback((index: number, x: number, y: number, placed: boolean) => {
     setMyStones(prev => prev.map(s =>
@@ -673,42 +697,11 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       const isHighlighted = highlightedStone?.color === color && highlightedStone?.index === i;
 
       return (
-        <>
+        <React.Fragment key={`${color}-${i}`}>
           {/* Pulse ring animation for selected stone */}
-          {isHighlighted && (
-            <div
-              key={`${color}-${i}-pulse`}
-              className="absolute rounded-full pointer-events-none"
-              style={{
-                left: pos.x * scale,
-                top: pos.y * scale,
-                marginLeft: -stonePixelSize / 2,
-                marginTop: -stonePixelSize / 2,
-                width: stonePixelSize,
-                height: stonePixelSize,
-                zIndex: 1,
-              }}
-            >
-              <div
-                className="absolute inset-0 rounded-full animate-ping"
-                style={{
-                  animationDuration: '2.5s',
-                  border: '3px solid rgba(168, 85, 247, 0.6)',
-                  boxShadow: '0 0 8px rgba(168, 85, 247, 0.4)'
-                }}
-              />
-              <div
-                className="absolute inset-0 rounded-full animate-pulse"
-                style={{
-                  border: '2px solid rgba(168, 85, 247, 0.8)',
-                  boxShadow: '0 0 6px rgba(168, 85, 247, 0.5)'
-                }}
-              />
-            </div>
-          )}
+
 
           <div
-            key={`${color}-${i}`}
             className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${isHighlighted ? 'scale-105 ring-2 ring-white/50' : ''
               } ${(gameState.phase === 'combined' || isHistoryMode) ? 'cursor-pointer' : 'cursor-default'
               }`}
@@ -802,7 +795,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
               }}
             />
           </div>
-        </>
+        </React.Fragment>
       );
     });
   };
@@ -1438,14 +1431,22 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
         roundNumber={gameState.current_round}
         onComplete={handleRoundOverlayComplete}
       />
+
+      {/* Phase Tutorial - automatically shows for registered phases */}
+      <PhaseTutorial
+        phase={gameState.phase}
+        canShow={!isHistoryMode && !showRoundStartOverlay}
+      />
     </motion.div>
   );
 };
 
 const CurlingGame = (props: CurlingGameProps) => (
-  <SettingsProvider>
-    <CurlingGameContent {...props} />
-  </SettingsProvider>
+  <TutorialProvider>
+    <SettingsProvider>
+      <CurlingGameContent {...props} />
+    </SettingsProvider>
+  </TutorialProvider>
 );
 
 export default CurlingGame;

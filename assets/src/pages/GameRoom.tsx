@@ -5,7 +5,7 @@ import CurlingGame from '../components/CurlingGame';
 import GameTitle from '../components/GameTitle';
 import { Share2, Copy, Check, ArrowLeft } from 'lucide-react';
 import { saveGameToHistory } from '../lib/gameHistory';
-import { Button, Card } from '../components/ui';
+import { Button, Card, BayerDither } from '../components/ui';
 
 import { GameState } from '../types/game-types';
 
@@ -137,13 +137,20 @@ const GameRoom = () => {
                     </div>
                 </header>
 
-                <Card className="p-12 text-center">
-                    {/* Decorative elements */}
-                    <div className="absolute top-0 left-0 w-48 h-48 bg-[var(--icy-accent)] rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
-                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-[var(--icy-blue-medium)] rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
+                <Card className="p-8 text-center">
+                    <h2 className="text-2xl font-bold mb-4 text-[var(--icy-accent)] lowercase tracking-tighter">waiting for opponent...</h2>
 
-                    <h2 className="text-3xl font-bold mb-6 text-gray-900 relative z-10 lowercase tracking-tighter">waiting for opponent...</h2>
-                    <p className="mb-8 text-gray-600 font-medium relative z-10">Share the invite link with a friend to start playing.</p>
+                    {/* Grabbable dither widget */}
+                    <div className="mb-6 rounded-xl overflow-hidden shadow-inner border border-gray-200">
+                        <BayerDither
+                            cellSize={8}
+                            baseColor="#f5f5dc"
+                            accentColor="#483d8b"
+                            speed={0.015}
+                        />
+                    </div>
+
+                    <p className="mb-6 text-gray-600 font-medium text-sm">Share the invite link with a friend to start playing.</p>
                     <div className="p-2 pl-4 bg-gray-50 rounded-xl border border-gray-100 font-mono text-sm text-gray-500 relative z-10 flex items-center justify-between gap-4 mb-6">
                         <span className="truncate">{window.location.href}</span>
                         <Button
@@ -177,11 +184,11 @@ const GameRoom = () => {
             {/* Toast Notification */}
             {showCopiedToast && (
                 <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
-                    <div className="card-gradient backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-green-200 flex items-center gap-3">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="card-gradient backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-lavender-200 flex items-center gap-3">
+                        <svg className="w-5 h-5 text-lavender-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span className="font-medium text-gray-800">Invite link copied to clipboard!</span>
+                        <span className="font-medium text-[var(--icy-black)]">Invite link copied to clipboard!</span>
                     </div>
                 </div>
             )}

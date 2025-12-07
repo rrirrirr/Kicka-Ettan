@@ -55,7 +55,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, child
                         initial={{ y: '100%' }}
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+                        transition={{ duration: 0.15, ease: 'easeInOut' }}
                         className="fixed bottom-0 left-1/2 -translate-x-1/2 z-[1001] w-full md:max-w-md card-gradient rounded-t-3xl shadow-2xl max-h-[85vh] overflow-hidden border-t border-x border-white/30"
                         onClick={e => e.stopPropagation()}
                     >

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSettings, defaultSmartUnits } from '../../contexts/SettingsContext';
 import { Trash2, RotateCcw, ArrowRight } from 'lucide-react';
+import { BroomIcon, StoneIcon, RulerIcon } from '../icons/Icons';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export const SettingsSmartUnitsView: React.FC = () => {
@@ -111,119 +112,123 @@ export const SettingsSmartUnitsView: React.FC = () => {
                     return (
                         <div key={`${index}-${baseUnitSystem}`} className="flex items-center gap-3">
                             <div
-                                className={`flex-grow p-3 rounded-xl transition-all duration-300 ${
-                                    isDuplicate
-                                        ? 'bg-red-100 border-2 border-red-300'
-                                        : isUpdated
+                                className={`flex-grow p-3 rounded-xl transition-all duration-300 ${isDuplicate
+                                    ? 'bg-red-100 border-2 border-red-300'
+                                    : isUpdated
                                         ? 'bg-lavender-100 scale-[1.02]'
                                         : 'bg-gray-50'
-                                }`}
+                                    }`}
                             >
-                        <div className="grid grid-cols-2 gap-4 items-center">
-                            <div className="flex items-center gap-2">
-                                <div className="relative group">
-                                    <button
-                                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                                        onMouseEnter={() => setTooltipIndex(index)}
-                                        onMouseLeave={() => setTooltipIndex(null)}
-                                        onClick={() => setTooltipIndex(tooltipIndex === index ? null : index)}
-                                    >
-                                        <ArrowRight size={16} />
-                                    </button>
-                                    {tooltipIndex === index && (
-                                        <div className="absolute left-0 top-full mt-1 z-10 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                                            Distance threshold for this rule
-                                            <div className="absolute -top-1 left-3 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                                <div className="grid grid-cols-2 gap-4 items-center">
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative group">
+                                            <button
+                                                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                                onMouseEnter={() => setTooltipIndex(index)}
+                                                onMouseLeave={() => setTooltipIndex(null)}
+                                                onClick={() => setTooltipIndex(tooltipIndex === index ? null : index)}
+                                            >
+                                                <ArrowRight size={16} />
+                                            </button>
+                                            {tooltipIndex === index && (
+                                                <div className="absolute left-0 top-full mt-1 z-10 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                                                    Distance threshold for this rule
+                                                    <div className="absolute -top-1 left-3 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                        <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={
+                                                editingIndex === index
+                                                    ? editingValue
+                                                    : rule.maxDistance === Infinity
+                                                        ? ''
+                                                        : (toDisplayUnit(rule.maxDistance)?.toFixed(2) ?? '')
+                                            }
+                                            placeholder="∞"
+                                            onFocus={() => {
+                                                setEditingIndex(index);
+                                                const displayVal = rule.maxDistance === Infinity
+                                                    ? ''
+                                                    : (toDisplayUnit(rule.maxDistance)?.toString() ?? '');
+                                                setEditingValue(displayVal);
+                                            }}
+                                            onChange={(e) => {
+                                                const input = e.target.value;
+
+                                                // Only allow digits, dots, and empty
+                                                if (input && !/^[\d.]*$/.test(input)) {
+                                                    return;
+                                                }
+
+                                                // Update local editing state
+                                                setEditingValue(input);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.currentTarget.blur();
+                                                }
+                                            }}
+                                            onBlur={() => {
+                                                const input = editingValue;
+
+                                                // If just a dot or empty, set to infinity
+                                                if (input === '.' || input === '') {
+                                                    const newRules = [...smartUnits];
+                                                    newRules[index] = { ...rule, maxDistance: Infinity };
+                                                    const sorted = sortRules(newRules);
+                                                    updateSmartUnits(sorted);
+                                                    triggerUpdateAnimation(Infinity, sorted);
+                                                    setEditingIndex(null);
+                                                    setEditingValue('');
+                                                    return;
+                                                }
+
+                                                // Parse the value
+                                                const displayVal = parseFloat(input);
+                                                if (!isNaN(displayVal)) {
+                                                    const cmVal = fromDisplayUnit(displayVal);
+                                                    const newRules = [...smartUnits];
+                                                    newRules[index] = { ...rule, maxDistance: cmVal };
+                                                    const sorted = sortRules(newRules);
+                                                    updateSmartUnits(sorted);
+                                                    triggerUpdateAnimation(cmVal, sorted);
+                                                }
+
+                                                setEditingIndex(null);
+                                                setEditingValue('');
+                                            }}
+                                            className="w-20 px-2 py-1 rounded border-gray-300 text-sm"
+                                        />
+                                        <span className="text-sm text-gray-500">{displayUnitLabel}</span>
+                                    </div>
+                                    <select
+                                        value={rule.unit}
+                                        onChange={(e) => {
+                                            const newRules = [...smartUnits];
+                                            newRules[index] = { ...rule, unit: e.target.value as any };
+                                            const sorted = sortRules(newRules);
+                                            updateSmartUnits(sorted);
+                                            triggerUpdateAnimation(rule.maxDistance, sorted);
+                                        }}
+                                        className="px-2 py-1 rounded border-gray-300 text-sm"
+                                    >
+                                        {baseUnitSystem === 'metric' ? (
+                                            <option value="metric">Centimeters</option>
+                                        ) : (
+                                            <option value="imperial">Inches</option>
+                                        )}
+                                        <option value="stone">Stone Widths</option>
+                                        <option value="broom">Broom Lengths</option>
+                                    </select>
+                                    <div className="text-gray-400">
+                                        {rule.unit === 'stone' && <StoneIcon size={20} />}
+                                        {rule.unit === 'broom' && <BroomIcon size={20} />}
+                                        {(rule.unit === 'metric' || rule.unit === 'imperial') && <RulerIcon size={20} />}
+                                    </div>
                                 </div>
-                                <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={
-                                        editingIndex === index
-                                            ? editingValue
-                                            : rule.maxDistance === Infinity
-                                                ? ''
-                                                : (toDisplayUnit(rule.maxDistance)?.toFixed(2) ?? '')
-                                    }
-                                    placeholder="∞"
-                                    onFocus={() => {
-                                        setEditingIndex(index);
-                                        const displayVal = rule.maxDistance === Infinity
-                                            ? ''
-                                            : (toDisplayUnit(rule.maxDistance)?.toString() ?? '');
-                                        setEditingValue(displayVal);
-                                    }}
-                                    onChange={(e) => {
-                                        const input = e.target.value;
-
-                                        // Only allow digits, dots, and empty
-                                        if (input && !/^[\d.]*$/.test(input)) {
-                                            return;
-                                        }
-
-                                        // Update local editing state
-                                        setEditingValue(input);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.currentTarget.blur();
-                                        }
-                                    }}
-                                    onBlur={() => {
-                                        const input = editingValue;
-
-                                        // If just a dot or empty, set to infinity
-                                        if (input === '.' || input === '') {
-                                            const newRules = [...smartUnits];
-                                            newRules[index] = { ...rule, maxDistance: Infinity };
-                                            const sorted = sortRules(newRules);
-                                            updateSmartUnits(sorted);
-                                            triggerUpdateAnimation(Infinity, sorted);
-                                            setEditingIndex(null);
-                                            setEditingValue('');
-                                            return;
-                                        }
-
-                                        // Parse the value
-                                        const displayVal = parseFloat(input);
-                                        if (!isNaN(displayVal)) {
-                                            const cmVal = fromDisplayUnit(displayVal);
-                                            const newRules = [...smartUnits];
-                                            newRules[index] = { ...rule, maxDistance: cmVal };
-                                            const sorted = sortRules(newRules);
-                                            updateSmartUnits(sorted);
-                                            triggerUpdateAnimation(cmVal, sorted);
-                                        }
-
-                                        setEditingIndex(null);
-                                        setEditingValue('');
-                                    }}
-                                    className="w-20 px-2 py-1 rounded border-gray-300 text-sm"
-                                />
-                                <span className="text-sm text-gray-500">{displayUnitLabel}</span>
-                            </div>
-                            <select
-                                value={rule.unit}
-                                onChange={(e) => {
-                                    const newRules = [...smartUnits];
-                                    newRules[index] = { ...rule, unit: e.target.value as any };
-                                    const sorted = sortRules(newRules);
-                                    updateSmartUnits(sorted);
-                                    triggerUpdateAnimation(rule.maxDistance, sorted);
-                                }}
-                                className="px-2 py-1 rounded border-gray-300 text-sm"
-                            >
-                                {baseUnitSystem === 'metric' ? (
-                                    <option value="metric">Centimeters</option>
-                                ) : (
-                                    <option value="imperial">Inches</option>
-                                )}
-                                <option value="stone">Stone Widths</option>
-                                <option value="broom">Broom Lengths</option>
-                            </select>
-                        </div>
                             </div>
                             {smartUnits.length > 1 && (
                                 <button

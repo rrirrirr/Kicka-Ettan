@@ -6,12 +6,13 @@ import { SettingsMainView } from './settings/SettingsMainView';
 import { SettingsMeasurementsView } from './settings/SettingsMeasurementsView';
 import { SettingsSheetView } from './settings/SettingsSheetView';
 import { SettingsSmartUnitsView } from './settings/SettingsSmartUnitsView';
+import { SettingsTutorialsView } from './settings/SettingsTutorialsView';
 
 interface SettingsDialogProps { }
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     const { isSettingsOpen, closeSettings } = useSettings();
-    const [view, setView] = useState<'main' | 'measurements' | 'sheet' | 'smart-units'>('main');
+    const [view, setView] = useState<'main' | 'measurements' | 'sheet' | 'smart-units' | 'tutorials'>('main');
 
     const handleClose = () => {
         closeSettings();
@@ -31,6 +32,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             case 'measurements': return 'Measurements';
             case 'sheet': return 'Sheet Settings';
             case 'smart-units': return 'Smart Units Configuration';
+            case 'tutorials': return 'Tutorials';
             default: return 'Settings';
         }
     };
@@ -58,6 +60,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                 {view === 'measurements' && <SettingsMeasurementsView />}
                 {view === 'sheet' && <SettingsSheetView />}
                 {view === 'smart-units' && <SettingsSmartUnitsView />}
+                {view === 'tutorials' && <SettingsTutorialsView />}
             </div>
         </Dialog>
     );

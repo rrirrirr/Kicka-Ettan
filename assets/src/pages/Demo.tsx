@@ -1,11 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CurlingGame from '../components/CurlingGame';
 import { Channel } from 'phoenix';
 import { GameState } from '../types/game-types';
+import { LoadingGame } from '../components/ui/LoadingGame';
 
 const Demo = () => {
     // Mock Player ID
     const playerId = "demo-player-1";
+
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate loading for demo purposes
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 2000); // Show loader for 2 seconds
+
+        return () => clearTimeout(timer);
+    }, []);
 
     // State to track phase and round
     const [phase, setPhase] = useState<'placement' | 'combined'>('placement');
@@ -98,11 +110,17 @@ const Demo = () => {
 
     return (
         <div className="min-h-screen md:px-4 flex items-center md:justify-start justify-center">
-            <CurlingGame
-                gameState={mockGameState}
-                playerId={playerId}
-                channel={mockChannel}
-            />
+            {isLoading ? (
+                <div className="w-full h-screen flex items-center justify-center">
+                    <LoadingGame />
+                </div>
+            ) : (
+                <CurlingGame
+                    gameState={mockGameState}
+                    playerId={playerId}
+                    channel={mockChannel}
+                />
+            )}
         </div>
     );
 };

@@ -19,8 +19,8 @@ const getResponsiveSize = (): number => {
   // Use the smaller of width/height (vmin equivalent)
   const vmin = Math.min(window.innerWidth, window.innerHeight);
 
-  // 22% of vmin, clamped between 80px and 150px
-  return Math.max(80, Math.min(150, vmin * 0.22));
+  // 26% of vmin, clamped between 90px and 160px
+  return Math.max(90, Math.min(160, vmin * 0.26));
 };
 
 // Calculate responsive offset based on viewport
@@ -29,8 +29,8 @@ const getResponsiveOffset = (): number => {
 
   const vmin = Math.min(window.innerWidth, window.innerHeight);
 
-  // 25% of vmin, clamped between 70px and 150px
-  return Math.max(70, Math.min(150, vmin * 0.25));
+  // 29% of vmin, clamped between 80px and 160px
+  return Math.max(80, Math.min(160, vmin * 0.29));
 };
 
 // Calculate the optimal angle for loupe positioning (continuous, not stepped)

@@ -20,21 +20,26 @@ defmodule KickaEttanWeb.GameChannel do
       {:ok, game_state} ->
         # Filter the game state for this specific player to hide opponent stones during placement
         client_view = KickaEttan.Games.GameState.client_view(game_state, player_id)
+        Logger.info("Join successful", player_id: player_id)
         {:ok, %{game_state: client_view, player_id: player_id}, socket}
 
       {:error, :not_found} ->
+        Logger.warning("Join failed: Game not found", game_id: game_id)
         {:error, %{reason: "Game not found"}}
 
       {:error, :game_full} ->
+        Logger.warning("Join failed: Game full", game_id: game_id)
         {:error, %{reason: "Game is full"}}
 
       {:error, reason} ->
+        Logger.error("Join failed: Unknown reason", reason: inspect(reason))
         {:error, %{reason: reason}}
     end
   end
 
   @impl true
   def handle_in("place_stone", payload, socket) do
+    Logger.debug("Received place_stone", payload: payload)
     with :ok <- check_rate_limit(socket),
          %{"stone_index" => index, "position" => position} <- payload do
       game_id = socket.assigns.game_id
@@ -42,56 +47,77 @@ defmodule KickaEttanWeb.GameChannel do
 
       case GameServer.place_stone(game_id, player_id, index, position) do
         {:ok, _state} -> {:reply, :ok, socket}
-        {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+        {:error, reason} -> 
+          Logger.warning("place_stone failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
       end
     else
-      {:error, :rate_limit_exceeded} -> {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
-      _ -> {:reply, {:error, %{reason: "Invalid payload"}}, socket}
+      {:error, :rate_limit_exceeded} -> 
+        Logger.warning("place_stone rate limited")
+        {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+      _ -> 
+        Logger.warning("place_stone invalid payload", payload: payload)
+        {:reply, {:error, %{reason: "Invalid payload"}}, socket}
     end
   end
 
   @impl true
   def handle_in("confirm_placement", _params, socket) do
+    Logger.debug("Received confirm_placement")
     with :ok <- check_rate_limit(socket) do
       game_id = socket.assigns.game_id
       player_id = socket.assigns.player_id
 
       case GameServer.confirm_placement(game_id, player_id) do
         {:ok, _state} -> {:reply, :ok, socket}
-        {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+        {:error, reason} -> 
+          Logger.warning("confirm_placement failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
       end
     else
-      {:error, :rate_limit_exceeded} -> {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+      {:error, :rate_limit_exceeded} -> 
+        Logger.warning("confirm_placement rate limited")
+        {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
     end
   end
 
   @impl true
   def handle_in("cancel_placement", _params, socket) do
+    Logger.debug("Received cancel_placement")
     with :ok <- check_rate_limit(socket) do
       game_id = socket.assigns.game_id
       player_id = socket.assigns.player_id
 
       case GameServer.cancel_placement(game_id, player_id) do
         {:ok, _state} -> {:reply, :ok, socket}
-        {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+        {:error, reason} -> 
+          Logger.warning("cancel_placement failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
       end
     else
-      {:error, :rate_limit_exceeded} -> {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+      {:error, :rate_limit_exceeded} -> 
+        Logger.warning("cancel_placement rate limited")
+        {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
     end
   end
 
   @impl true
   def handle_in("ready_for_next_round", _params, socket) do
+    Logger.debug("Received ready_for_next_round")
     with :ok <- check_rate_limit(socket) do
       game_id = socket.assigns.game_id
       player_id = socket.assigns.player_id
 
       case GameServer.ready_for_next_round(game_id, player_id) do
         {:ok, _state} -> {:reply, :ok, socket}
-        {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+        {:error, reason} -> 
+          Logger.warning("ready_for_next_round failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
       end
     else
-      {:error, :rate_limit_exceeded} -> {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+      {:error, :rate_limit_exceeded} -> 
+        Logger.warning("ready_for_next_round rate limited")
+        {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
     end
   end
 

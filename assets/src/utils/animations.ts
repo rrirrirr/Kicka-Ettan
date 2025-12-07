@@ -5,13 +5,13 @@ export const springs = {
     snappy: {
         type: "spring",
         stiffness: 400,
-        damping: 25,
+        damping: 30, // Increased dampening to prevent overshoot (was 25)
         mass: 1
     },
     bouncy: {
         type: "spring",
         stiffness: 300,
-        damping: 15,
+        damping: 25, // Increased dampening to reduce erratic bounce (was 15)
         mass: 1
     },
     smooth: {
@@ -77,21 +77,20 @@ export const slideIn: Variants = {
 export const pageTransition: Variants = {
     initial: {
         opacity: 0,
-        y: 10,
-        scale: 0.98
+        // y: 10, // REMOVED: Vertical start position causing overshoot perception
+        // scale: 0.98 // REMOVED: Scale causing springy feel
     },
     animate: {
         opacity: 1,
-        y: 0,
-        scale: 1,
+        // y: 0, // REMOVED: Vertical end position
+        // scale: 1, // REMOVED: Scale causing springy feel
         transition: {
-            duration: 0.4,
-            ease: [0.22, 1, 0.36, 1] // Custom cubic bezier for "modern" feel
+            duration: 0.3,
+            ease: "easeOut"
         }
     },
     exit: {
         opacity: 0,
-        scale: 0.98,
         transition: {
             duration: 0.2,
             ease: "easeIn"
@@ -155,7 +154,7 @@ export const roundStartText: Variants = {
         transition: {
             type: "spring",
             stiffness: 300,
-            damping: 20
+            damping: 30 // Increased damping to prevent overshoot (was 20)
         }
     },
     exit: {

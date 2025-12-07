@@ -101,6 +101,7 @@ defmodule KickaEttan.Games.GameServer do
   def handle_call({:join_game, player_id, color}, _from, game_state) do
     case GameState.join_game(game_state, player_id, color) do
       {:ok, new_state} ->
+        Logger.info("Player joined game", player_id: player_id, color: color)
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
       
@@ -114,11 +115,12 @@ defmodule KickaEttan.Games.GameServer do
   def handle_call({:place_stone, player_id, stone_index, position}, _from, game_state) do
     case GameState.place_stone(game_state, player_id, stone_index, position) do
       {:ok, new_state} ->
+        Logger.info("Player placed stone", player_id: player_id, stone_index: stone_index, position: position)
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
-        Logger.warning("Failed to place stone", player_id: player_id, reason: reason)
+        Logger.warning("Failed to place stone", player_id: player_id, stone_index: stone_index, position: position, reason: reason)
         {:reply, error, game_state}
     end
   end
@@ -127,6 +129,7 @@ defmodule KickaEttan.Games.GameServer do
   def handle_call({:confirm_placement, player_id}, _from, game_state) do
     case GameState.confirm_placement(game_state, player_id) do
       {:ok, new_state} ->
+        Logger.info("Player confirmed placement", player_id: player_id)
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
       
@@ -140,6 +143,7 @@ defmodule KickaEttan.Games.GameServer do
   def handle_call({:cancel_placement, player_id}, _from, game_state) do
     case GameState.cancel_placement(game_state, player_id) do
       {:ok, new_state} ->
+        Logger.info("Player canceled placement", player_id: player_id)
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
       
@@ -153,6 +157,7 @@ defmodule KickaEttan.Games.GameServer do
   def handle_call({:ready_for_next_round, player_id}, _from, game_state) do
     case GameState.ready_for_next_round(game_state, player_id) do
       {:ok, new_state} ->
+        Logger.info("Player ready for next round", player_id: player_id)
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
       
