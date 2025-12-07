@@ -332,14 +332,19 @@ export const SettingsMeasurementsView: React.FC = () => {
                 {
                     measurementTab === 'display' && (
                         <div className="space-y-6">
+                            <p className="text-sm text-gray-600 mb-4">
+                                Choose which measurement details are visible on the canvas when measurements are active.
+                            </p>
+
                             {/* Guard Measurements */}
-                            <div>
-                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                                     {getIcon('guard')}
                                     Guard Measurements
                                 </h3>
-                                <div className="space-y-3 pl-2">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Brace Line</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.guard.showBraceLine}
@@ -347,11 +352,11 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 guard: { ...displaySettings.guard, showBraceLine: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Brace Line</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Percentage</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.guard.showPercentage}
@@ -359,11 +364,11 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 guard: { ...displaySettings.guard, showPercentage: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Percentage</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Distance (cm)</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.guard.showDistance}
@@ -371,11 +376,11 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 guard: { ...displaySettings.guard, showDistance: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Distance (cm)</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Broom Length (&gt; 1.5m)</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.guard.showBroomLength}
@@ -383,22 +388,22 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 guard: { ...displaySettings.guard, showBroomLength: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Broom Length (for distances &gt; 1.5m)</span>
                                     </label>
                                 </div>
                             </div>
 
 
                             {/* T-Line Measurements */}
-                            <div>
-                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                                     {getIcon('t-line')}
                                     T-Line Measurements
                                 </h3>
-                                <div className="space-y-3 pl-2">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Line</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.tLine.showLine}
@@ -406,11 +411,11 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 tLine: { ...displaySettings.tLine, showLine: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Line</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Distance Label</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.tLine.showDistance}
@@ -418,22 +423,22 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 tLine: { ...displaySettings.tLine, showDistance: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Distance Label</span>
                                     </label>
                                 </div>
                             </div>
 
 
                             {/* Center Line Measurements */}
-                            <div>
-                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                                     {getIcon('center-line')}
                                     Center Line Measurements
                                 </h3>
-                                <div className="space-y-3 pl-2">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Line</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.centerLine.showLine}
@@ -441,11 +446,11 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 centerLine: { ...displaySettings.centerLine, showLine: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Line</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Distance Label</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.centerLine.showDistance}
@@ -453,22 +458,22 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                 ...displaySettings,
                                                 centerLine: { ...displaySettings.centerLine, showDistance: e.target.checked }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Distance Label</span>
                                     </label>
                                 </div>
                             </div>
 
 
                             {/* Closest Ring Measurements */}
-                            <div>
-                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                                     {getIcon('closest-ring')}
                                     Closest Ring Measurements
                                 </h3>
-                                <div className="space-y-3 pl-2">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Line</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.closestRing?.showLine ?? true}
@@ -479,11 +484,11 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                     showDistance: displaySettings.closestRing?.showDistance ?? true
                                                 }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Line</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Distance Label</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.closestRing?.showDistance ?? true}
@@ -494,21 +499,21 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                     showDistance: e.target.checked
                                                 }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Distance Label</span>
                                     </label>
                                 </div>
                             </div>
 
                             {/* Stone to Stone Measurements */}
-                            <div>
-                                <h3 className="text-lg font-bold text-icy-black mb-4 flex items-center gap-2">
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                                     {getIcon('stone-to-stone')}
                                     Stone to Stone Measurements
                                 </h3>
-                                <div className="space-y-3 pl-2">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div className="space-y-3">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Line</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.stoneToStone?.showLine ?? true}
@@ -519,11 +524,11 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                     showDistance: displaySettings.stoneToStone?.showDistance ?? true
                                                 }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Line</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <label className="flex items-center justify-between cursor-pointer select-none">
+                                        <span className="text-gray-600">Show Distance Label</span>
                                         <input
                                             type="checkbox"
                                             checked={displaySettings.stoneToStone?.showDistance ?? true}
@@ -534,9 +539,8 @@ export const SettingsMeasurementsView: React.FC = () => {
                                                     showDistance: e.target.checked
                                                 }
                                             })}
-                                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
                                         />
-                                        <span className="text-sm text-gray-700">Show Distance Label</span>
                                     </label>
                                 </div>
                             </div>

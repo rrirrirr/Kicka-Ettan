@@ -1435,7 +1435,7 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
       {/* Round Start Overlay */}
       <RoundStartOverlay
         isVisible={showRoundStartOverlay}
-        roundNumber={gameState.current_round + 1}
+        roundNumber={gameState.current_round}
         onComplete={handleRoundOverlayComplete}
       />
     </motion.div>
