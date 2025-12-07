@@ -892,9 +892,9 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
 
       {/* Render Red and Yellow stones (Live or History) */}
-      {/* Skip rendering own color during placement phase (myStones handles that) */}
-      {!(gameState.phase === 'placement' && !isReady && myColor === 'red') && renderStones(displayRedStones, 'red')}
-      {!(gameState.phase === 'placement' && !isReady && myColor === 'yellow') && renderStones(displayYellowStones, 'yellow')}
+      {/* Skip rendering own color during placement phase (myStones handles that), but always render in history mode */}
+      {!(gameState.phase === 'placement' && !isReady && myColor === 'red' && !isHistoryMode) && renderStones(displayRedStones, 'red')}
+      {!(gameState.phase === 'placement' && !isReady && myColor === 'yellow' && !isHistoryMode) && renderStones(displayYellowStones, 'yellow')}
 
       {/* Measurement lines in combined phase or history mode */}
       {(gameState.phase === 'combined' || isHistoryMode) && (
@@ -1419,8 +1419,10 @@ const CurlingGameContent = ({ gameState, playerId, channel, onShare }: CurlingGa
 
               <Button
                 onClick={handleCancelPlacement}
-                className="h-12 px-6 bg-[var(--icy-dark)] hover:bg-[var(--icy-dark)]/90 text-[var(--icy-white)] border border-[var(--icy-blue-light)]/30 shadow-lg backdrop-blur-md transition-all duration-200 flex items-center gap-2"
+                variant="outline"
+                className="h-12 px-6 rounded-full bg-white/90 hover:bg-white text-gray-800 border border-gray-200/50 shadow-md backdrop-blur-md animate-glow"
                 noHoverAnimation
+                noTapAnimation
               >
                 <Undo2 className="w-4 h-4" />
                 edit placement
