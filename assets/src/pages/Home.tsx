@@ -158,13 +158,14 @@ const Home = () => {
                                 <AnimatePresence mode="popLayout" initial={false}>
                                     <motion.span
                                         key={stonesPerPlayer}
-                                        initial={{ opacity: 0, filter: 'blur(8px)', scale: 0.5 }}
-                                        animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
-                                        exit={{ opacity: 0, filter: 'blur(8px)', scale: 1.5 }}
+                                        initial={{ opacity: 0, scale: 0, y: 10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.5, y: -10 }}
                                         transition={{
-                                            opacity: { duration: 0.2 },
-                                            filter: { duration: 0.2 },
-                                            scale: { type: "spring", stiffness: 300, damping: 25 }
+                                            type: "spring",
+                                            stiffness: 500,
+                                            damping: 15,
+                                            mass: 0.5
                                         }}
                                         className="font-bold text-2xl text-[var(--icy-button-bg)] absolute inset-0 flex items-center justify-center"
                                     >
