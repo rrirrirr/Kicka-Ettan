@@ -90,7 +90,6 @@ const GameRoom = () => {
         );
     }
 
-    const myPlayer = gameState.players.find(p => p.id === playerId);
     const isGameFull = gameState.players.length === 2;
 
     // If game is full/active, render full screen game
@@ -113,35 +112,39 @@ const GameRoom = () => {
             <div className="max-w-md mx-auto">
                 <header className="flex flex-wrap justify-between items-center mb-8 card-gradient backdrop-blur-md p-4 rounded-2xl shadow-lg gap-4">
                     <GameTitle size="small" />
-                    <div className="flex gap-2 sm:gap-4 items-center">
-                        <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/50 flex items-center gap-2">
-                            {/* My Dot */}
-                            <div
-                                className="w-6 h-6 rounded-full shadow-inner border border-black/10 relative"
-                                style={{ backgroundColor: gameState.team_colors?.[myPlayer?.color!] || (myPlayer?.color === 'red' ? '#D22730' : '#185494') }}
-                            >
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/10 to-transparent" />
-                            </div>
-
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">vs</span>
-
-                            {/* Opponent Dot */}
-                            <div
-                                className="w-6 h-6 rounded-full shadow-inner border border-black/10 relative"
-                                style={{ backgroundColor: gameState.team_colors?.[myPlayer?.color === 'red' ? 'yellow' : 'red'] || (myPlayer?.color === 'red' ? '#185494' : '#D22730') }}
-                            >
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/10 to-transparent" />
-                            </div>
-                        </div>
-
-                    </div>
                 </header>
 
-                <Card className="p-8 text-center">
-                    <h2 className="text-2xl font-bold mb-4 text-[var(--icy-accent)] lowercase tracking-tighter">waiting for opponent...</h2>
+                <Card className="p-8 text-center flex flex-col items-center gap-6">
+                    {/* Blind pick info */}
+                    <div className="text-4xl font-black text-gray-900 lowercase tracking-tight">
+                        Blind pick {gameState.stones_per_team}
+                    </div>
 
-                    {/* Grabbable dither widget */}
-                    <div className="mb-6 rounded-xl overflow-hidden shadow-inner border border-gray-200">
+                    {/* Team colors - bigger dots */}
+                    <div className="flex items-center gap-4">
+                        <div
+                            className="w-12 h-12 rounded-full border-2 border-gray-300 shadow-md"
+                            style={{
+                                backgroundColor: gameState.team_colors?.red || "#cc0000",
+                            }}
+                        />
+                        <span className="text-2xl font-bold text-gray-700">vs</span>
+                        <div
+                            className="w-12 h-12 rounded-full border-2 border-gray-300 shadow-md"
+                            style={{
+                                backgroundColor: gameState.team_colors?.yellow || "#e6b800",
+                            }}
+                        />
+                    </div>
+
+                    {/* Waiting text with animated dots */}
+                    <div className="text-xl text-gray-700 lowercase tracking-tight">
+                        waiting for opponent
+                        <span className="inline-block ml-1 animate-pulse">...</span>
+                    </div>
+
+                    {/* Dither animation */}
+                    <div className="w-full rounded-xl overflow-hidden shadow-inner border border-gray-200">
                         <BayerDither
                             cellSize={8}
                             baseColor="#f5f5dc"
@@ -150,18 +153,7 @@ const GameRoom = () => {
                         />
                     </div>
 
-                    <p className="mb-6 text-gray-600 font-medium text-sm">Share the invite link with a friend to start playing.</p>
-                    <div className="p-2 pl-4 bg-gray-50 rounded-xl border border-gray-100 font-mono text-sm text-gray-500 relative z-10 flex items-center justify-between gap-4 mb-6">
-                        <span className="truncate">{window.location.href}</span>
-                        <Button
-                            variant="icon"
-                            onClick={copyInviteLink}
-                            aria-label="Copy link"
-                        >
-                            {showCopiedToast ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
-                        </Button>
-                    </div>
-
+                    {/* Share button */}
                     <Button
                         onClick={handleShare}
                         className="w-full py-3 text-base relative z-10"
@@ -170,14 +162,48 @@ const GameRoom = () => {
                         invite team
                     </Button>
 
+                    {/* Leave lobby button */}
                     <Button
                         variant="ghost"
                         onClick={() => window.location.href = '/'}
-                        className="w-full mt-4 text-gray-500 hover:text-red-600 hover:bg-red-50 relative z-10 transition-colors duration-200"
+                        className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 relative z-10 transition-colors duration-200"
                     >
                         <ArrowLeft size={18} />
                         leave lobby
                     </Button>
+
+                    {/* Can't invite link */}
+                    <button
+                        onClick={() => {
+                            const linkEl = document.getElementById('invite-link-bar');
+                            if (linkEl) {
+                                linkEl.classList.toggle('hidden');
+                            }
+                        }}
+                        className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    >
+                        can't invite?
+                    </button>
+
+                    {/* Hidden link bar - revealed when clicked */}
+                    <div
+                        id="invite-link-bar"
+                        className="hidden w-full p-3 bg-gray-100 rounded-lg border border-gray-200"
+                    >
+                        <div className="text-xs text-gray-600 mb-2">
+                            Share this link:
+                        </div>
+                        <div className="p-2 pl-4 bg-white rounded-lg border border-gray-300 font-mono text-sm text-gray-500 flex items-center justify-between gap-4">
+                            <span className="truncate">{window.location.href}</span>
+                            <Button
+                                variant="icon"
+                                onClick={copyInviteLink}
+                                aria-label="Copy link"
+                            >
+                                {showCopiedToast ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
+                            </Button>
+                        </div>
+                    </div>
                 </Card>
             </div>
 
