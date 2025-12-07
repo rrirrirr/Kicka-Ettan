@@ -9,13 +9,13 @@ defmodule KickaEttan.Games.GameState do
     players: [],
     current_round: 1,
     total_rounds: 3,
-    stones_per_team: 5,
+    stones_per_team: 3,
     stones: %{red: [], yellow: []},
     player_ready: %{},
     phase: :placement,
     ready_for_next_round: %{},
     history: [],
-    team_colors: %{red: "#cc0000", yellow: "#e6b800"},
+    team_colors: %{red: "#cc0000", yellow: "#185494"},
     created_at: nil
   ]
 
@@ -43,13 +43,13 @@ defmodule KickaEttan.Games.GameState do
   def new(options) do
     team_colors = %{
       red: options[:team1_color] || "#cc0000",
-      yellow: options[:team2_color] || "#e6b800"
+      yellow: options[:team2_color] || "#185494"
     }
-    
+
     %__MODULE__{
       game_id: options[:game_id] || generate_game_id(),
       total_rounds: options[:total_rounds] || 3,
-      stones_per_team: options[:stones_per_team] || 5,
+      stones_per_team: options[:stones_per_team] || 3,
       team_colors: team_colors,
       created_at: DateTime.utc_now()
     }

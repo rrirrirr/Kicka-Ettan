@@ -12,7 +12,7 @@ import { SettingsDialog } from '../components/SettingsDialog';
 const Home = () => {
     const navigate = useNavigate();
     const { openSettings } = useSettings();
-    const [stonesPerPlayer, setStonesPerPlayer] = useState(2);
+    const [stonesPerPlayer, setStonesPerPlayer] = useState(3);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showHistory, setShowHistory] = useState(false);
@@ -21,7 +21,7 @@ const Home = () => {
 
     // Team Color State
     const [team1Color, setTeam1Color] = useState('#D22730'); // Default Red
-    const [team2Color, setTeam2Color] = useState('#FFDD00'); // Default Yellow
+    const [team2Color, setTeam2Color] = useState('#185494'); // Default Blue
     const [showColorPicker, setShowColorPicker] = useState<'team1' | 'team2' | null>(null);
 
     const PRESET_COLORS = [

@@ -8,7 +8,7 @@ defmodule KickaEttanWeb.API.GameController do
   """
   def create(conn, params) do
     total_rounds = parse_int(params["total_rounds"] || 3)
-    stones_per_team = parse_int(params["stones_per_team"] || 5)
+    stones_per_team = parse_int(params["stones_per_team"] || 3)
 
     with :ok <- validate_bounds(total_rounds, 1, 1000, "total_rounds"),
          :ok <- validate_bounds(stones_per_team, 1, 100, "stones_per_team") do
