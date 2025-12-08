@@ -8,6 +8,7 @@ import NotFound from './pages/NotFound';
 
 // Only load DevPage in development
 const DevPage = React.lazy(() => import('./pages/DevPage'));
+const ButtonGuidePage = React.lazy(() => import('./pages/ButtonGuidePage'));
 import { SettingsProvider } from './contexts/SettingsContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import { pageTransition } from './utils/animations';
@@ -36,11 +37,18 @@ const AnimatedRoutes = () => {
         <Route path="/game/:gameId" element={<PageWrapper><GameRoom /></PageWrapper>} />
         <Route path="/demo" element={<PageWrapper><Demo /></PageWrapper>} />
         {import.meta.env.DEV && (
-          <Route path="/dev" element={
-            <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-              <PageWrapper><DevPage /></PageWrapper>
-            </Suspense>
-          } />
+          <>
+            <Route path="/dev" element={
+              <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <PageWrapper><DevPage /></PageWrapper>
+              </Suspense>
+            } />
+            <Route path="/dev/buttons" element={
+              <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <PageWrapper><ButtonGuidePage /></PageWrapper>
+              </Suspense>
+            } />
+          </>
         )}
         <Route path="/loading-test" element={<PageWrapper><LoadingGame /></PageWrapper>} />
         <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />

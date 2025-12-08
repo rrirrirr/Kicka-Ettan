@@ -1420,17 +1420,19 @@ const CurlingGameContent = ({
           <div className="flex gap-2 h-[64px]">
             {/* Persistent Menu Button */}
             <div className="relative shrink-0 flex items-center">
-              <button
+              <Button
+                variant="primary"
+                shape="circle"
                 onClick={() => {
                   setShowMenu(!showMenu);
                   setHighlightedStone(null);
                   setHoveredStone(null);
                 }}
-                className="w-12 h-12 rounded-full bg-[var(--icy-button-bg)] text-[var(--icy-button-text)] flex items-center justify-center hover:scale-105 hover:shadow-lg shadow-md transition-all active:scale-95"
+                className="w-12 h-12 shadow-md hover:scale-105 active:scale-95 transition-transform"
                 aria-label="Menu"
               >
-                <Menu size={24} />
-              </button>
+                <Menu size={24} className="w-6 h-6 shrink-0" />
+              </Button>
 
               {/* Menu Bottom Sheet */}
               <BottomSheet
@@ -1440,18 +1442,20 @@ const CurlingGameContent = ({
               >
                 <div className="flex flex-col gap-1">
                   {onShare && (
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={() => {
                         onShare();
                         setShowMenu(false);
                       }}
-                      className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
+                      className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
                     >
                       <Share2 size={22} className="text-gray-600" />
                       Share
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => {
                       if (gameState.history && gameState.history.length > 0) {
                         setSelectedHistoryRound(0);
@@ -1460,39 +1464,42 @@ const CurlingGameContent = ({
                       }
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
+                    className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
                   >
                     <HistoryIcon size={22} className="text-gray-600" />
                     History
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
                     onClick={() => {
                       setShowHelp(true);
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
+                    className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
                   >
                     <Info size={22} className="text-gray-600" />
                     Help
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
                     onClick={() => {
                       openSettings();
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-4 hover:bg-gray-100 active:bg-gray-200 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
+                    className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
                   >
                     <Settings size={22} className="text-gray-600" />
                     Settings
-                  </button>
+                  </Button>
                   <div className="h-px bg-gray-200 my-2" />
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => (window.location.href = "/")}
-                    className="w-full text-left px-4 py-4 hover:bg-red-50 active:bg-red-100 text-red-600 rounded-2xl flex items-center gap-4 text-base font-medium transition-colors"
+                    className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <LogOut size={22} />
                     Exit Game
-                  </button>
+                  </Button>
                 </div>
               </BottomSheet>
             </div>
@@ -1551,10 +1558,8 @@ const CurlingGameContent = ({
                   </Button>
                   <Button
                     onClick={handleNextRound}
-                    variant="destructive"
+                    variant="primary"
                     className="flex-grow h-12 text-base"
-                    noHoverAnimation
-                    noTapAnimation
                   >
                     start new round
                   </Button>
@@ -1696,7 +1701,8 @@ const CurlingGameContent = ({
                 <Button
                   onClick={handleCancelPlacement}
                   variant="outline"
-                  className="h-12 px-6 rounded-full bg-white/90 hover:bg-white text-gray-800 border border-gray-200/50 shadow-md backdrop-blur-md animate-glow"
+                  shape="pill"
+                  className="h-12 px-6 bg-white/90 hover:bg-white text-gray-800 border border-gray-200/50 shadow-md backdrop-blur-md animate-glow"
                   noHoverAnimation
                   noTapAnimation
                 >

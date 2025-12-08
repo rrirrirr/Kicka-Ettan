@@ -4,7 +4,7 @@ import { Play, History, ChevronDown, ChevronUp, Info, Settings } from 'lucide-re
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import GameTitle from '../components/GameTitle';
-import { Dialog, Card } from '../components/ui';
+import { Dialog, Card, Button } from '../components/ui';
 import { config } from '../config';
 import { useSettings } from '../contexts/SettingsContext';
 import { SettingsDialog } from '../components/SettingsDialog';
@@ -125,13 +125,16 @@ const Home = () => {
                 <GameTitle className="mb-4 relative z-10" />
                 <p className="mb-8 text-gray-600 font-medium text-center relative z-10 flex items-center justify-center gap-2">
                     Finally, a game your lead can't mess up.
-                    <button
+                    <Button
+                        variant="ghost"
+                        shape="circle"
+                        size="sm"
                         onClick={() => setShowInfo(true)}
-                        className="w-6 h-6 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow animate-glow flex items-center justify-center group flex-shrink-0"
+                        className="w-6 h-6 bg-white/90 hover:bg-white backdrop-blur-md shadow flex-shrink-0 p-0"
                         aria-label="About this project"
                     >
                         <Info size={14} className="text-gray-700 group-hover:text-[var(--icy-blue-medium)] transition-colors" />
-                    </button>
+                    </Button>
                 </p>
 
                 {error && (
@@ -181,30 +184,32 @@ const Home = () => {
                             team colors
                         </label>
                         <div className="flex gap-4">
-                            <button
+                            <Button
+                                variant="outline"
                                 onClick={() => setShowColorPicker('team1')}
-                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 animate-glow"
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
                             >
                                 <div
-                                    className="w-8 h-8 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
+                                    className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
                                     style={{ backgroundColor: team1Color }}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
                                 </div>
-                                <span className="font-bold text-gray-700 lowercase">team 1</span>
-                            </button>
-                            <button
+                                <span className="font-bold text-gray-700 lowercase text-base">team 1</span>
+                            </Button>
+                            <Button
+                                variant="outline"
                                 onClick={() => setShowColorPicker('team2')}
-                                className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-2xl flex items-center justify-center gap-3 animate-glow"
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
                             >
                                 <div
-                                    className="w-8 h-8 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
+                                    className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
                                     style={{ backgroundColor: team2Color }}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
                                 </div>
-                                <span className="font-bold text-gray-700 lowercase">team 2</span>
-                            </button>
+                                <span className="font-bold text-gray-700 lowercase text-base">team 2</span>
+                            </Button>
                         </div>
 
                         {/* Color Picker Dialog */}
@@ -221,15 +226,16 @@ const Home = () => {
                                             const isTaken = color.toUpperCase() === otherTeamColor.toUpperCase();
 
                                             return (
-                                                <button
+                                                <Button
                                                     key={color}
+                                                    shape="circle"
                                                     onClick={() => {
                                                         if (isTaken) return;
                                                         if (showColorPicker === 'team1') setTeam1Color(color);
                                                         else setTeam2Color(color);
                                                         setShowColorPicker(null);
                                                     }}
-                                                    className={`w-12 h-12 rounded-full shadow-md ring-2 animate-glow transition-transform ${isTaken
+                                                    className={`w-12 h-12 shadow-md ring-2 animate-glow transition-transform p-0 ${isTaken
                                                         ? 'ring-red-400 opacity-40 cursor-not-allowed'
                                                         : 'ring-transparent hover:ring-gray-400 hover:scale-110'
                                                         }`}
@@ -246,34 +252,26 @@ const Home = () => {
                     </div>
                 </div>
 
-                <button
+                <Button
                     onClick={createGame}
-                    disabled={isLoading}
-                    className="w-full bg-[var(--icy-accent)] hover:bg-[var(--icy-accent-hover)] text-white font-bold py-4 px-4 rounded-full flex items-center justify-center gap-2 animate-glow relative z-10 lowercase tracking-tight text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4"
+                    isLoading={isLoading}
+                    shape="pill"
+                    size="xl"
+                    className="w-full bg-[var(--icy-accent)] hover:bg-[var(--icy-accent-hover)] text-white shadow-none animate-glow relative z-10 mb-4 text-lg py-4"
                 >
-                    {isLoading ? (
-                        <>
-                            <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            creating...
-                        </>
-                    ) : (
-                        <>
-                            <Play size={20} fill="currentColor" />
-                            create game
-                        </>
-                    )}
-                </button>
+                    <Play size={20} fill="currentColor" />
+                    create game
+                </Button>
 
-                <button
+                <Button
                     onClick={openSettings}
-                    className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-4 px-4 rounded-full flex items-center justify-center gap-2 animate-glow relative z-10 lowercase tracking-tight text-lg"
+                    shape="pill"
+                    size="xl"
+                    className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 animate-glow relative z-10 text-lg py-4 shadow-none"
                 >
                     <Settings size={20} />
                     settings
-                </button>
+                </Button>
             </div>
 
             {lastGame && (
@@ -284,42 +282,47 @@ const Home = () => {
                             recent games
                         </h3>
 
-                        <button
+                        <Button
+                            variant="outline"
                             onClick={() => navigate(`/game/${lastGame.gameId}`)}
-                            className="w-full bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between group animate-glow mb-4"
+                            className="w-full bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-sm border border-gray-200 flex items-center !justify-between group animate-glow mb-4 h-auto"
+                            noHoverAnimation
                         >
-                            <div className="flex flex-col items-start">
-                                <span className="text-xs text-gray-500 uppercase tracking-wider">last played</span>
+                            <div className="flex flex-col items-start gap-0">
+                                <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">last played</span>
                                 <span className="text-sm font-mono text-gray-600">#{lastGame.gameId.slice(0, 8)}</span>
                             </div>
                             <div className="bg-[var(--icy-blue-light)] text-black p-2 rounded-full group-hover:scale-110 transition-transform">
                                 <Play size={16} fill="currentColor" />
                             </div>
-                        </button>
+                        </Button>
 
                         {history.length > 1 && (
                             <div>
-                                <button
+                                <Button
+                                    variant="ghost"
                                     onClick={() => setShowHistory(!showHistory)}
-                                    className="w-full flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-700 py-2 transition-colors lowercase tracking-tight"
+                                    className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors"
                                 >
                                     {showHistory ? 'hide history' : 'show history'}
                                     {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                </button>
+                                </Button>
 
                                 {showHistory && (
                                     <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
                                         {history.slice(1).map(game => (
-                                            <button
+                                            <Button
+                                                variant="outline"
                                                 key={game.gameId}
                                                 onClick={() => navigate(`/game/${game.gameId}`)}
-                                                className="w-full bg-white/50 hover:bg-white text-left p-3 rounded-xl border border-gray-100 hover:border-gray-200 animate-glow flex items-center justify-between group"
+                                                className="w-full bg-white/50 hover:bg-white text-left p-3 rounded-xl border border-gray-100 hover:border-gray-200 animate-glow flex items-center !justify-between group h-auto !shadow-none"
+                                                noHoverAnimation
                                             >
                                                 <span className="font-mono text-xs text-gray-600">#{game.gameId.slice(0, 8)}</span>
-                                                <span className="text-[10px] text-gray-400">
+                                                <span className="text-[10px] text-gray-400 font-normal">
                                                     {new Date(game.timestamp).toLocaleDateString()}
                                                 </span>
-                                            </button>
+                                            </Button>
                                         ))}
                                     </div>
                                 )}

@@ -156,7 +156,8 @@ const GameRoom = () => {
                     {/* Share button */}
                     <Button
                         onClick={handleShare}
-                        className="w-full py-3 text-base relative z-10"
+                        size="xl"
+                        className="w-full relative z-10"
                     >
                         <Share2 size={18} />
                         invite team
@@ -173,17 +174,19 @@ const GameRoom = () => {
                     </Button>
 
                     {/* Can't invite link */}
-                    <button
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                             const linkEl = document.getElementById('invite-link-bar');
                             if (linkEl) {
                                 linkEl.classList.toggle('hidden');
                             }
                         }}
-                        className="text-xs text-gray-500 hover:text-gray-700 underline"
+                        className="text-gray-500 hover:text-gray-700 underline h-auto p-1"
                     >
                         can't invite?
-                    </button>
+                    </Button>
 
                     {/* Hidden link bar - revealed when clicked */}
                     <div
