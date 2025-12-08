@@ -152,11 +152,23 @@ defmodule KickaEttan.Games.GameServerTest do
       %{game_id: game_id}
     end
 
-    test "advances to next round", %{game_id: game_id} do
+    test "one player clicking immediately starts the next round", %{game_id: game_id} do
       {:ok, state} = GameServer.ready_for_next_round(game_id, "player1")
+      
+      # Round immediately starts on server
+      assert state.current_round == 2
+      assert state.phase == :placement
+      # Player is marked as started
+      assert state.ready_for_next_round["player1"] == true
+    end
+
+    test "second player clicking also marks them started", %{game_id: game_id} do
+      {:ok, _} = GameServer.ready_for_next_round(game_id, "player1")
+      {:ok, state} = GameServer.ready_for_next_round(game_id, "player2")
       
       assert state.current_round == 2
       assert state.phase == :placement
+      assert state.ready_for_next_round["player2"] == true
     end
 
     test "resets stones for next round", %{game_id: game_id} do

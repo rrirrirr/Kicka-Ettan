@@ -122,12 +122,15 @@ const GameRoom = () => {
 
                     {/* Team colors - bigger dots */}
                     <div className="flex items-center gap-4">
-                        <div
-                            className="w-12 h-12 rounded-full border-2 border-gray-300 shadow-md"
-                            style={{
-                                backgroundColor: gameState.team_colors?.red || "#cc0000",
-                            }}
-                        />
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-600 lowercase font-outfit">you</span>
+                            <div
+                                className="w-12 h-12 rounded-full border-2 border-gray-300 shadow-md"
+                                style={{
+                                    backgroundColor: gameState.team_colors?.red || "#cc0000",
+                                }}
+                            />
+                        </div>
                         <span className="text-2xl font-bold text-gray-700">vs</span>
                         <div
                             className="w-12 h-12 rounded-full border-2 border-gray-300 shadow-md"

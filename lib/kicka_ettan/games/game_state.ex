@@ -101,19 +101,15 @@ defmodule KickaEttan.Games.GameState do
          true <- is_valid_stone_index?(stone_index, game_state.stones_per_team),
          true <- is_valid_position?(position) do
       
-      # Update stone position
+      # Store in stones
       stones = Map.update!(game_state.stones, color, fn stones ->
-        # If the stone already exists in the list, update it
-        # Otherwise, add a new stone
         current_stones = stones || []
-        
         if stone_index < length(current_stones) do
           List.replace_at(current_stones, stone_index, position)
         else
           current_stones ++ [position]
         end
       end)
-      
       {:ok, %{game_state | stones: stones}}
     else
       nil -> {:error, :player_not_found}
@@ -126,27 +122,31 @@ defmodule KickaEttan.Games.GameState do
   """
   def confirm_placement(game_state, player_id) do
     with player when not is_nil(player) <- find_player(game_state, player_id),
-         color <- player.color,
-         true <- has_placed_all_stones?(game_state, color) do
+         color <- player.color do
       
-      player_ready = Map.put(game_state.player_ready, player_id, true)
-      new_state = %{game_state | player_ready: player_ready}
+      placed_stones = game_state.stones[color] || []
       
-      Logger.debug("Player #{player_id} confirmed placement. Ready map: #{inspect(player_ready)}")
+      if length(placed_stones) >= game_state.stones_per_team do
+        player_ready = Map.put(game_state.player_ready, player_id, true)
+        new_state = %{game_state | player_ready: player_ready}
+        
+        Logger.debug("Player #{player_id} confirmed placement. Ready map: #{inspect(player_ready)}")
 
-      # Check if all players have confirmed
-      if all_players_ready?(new_state) do
-        Logger.debug("All players ready! Transitioning to combined phase.")
-        # Move to combined view - resolve collisions first
-        {:ok, resolved_state} = resolve_collisions(new_state)
-        {:ok, %{resolved_state | phase: :combined}}
+        # Check if all players have confirmed
+        if all_players_ready?(new_state) do
+          Logger.debug("All players ready! Transitioning to combined phase.")
+          # Move to combined view - resolve collisions first
+          {:ok, resolved_state} = resolve_collisions(new_state)
+          {:ok, %{resolved_state | phase: :combined}}
+        else
+          Logger.debug("Waiting for other players. Ready: #{inspect(player_ready)}")
+          {:ok, new_state}
+        end
       else
-        Logger.debug("Waiting for other players. Ready: #{inspect(player_ready)}")
-        {:ok, new_state}
+        {:error, :not_all_stones_placed}
       end
     else
       nil -> {:error, :player_not_found}
-      false -> {:error, :not_all_stones_placed}
     end
   end
 
@@ -154,16 +154,16 @@ defmodule KickaEttan.Games.GameState do
   Revoke confirmation of stone placement.
   """
   def cancel_placement(game_state, player_id) do
-    if game_state.phase == :placement do
-      with player when not is_nil(player) <- find_player(game_state, player_id) do
+    with player when not is_nil(player) <- find_player(game_state, player_id) do
+      if game_state.phase == :placement do
         player_ready = Map.put(game_state.player_ready, player_id, false)
         Logger.debug("Player #{player_id} canceled placement. Ready map: #{inspect(player_ready)}")
         {:ok, %{game_state | player_ready: player_ready}}
       else
-        nil -> {:error, :player_not_found}
+        {:error, :invalid_phase}
       end
     else
-      {:error, :invalid_phase}
+      nil -> {:error, :player_not_found}
     end
   end
 
@@ -202,15 +202,28 @@ defmodule KickaEttan.Games.GameState do
 
   @doc """
   Mark a player as ready for the next round.
+  When the first player clicks, the round immediately starts on the server.
+  The other player can still view the combined phase until they click.
   """
   def ready_for_next_round(game_state, player_id) do
     with player when not is_nil(player) <- find_player(game_state, player_id) do
-      # Immediately start next round if we are in the combined phase
-      # This prevents race conditions where both players click at the same time
-      if game_state.phase == :combined do
-        start_next_round(game_state)
-      else
-        {:ok, game_state}
+      cond do
+        # Already in placement phase - just mark player as starting (for client_view filtering)
+        game_state.phase == :placement ->
+          ready_for_next_round = Map.put(game_state.ready_for_next_round, player_id, true)
+          {:ok, %{game_state | ready_for_next_round: ready_for_next_round}}
+        
+        # First player clicking from combined phase - start the round immediately
+        game_state.phase == :combined ->
+          # Mark this player as ready
+          ready_for_next_round = Map.put(game_state.ready_for_next_round, player_id, true)
+          new_state = %{game_state | ready_for_next_round: ready_for_next_round}
+          
+          # Start the next round immediately
+          start_next_round(new_state)
+        
+        true ->
+          {:ok, game_state}
       end
     else
       nil -> {:error, :player_not_found}
@@ -226,6 +239,8 @@ defmodule KickaEttan.Games.GameState do
 
   @doc """
   Start the next round.
+  Uses any stones that were placed early (in next_round_stones) by players
+  who already clicked "Start New Round".
   """
   def start_next_round(game_state) do
     # Save current round to history
@@ -236,22 +251,23 @@ defmodule KickaEttan.Games.GameState do
     history = [history_item | game_state.history]
 
     # Reset for next round
+    # Keep ready_for_next_round as-is (player who clicked is marked true)
+    # Reset player_ready and stones
     player_ready = Map.new(game_state.player_ready, fn {id, _} -> {id, false} end)
-    ready_for_next_round = Map.new(game_state.ready_for_next_round, fn {id, _} -> {id, false} end)
-    stones = %{red: [], yellow: []}
     
     {:ok, %{game_state | 
       current_round: game_state.current_round + 1,
       phase: :placement,
       player_ready: player_ready,
-      ready_for_next_round: ready_for_next_round,
-      stones: stones,
+      stones: %{red: [], yellow: []},
       history: history
     }}
   end
 
   @doc """
   Create a view of the game state suitable for sending to clients.
+  Handles per-player view during placement phase when players can 
+  independently start the next round.
   """
   def client_view(game_state, player_id \\ nil) do
     base_view = Map.from_struct(game_state)
@@ -259,21 +275,36 @@ defmodule KickaEttan.Games.GameState do
     # Sanitize the view based on the game phase and player
     case game_state.phase do
       :placement when not is_nil(player_id) ->
-        # During placement, only show the player's own stones
         player = find_player(game_state, player_id)
         if player do
           player_color = player.color
           opponent_color = if player_color == :red, do: :yellow, else: :red
           
-          # Hide opponent stones
-          stones = Map.put(base_view.stones, opponent_color, [])
-          Map.put(base_view, :stones, stones)
+          # Check if this player has clicked "start new round" (for rounds after first)
+          player_started = Map.get(game_state.ready_for_next_round, player_id, false)
+          
+          # For players who haven't started yet AND there's history, show previous round's combined
+          if not player_started and length(game_state.history) > 0 do
+            [last_round | _] = game_state.history
+            base_view
+            |> Map.put(:phase, :combined)
+            |> Map.put(:current_round, last_round.round)
+            |> Map.put(:stones, last_round.stones)
+          else
+            # Normal placement phase - ALWAYS hide opponent stones
+            stones = Map.put(base_view.stones, opponent_color, [])
+            Map.put(base_view, :stones, stones)
+          end
         else
           base_view
         end
       
+      :combined when not is_nil(player_id) ->
+        # Combined phase - show all stones
+        base_view
+      
       _ ->
-        # For other phases, show all stones
+        # For other phases or nil player_id, show all stones
         base_view
     end
   end
@@ -300,12 +331,6 @@ defmodule KickaEttan.Games.GameState do
   end
   
   defp is_valid_position?(_), do: false
-  
-  defp has_placed_all_stones?(game_state, color) do
-    placed_stones = game_state.stones[color] || []
-    Logger.debug("Checking stones for #{color}: placed #{length(placed_stones)} / required #{game_state.stones_per_team}")
-    length(placed_stones) >= game_state.stones_per_team
-  end
   
   defp do_resolve_collisions(stones) do
     # Resolve stone-to-stone collisions using iterative relaxation.

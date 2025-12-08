@@ -7,7 +7,7 @@ defmodule KickaEttan.Games.GameStateTest do
       state = GameState.new([])
       assert state.current_round == 1
       assert state.total_rounds == 3
-      assert state.stones_per_team == 5
+      assert state.stones_per_team == 3  # Default is 3
       assert state.phase == :placement
       assert state.stones == %{red: [], yellow: []}
     end
@@ -243,40 +243,66 @@ defmodule KickaEttan.Games.GameStateTest do
       %{state: state}
     end
 
-    test "transitions to next round from combined phase", %{state: state} do
+    test "one player clicking immediately starts the next round on server", %{state: state} do
       assert state.phase == :combined
       assert state.current_round == 1
       
       {:ok, new_state} = GameState.ready_for_next_round(state, "p1")
       
+      # Round immediately starts on server
       assert new_state.current_round == 2
       assert new_state.phase == :placement
+      # Player who clicked is marked as ready for next round
+      assert new_state.ready_for_next_round["p1"] == true
     end
 
-    test "saves current round to history", %{state: state} do
-      {:ok, new_state} = GameState.ready_for_next_round(state, "p1")
+    test "second player clicking also marks them as started", %{state: state} do
+      {:ok, state} = GameState.ready_for_next_round(state, "p1")
+      {:ok, state} = GameState.ready_for_next_round(state, "p2")
       
-      assert length(new_state.history) == 1
-      assert hd(new_state.history).round == 1
+      assert state.current_round == 2
+      assert state.phase == :placement
+      assert state.ready_for_next_round["p2"] == true
+    end
+
+    test "saves current round to history when first player clicks", %{state: state} do
+      {:ok, state} = GameState.ready_for_next_round(state, "p1")
+      
+      assert length(state.history) == 1
+      assert hd(state.history).round == 1
     end
 
     test "resets stones for next round", %{state: state} do
-      {:ok, new_state} = GameState.ready_for_next_round(state, "p1")
+      {:ok, state} = GameState.ready_for_next_round(state, "p1")
       
-      assert new_state.stones.red == []
-      assert new_state.stones.yellow == []
+      assert state.stones.red == []
+      assert state.stones.yellow == []
     end
 
-    test "resets ready states for next round", %{state: state} do
-      {:ok, new_state} = GameState.ready_for_next_round(state, "p1")
+    test "resets player ready states for next round", %{state: state} do
+      {:ok, state} = GameState.ready_for_next_round(state, "p1")
       
-      assert new_state.player_ready["p1"] == false
-      assert new_state.player_ready["p2"] == false
+      assert state.player_ready["p1"] == false
+      assert state.player_ready["p2"] == false
     end
 
     test "returns error for unknown player" do
       state = GameState.new([])
       assert {:error, :player_not_found} = GameState.ready_for_next_round(state, "unknown")
+    end
+
+    test "client_view shows placement phase to player who clicked start", %{state: state} do
+      {:ok, state} = GameState.ready_for_next_round(state, "p1")
+      
+      # P1's view should show placement phase for next round
+      p1_view = GameState.client_view(state, "p1")
+      assert p1_view.phase == :placement
+      assert p1_view.current_round == 2
+      
+      # P2's view should still show combined phase (previous round from history)
+      p2_view = GameState.client_view(state, "p2")
+      assert p2_view.phase == :combined
+      assert p2_view.current_round == 1
     end
   end
 
@@ -290,7 +316,10 @@ defmodule KickaEttan.Games.GameStateTest do
       %{state: state}
     end
 
-    test "hides opponent stones during placement phase", %{state: state} do
+    test "hides opponent stones during placement phase for player who started", %{state: state} do
+      # Mark player as started (needed for client_view to show placement phase)
+      state = %{state | ready_for_next_round: %{"p1" => true, "p2" => false}}
+      
       view = GameState.client_view(state, "p1")
       
       assert length(view.stones.red) == 1
