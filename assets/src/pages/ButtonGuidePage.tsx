@@ -174,6 +174,39 @@ const ButtonGuidePage = () => {
                     </Card>
                 </section>
 
+                {/* SETTINGS-STYLE BUTTONS */}
+                <section className="space-y-4">
+                    <h2 className="text-xl font-bold text-gray-800 border-b pb-2">Settings-Style Buttons</h2>
+                    <Card className="p-6 space-y-4">
+                        <p className="text-sm text-gray-600">
+                            For interactive settings and form-like inputs, use <code className="bg-gray-100 px-1 rounded">rounded-2xl</code> with
+                            a muted background. This distinguishes them from action buttons.
+                        </p>
+                        <div className="flex gap-4">
+                            <Button
+                                variant="outline"
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 border-0"
+                            >
+                                <div className="w-9 h-9 rounded-full bg-red-500 shadow-sm border border-black/5"></div>
+                                <span className="font-bold text-gray-700 lowercase text-base">team 1</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 border-0"
+                            >
+                                <div className="w-9 h-9 rounded-full bg-blue-600 shadow-sm border border-black/5"></div>
+                                <span className="font-bold text-gray-700 lowercase text-base">team 2</span>
+                            </Button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Key classes: <code className="bg-gray-100 px-1 rounded">bg-gray-50</code>,
+                            <code className="bg-gray-100 px-1 rounded ml-1">!rounded-2xl</code>,
+                            <code className="bg-gray-100 px-1 rounded ml-1">!p-4</code>,
+                            <code className="bg-gray-100 px-1 rounded ml-1">border-0</code>
+                        </p>
+                    </Card>
+                </section>
+
                 {/* STATES SECTION */}
                 <section className="space-y-4">
                     <h2 className="text-xl font-bold text-gray-800 border-b pb-2">States</h2>
@@ -183,6 +216,26 @@ const ButtonGuidePage = () => {
                             <Button disabled>Disabled</Button>
                             <Button className="animate-glow">With Glow Effect</Button>
                         </div>
+                    </Card>
+                </section>
+
+                {/* OVERRIDE TIPS SECTION */}
+                <section className="space-y-4">
+                    <h2 className="text-xl font-bold text-gray-800 border-b pb-2">Override Tips</h2>
+                    <Card className="p-6 space-y-4">
+                        <p className="text-sm text-gray-600">
+                            The Button component has base styles that may conflict with custom classes.
+                            Use <code className="bg-gray-100 px-1 rounded">!</code> prefix to force overrides:
+                        </p>
+                        <ul className="text-sm text-gray-600 space-y-2 list-disc list-inside">
+                            <li><code className="bg-gray-100 px-1 rounded">!justify-between</code> — Override <code className="bg-gray-100 px-1 rounded">justify-center</code></li>
+                            <li><code className="bg-gray-100 px-1 rounded">!shadow-none</code> — Override <code className="bg-gray-100 px-1 rounded">shadow-sm</code> from outline variant</li>
+                            <li><code className="bg-gray-100 px-1 rounded">!rounded-2xl</code> — Override default rounding</li>
+                            <li><code className="bg-gray-100 px-1 rounded">!p-4</code> — Override default padding</li>
+                        </ul>
+                        <p className="text-sm text-gray-500">
+                            Use <code className="bg-gray-100 px-1 rounded">noHoverAnimation</code> prop to disable button scale on hover.
+                        </p>
                     </Card>
                 </section>
             </div>
