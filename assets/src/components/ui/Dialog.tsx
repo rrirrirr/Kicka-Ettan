@@ -74,7 +74,7 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, onEscape, title
                         role="dialog"
                         aria-modal="true"
                     >
-                        <div className={`flex justify-between items-center mb-6 ${headerClassName}`}>
+                        <div className={`flex justify-between items-center mb-4 sm:mb-6 ${headerClassName}`}>
                             <div className="flex items-center gap-2">
                                 {backButton}
                                 <h2 className="text-3xl font-black lowercase tracking-tighter text-gray-900">{title}</h2>

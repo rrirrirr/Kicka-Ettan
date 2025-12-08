@@ -46,7 +46,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             title={getTitle()}
             fullScreen
             className="!p-0 overflow-hidden"
-            headerClassName="shrink-0 px-6 py-6"
+            headerClassName="shrink-0 px-6 py-4 sm:py-6"
             backButton={view !== 'main' ? (
                 <Button
                     variant="ghost"
@@ -59,7 +59,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                 </Button>
             ) : undefined}
         >
-            <div className="flex-grow overflow-y-auto p-6">
+            <div className="flex-grow overflow-y-auto px-6 pt-2 pb-6 sm:p-6">
                 {view === 'main' && <SettingsMainView setView={setView} />}
                 {view === 'measurements' && <SettingsMeasurementsView />}
                 {view === 'sheet' && <SettingsSheetView />}
