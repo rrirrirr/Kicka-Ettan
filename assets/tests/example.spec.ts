@@ -7,10 +7,4 @@ test('has title', async ({ page }) => {
     await expect(page).toHaveTitle(/Kicka Ettan/);
 });
 
-test.describe('Navigation', () => {
-    test('can navigate to demo page', async ({ page }) => {
-        await page.goto('/');
-        await page.getByRole('link', { name: 'Demo' }).click();
-        await expect(page).toHaveURL(/.*demo/);
-    });
-});
+

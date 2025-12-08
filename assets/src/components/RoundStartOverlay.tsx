@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { overlayBackdrop, roundStartContainer, roundStartText } from '../utils/animations';
 
@@ -8,6 +9,14 @@ interface RoundStartOverlayProps {
 }
 
 export const RoundStartOverlay = ({ isVisible, roundNumber, onComplete }: RoundStartOverlayProps) => {
+    useEffect(() => {
+        if (isVisible && onComplete) {
+            // Auto-dismiss after 2 seconds (animation + reading time)
+            const timer = setTimeout(onComplete, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [isVisible, onComplete]);
+
     return (
         <AnimatePresence>
             {isVisible && (
@@ -17,13 +26,6 @@ export const RoundStartOverlay = ({ isVisible, roundNumber, onComplete }: RoundS
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    onAnimationComplete={(definition) => {
-                        // Call onComplete after the animate phase finishes (not exit)
-                        if (definition === 'animate' && onComplete) {
-                            // Auto-dismiss after 1.5 seconds
-                            setTimeout(onComplete, 1500);
-                        }
-                    }}
                 >
                     {/* Backdrop */}
                     <div className="absolute inset-0 bg-gradient-to-b from-[var(--icy-black)]/80 to-[var(--icy-black)]/90 backdrop-blur-sm" />

@@ -10,6 +10,7 @@ interface StoneSelectionBarProps {
     onDragEnd: (index: number, dropPoint: { x: number; y: number }) => void;
     disabled?: boolean;
     draggedStoneIndex?: number | null;
+    teamColors?: { red: string; yellow: string };
 }
 
 const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
@@ -18,7 +19,8 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
     onDragStart,
     onDragEnd,
     disabled = false,
-    draggedStoneIndex = null
+    draggedStoneIndex = null,
+    teamColors
 }) => {
     if (!myColor) return null;
 
@@ -46,6 +48,7 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
                                 size={44} // Fixed size for the bar
                                 interactive={!disabled}
                                 opacity={stone.index === draggedStoneIndex ? 0 : 1}
+                                customColor={teamColors ? teamColors[myColor] : undefined}
                             />
                             {(stone.resetCount || 0) > 0 && (
                                 <motion.div

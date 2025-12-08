@@ -71,6 +71,8 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, onEscape, title
                         exit="exit"
                         className={dialogClasses}
                         onClick={e => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
                     >
                         <div className={`flex justify-between items-center mb-6 ${headerClassName}`}>
                             <div className="flex items-center gap-2">
