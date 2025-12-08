@@ -38,14 +38,14 @@ interface CurlingGameProps {
 type GestureState =
   | { type: "IDLE" }
   | {
-    type: "PENDING";
-    stoneIndex: number;
-    startX: number;
-    startY: number;
-    timerId: number;
-    source: "pickup" | "placement";
-    startTime: number;
-  }
+      type: "PENDING";
+      stoneIndex: number;
+      startX: number;
+      startY: number;
+      timerId: number;
+      source: "pickup" | "placement";
+      startTime: number;
+    }
   | { type: "DRAGGING"; stoneIndex: number };
 
 import {
@@ -57,6 +57,7 @@ import {
   Ruler,
   X,
   Settings,
+  RotateCcw,
 } from "lucide-react";
 import { Loupe } from "./Loupe";
 import { StoneInspector } from "./StoneInspector";
@@ -189,7 +190,7 @@ const CurlingGameContent = ({
       if (player) {
         setMyColor(player.color);
 
-        // Initialize stones if not already done or if round changed
+        // Reinitialize stones when round changes
         if (gameState.current_round > lastInitializedRound) {
           const initialStones = Array.from({
             length: gameState.stones_per_team,
@@ -202,16 +203,12 @@ const CurlingGameContent = ({
           }));
           setMyStones(initialStones);
           setLastInitializedRound(gameState.current_round);
-          setIsReady(false);
         }
       }
 
-      // Check if we are ready
-      if (gameState.player_ready && gameState.player_ready[playerId]) {
-        setIsReady(true);
-      } else {
-        setIsReady(false);
-      }
+      // Sync isReady state with server
+      const serverReady = gameState.player_ready?.[playerId] ?? false;
+      setIsReady(serverReady);
     }
   }, [gameState, playerId]);
 
@@ -431,7 +428,7 @@ const CurlingGameContent = ({
                     // Since HOG_LINE_OFFSET > HOUSE_RADIUS_12, Hog Line Y < Top of House Y.
                     const distToCenter = Math.sqrt(
                       Math.pow(stone.x - SHEET_WIDTH / 2, 2) +
-                      Math.pow(stone.y - VIEW_TOP_OFFSET, 2),
+                        Math.pow(stone.y - VIEW_TOP_OFFSET, 2),
                     );
 
                     // House Stone: Touching the house
@@ -443,7 +440,7 @@ const CurlingGameContent = ({
                     const isNearHouseStone =
                       !isHouseStone &&
                       distToCenter <=
-                      HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD;
+                        HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD;
 
                     let steps;
                     if (isHouseStone) {
@@ -857,11 +854,13 @@ const CurlingGameContent = ({
           {/* Pulse ring animation for selected stone */}
 
           <div
-            className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${isHighlighted ? "scale-105 ring-2 ring-white/50" : ""
-              } ${gameState.phase === "combined" || isHistoryMode
+            className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${
+              isHighlighted ? "scale-105 ring-2 ring-white/50" : ""
+            } ${
+              gameState.phase === "combined" || isHistoryMode
                 ? "cursor-pointer"
                 : "cursor-default"
-              }`}
+            }`}
             style={{
               width: stonePixelSize,
               height: stonePixelSize,
@@ -882,7 +881,7 @@ const CurlingGameContent = ({
                   // const topOfHouseY = VIEW_TOP_OFFSET - HOUSE_RADIUS_12;
                   const distToCenter = Math.sqrt(
                     Math.pow(pos.x - SHEET_WIDTH / 2, 2) +
-                    Math.pow(pos.y - VIEW_TOP_OFFSET, 2),
+                      Math.pow(pos.y - VIEW_TOP_OFFSET, 2),
                   );
 
                   // House Stone: Touching the house (dist <= 12ft radius + stone radius)
@@ -894,7 +893,7 @@ const CurlingGameContent = ({
                   const isNearHouseStone =
                     !isHouseStone &&
                     distToCenter <=
-                    HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD;
+                      HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD;
 
                   // Guard Stone: Anything else (typically above house)
                   let steps;
@@ -1045,7 +1044,7 @@ const CurlingGameContent = ({
                     x: stone.x * scale,
                     y: stone.y * scale,
                   }}
-                  onDragEnd={forLoupe ? () => { } : handleStoneDragEnd}
+                  onDragEnd={forLoupe ? () => {} : handleStoneDragEnd}
                   // onDrag={forLoupe ? undefined : handleStoneDrag} // Removed unused prop
                   isPlaced={true}
                   size={stonePixelSize}
@@ -1121,7 +1120,7 @@ const CurlingGameContent = ({
             if (stone) {
               const distToCenter = Math.sqrt(
                 Math.pow(stone.x - SHEET_WIDTH / 2, 2) +
-                Math.pow(stone.y - VIEW_TOP_OFFSET, 2),
+                  Math.pow(stone.y - VIEW_TOP_OFFSET, 2),
               );
 
               // House Stone: Touching the house
@@ -1133,7 +1132,7 @@ const CurlingGameContent = ({
               const isNearHouseStone =
                 !isHouseStone &&
                 distToCenter <=
-                HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD;
+                  HOUSE_RADIUS_12 + STONE_RADIUS + NEAR_HOUSE_THRESHOLD;
 
               if (isHouseStone) {
                 steps = settings.houseZone;
@@ -1706,6 +1705,7 @@ const CurlingGameContent = ({
                   noHoverAnimation
                   noTapAnimation
                 >
+                  <RotateCcw size={20} />
                   make changes
                 </Button>
               </motion.div>
