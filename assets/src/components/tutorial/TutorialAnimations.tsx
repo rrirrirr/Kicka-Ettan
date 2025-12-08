@@ -790,10 +790,11 @@ export const PlacementMethodsDemo: React.FC = () => {
 
         {/* Stone bar at bottom */}
         <div className="absolute bottom-0 inset-x-2 h-10 bg-white rounded-lg shadow-md flex items-center justify-center gap-2 px-3">
-          {/* Stone in bar (visible when not being dragged) */}
-          {!(phase === "drag" && animState >= 1) && (
-            <PlacementStone color="#cc0000" size={24} />
-          )}
+          {/* Stone in bar (visible when not being dragged or tapped) */}
+          {!(phase === "drag" && animState >= 1) &&
+            !(phase === "tap" && animState >= 1) && (
+              <PlacementStone color="#cc0000" size={24} />
+            )}
           <PlacementStone color="#cc0000" size={24} opacity={0.3} />
           <PlacementStone color="#cc0000" size={24} opacity={0.3} />
         </div>
@@ -805,7 +806,7 @@ export const PlacementMethodsDemo: React.FC = () => {
             animate={{
               left:
                 animState === 0
-                  ? 60
+                  ? 40
                   : animState === 1
                     ? 60
                     : animState === 2
@@ -813,12 +814,12 @@ export const PlacementMethodsDemo: React.FC = () => {
                       : 70,
               top:
                 animState === 0
-                  ? 135
+                  ? 155
                   : animState === 1
                     ? 120
                     : animState === 2
-                      ? 60
-                      : 60,
+                      ? 85
+                      : 85,
             }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
           >
@@ -834,7 +835,7 @@ export const PlacementMethodsDemo: React.FC = () => {
         {phase === "tap" && (
           <motion.div
             className="absolute z-20 pointer-events-none"
-            style={{ left: 70, top: 68 }}
+            style={{ left: 75, top: 95 }}
           >
             <PointerCursor size={28} isClicking={isClicking} />
           </motion.div>

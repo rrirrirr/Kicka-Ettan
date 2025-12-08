@@ -1,18 +1,28 @@
 {
   "index.html": {
-    "file": "assets/app-CW_Py0PK.js",
+    "file": "assets/app-nAsWuezv.js",
     "name": "app",
     "src": "index.html",
     "isEntry": true,
     "dynamicImports": [
-      "src/pages/DevPage.tsx"
+      "src/pages/DevPage.tsx",
+      "src/pages/ButtonGuidePage.tsx"
     ],
     "css": [
-      "assets/app-gDiANtZ4.css"
+      "assets/app-DHDELvPw.css"
+    ]
+  },
+  "src/pages/ButtonGuidePage.tsx": {
+    "file": "assets/ButtonGuidePage-hK3hX9CA.js",
+    "name": "ButtonGuidePage",
+    "src": "src/pages/ButtonGuidePage.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
     ]
   },
   "src/pages/DevPage.tsx": {
-    "file": "assets/DevPage-8nKBqAe_.js",
+    "file": "assets/DevPage-DwYOSvJZ.js",
     "name": "DevPage",
     "src": "src/pages/DevPage.tsx",
     "isDynamicEntry": true,
