@@ -74,6 +74,22 @@ const CurlingSheet: React.FC<CurlingSheetProps> = ({ width = '100%', round, phas
                 <rect x="0" y="0" width={SHEET_WIDTH} height={viewHeight} fill={colors.ice} />
 
                 {/* Sidelines */}
+                <line
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2={viewHeight}
+                    stroke="#E5E7EB"
+                    strokeWidth="3"
+                />
+                <line
+                    x1={SHEET_WIDTH}
+                    y1="0"
+                    x2={SHEET_WIDTH}
+                    y2={viewHeight}
+                    stroke="#E5E7EB"
+                    strokeWidth="3"
+                />
 
                 {/* House Rings */}
                 <circle cx={cx} cy={teeY} r={HOUSE_RADIUS_12} fill={colors.house.ring12} stroke={colors.house.stroke} strokeWidth="1" />
