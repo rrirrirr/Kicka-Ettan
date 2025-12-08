@@ -70,9 +70,26 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
-
     secret_key_base: secret_key_base,
     signing_salt: signing_salt
+
+  admin_username =
+    System.get_env("ADMIN_USERNAME") ||
+      raise """
+      environment variable ADMIN_USERNAME is missing.
+      Please set a secure username for the dashboard.
+      """
+
+  admin_password =
+    System.get_env("ADMIN_PASSWORD") ||
+      raise """
+      environment variable ADMIN_PASSWORD is missing.
+      Please set a secure password for the dashboard.
+      """
+
+  config :kicka_ettan, :dashboard_auth,
+    username: admin_username,
+    password: admin_password
 
   if sentry_dsn = System.get_env("SENTRY_DSN") do
     config :sentry, dsn: sentry_dsn
@@ -81,22 +98,22 @@ if config_env() == :prod do
   # Configure CORS origins from environment variable
   # CORS_ORIGINS should be a comma-separated list of allowed origins
   # Example: CORS_ORIGINS="https://example.com,https://www.example.com"
-  cors_origins = 
+  cors_origins =
     case System.get_env("CORS_ORIGINS") do
-      nil -> 
+      nil ->
         # Default to the production host if no CORS_ORIGINS specified
         ["https://#{host}"]
-      origins_string -> 
+
+      origins_string ->
         origins_string
         |> String.split(",")
         |> Enum.map(&String.trim/1)
     end
-  
+
   config :kicka_ettan, :cors_origins, cors_origins
 
   # Force SSL in production - redirects HTTP to HTTPS
-  config :kicka_ettan, KickaEttanWeb.Endpoint,
-    force_ssl: [hsts: true]
+  config :kicka_ettan, KickaEttanWeb.Endpoint, force_ssl: [hsts: true]
 
   # ## SSL Support
   #

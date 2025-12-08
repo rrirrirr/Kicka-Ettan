@@ -29,9 +29,12 @@ defmodule KickaEttanWeb.Router do
     if Application.get_env(:kicka_ettan, :dev_routes) do
       conn
     else
-      username = System.get_env("ADMIN_USERNAME") || "admin"
-      password = System.get_env("ADMIN_PASSWORD") || "password"
-      Plug.BasicAuth.basic_auth(conn, username: username, password: password)
+      auth_conf = Application.get_env(:kicka_ettan, :dashboard_auth)
+
+      Plug.BasicAuth.basic_auth(conn,
+        username: auth_conf[:username],
+        password: auth_conf[:password]
+      )
     end
   end
 
