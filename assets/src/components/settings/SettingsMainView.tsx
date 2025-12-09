@@ -19,7 +19,7 @@ export const SettingsMainView: React.FC<SettingsMainViewProps> = ({ setView }) =
                     <button
                         onClick={() => updateBaseUnitSystem('metric')}
                         className={`flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${baseUnitSystem === 'metric'
-                            ? 'bg-white text-lavender-700 shadow-md'
+                            ? 'bg-white text-lavender-600 shadow-md'
                             : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
@@ -28,7 +28,7 @@ export const SettingsMainView: React.FC<SettingsMainViewProps> = ({ setView }) =
                     <button
                         onClick={() => updateBaseUnitSystem('imperial')}
                         className={`flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${baseUnitSystem === 'imperial'
-                            ? 'bg-white text-lavender-700 shadow-md'
+                            ? 'bg-white text-lavender-600 shadow-md'
                             : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
@@ -60,7 +60,7 @@ export const SettingsMainView: React.FC<SettingsMainViewProps> = ({ setView }) =
                     </div>
                     <button
                         onClick={() => updateUnitSystem(unitSystem === 'smart' ? baseUnitSystem : 'smart')}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${unitSystem === 'smart' ? 'bg-lavender-600' : 'bg-gray-200'
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:ring-offset-2 ${unitSystem === 'smart' ? 'bg-lavender-500' : 'bg-gray-200'
                             }`}
                     >
                         <span

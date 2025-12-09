@@ -15,6 +15,7 @@ const Home = () => {
     const { openSettings } = useSettings();
     const [selectedGameType, setSelectedGameType] = useState<GameType>(getDefaultGameType());
     const [showGameTypePicker, setShowGameTypePicker] = useState(false);
+    const [showGameTypeInfo, setShowGameTypeInfo] = useState(false);
     const [showAllSettings, setShowAllSettings] = useState(false);
     const [gameSettings, setGameSettings] = useState<Record<string, number | boolean | string>>(getDefaultGameType().defaultSettings);
     const [isLoading, setIsLoading] = useState(false);
@@ -160,14 +161,23 @@ const Home = () => {
                         <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
                             game type
                         </label>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowGameTypePicker(true)}
-                            className="w-full bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
-                        >
-                            <Repeat size={20} className="text-icy-accent" />
-                            <span className="font-bold text-gray-700 lowercase text-base">{selectedGameType.name}</span>
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowGameTypePicker(true)}
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
+                            >
+                                <Repeat size={20} className="text-icy-accent" />
+                                <span className="font-bold text-gray-700 lowercase text-base">{selectedGameType.name}</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowGameTypeInfo(true)}
+                                className="bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center animate-glow border-0"
+                            >
+                                <Info size={20} className="text-gray-500" />
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Important Settings - Always shown */}
@@ -465,6 +475,17 @@ const Home = () => {
                             <p className="text-sm text-gray-500 mt-1">{gameType.shortDescription}</p>
                         </button>
                     ))}
+                </div>
+            </Dialog>
+
+            {/* Game Type Info Dialog */}
+            <Dialog
+                isOpen={showGameTypeInfo}
+                onClose={() => setShowGameTypeInfo(false)}
+                title={selectedGameType.name.toLowerCase()}
+            >
+                <div className="text-gray-600 whitespace-pre-line">
+                    {selectedGameType.longDescription}
                 </div>
             </Dialog>
         </div>
