@@ -42,14 +42,14 @@ defmodule KickaEttan.Games.Types.BlindPick do
           type: :integer,
           label: "Number of Rounds",
           description: "How many rounds to play",
-          min: 1,
+          min: 0,
           max: 10,
-          default: 3
+          default: 0
         }
       },
       default_settings: %{
         stones_per_team: 3,
-        total_rounds: 3
+        total_rounds: 0
       }
     }
   end

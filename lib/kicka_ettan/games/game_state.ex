@@ -414,7 +414,11 @@ defmodule KickaEttan.Games.GameState do
     should_continue =
       case definition.loop_type do
         :infinite -> true
-        {:rounds, max_rounds} -> game_state.current_round < max_rounds
+        {:rounds, _max_rounds_def} -> 
+           # Use configured total_rounds, defaulting to definition if not set
+           # 0 means infinite rounds
+           max = game_state.total_rounds
+           if max == 0, do: true, else: game_state.current_round < max
         {:until, _condition} -> true
       end
 

@@ -45,9 +45,9 @@ defmodule KickaEttan.Games.Types.BanPick do
           type: :integer,
           label: "Number of Rounds",
           description: "How many rounds to play",
-          min: 1,
+          min: 0,
           max: 10,
-          default: 3
+          default: 0
         },
         ban_circle_radius: %{
           type: :integer,
@@ -60,7 +60,7 @@ defmodule KickaEttan.Games.Types.BanPick do
       },
       default_settings: %{
         stones_per_team: 3,
-        total_rounds: 3,
+        total_rounds: 0,
         ban_circle_radius: 50
       }
     }

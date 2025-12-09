@@ -9,6 +9,8 @@ export interface GameTypeSetting {
     max?: number;
     default: number | boolean | string;
     options?: string[];
+    optionValues?: Record<string, number>; // Map option labels to numeric values
+    valueLabels?: Record<number, string>; // Map numeric values to display labels (e.g. 0 -> '∞')
     important?: boolean; // If true, shown on front page; otherwise hidden in "more settings"
 }
 
@@ -44,15 +46,18 @@ and any collisions are resolved.`,
                 type: 'integer',
                 label: 'Number of Rounds',
                 description: 'How many rounds to play',
-                min: 1,
+                min: 0,
                 max: 10,
-                default: 3,
+                default: 0,
+                valueLabels: {
+                    0: '∞'
+                },
                 important: false
             }
         },
         defaultSettings: {
             stones_per_team: 3,
-            total_rounds: 3
+            total_rounds: 0
         }
     },
     {
@@ -78,25 +83,33 @@ collisions resolved. The ban zones add a layer of strategic depth!`,
                 type: 'integer',
                 label: 'Number of Rounds',
                 description: 'How many rounds to play',
-                min: 1,
+                min: 0,
                 max: 10,
-                default: 3,
+                default: 0,
+                valueLabels: {
+                    0: '∞'
+                },
                 important: false
             },
             ban_circle_radius: {
-                type: 'integer',
+                type: 'select',
                 label: 'Ban Circle Size',
-                description: 'Radius of the banned zone circle (in cm)',
-                min: 20,
-                max: 100,
-                default: 50,
+                description: 'Size of the banned zone circle',
+                options: ['small', 'medium', 'large', 'xl'],
+                optionValues: {
+                    'small': 30,
+                    'medium': 60,
+                    'large': 90,
+                    'xl': 120
+                },
+                default: 'medium',
                 important: true
             }
         },
         defaultSettings: {
             stones_per_team: 3,
-            total_rounds: 3,
-            ban_circle_radius: 50
+            total_rounds: 0,
+            ban_circle_radius: 'medium'
         }
     }
     // Future game types:

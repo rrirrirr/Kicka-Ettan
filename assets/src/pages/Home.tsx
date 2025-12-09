@@ -85,25 +85,29 @@ const Home = () => {
         setError(null);
         try {
             // Convert ban_circle_radius from string label to numeric value if needed
-            const banRadiusSetting = selectedGameType.settingsSchema.ban_circle_radius;
-            let banRadiusValue = gameSettings.ban_circle_radius;
-            if (banRadiusSetting?.type === 'select' && typeof banRadiusValue === 'string' && banRadiusSetting.optionValues) {
-                banRadiusValue = banRadiusSetting.optionValues[banRadiusValue];
-            }
+            // Process all settings to convert option labels to values if needed
+            const processedSettings: Record<string, any> = {
+                game_type: selectedGameType.id,
+                team1_color: team1Color,
+                team2_color: team2Color
+            };
+
+            // Copy all current settings, transforming values if optionValues exists
+            Object.entries(gameSettings).forEach(([key, value]) => {
+                const settingDef = selectedGameType.settingsSchema[key];
+                if (settingDef?.type === 'select' && typeof value === 'string' && settingDef.optionValues) {
+                    processedSettings[key] = settingDef.optionValues[value];
+                } else {
+                    processedSettings[key] = value;
+                }
+            });
 
             const response = await fetch(`${config.apiUrl}/api/games`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    game_type: selectedGameType.id,
-                    stones_per_team: gameSettings.stones_per_team,
-                    total_rounds: gameSettings.total_rounds,
-                    ban_circle_radius: banRadiusValue,
-                    team1_color: team1Color,
-                    team2_color: team2Color
-                }),
+                body: JSON.stringify(processedSettings),
             });
 
             if (!response.ok) {
@@ -233,7 +237,7 @@ const Home = () => {
                                     <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
                                         <input
                                             type="range"
-                                            min={setting.min || 1}
+                                            min={setting.min ?? 1}
                                             max={setting.max || 10}
                                             value={gameSettings[key] as number}
                                             onChange={(e) => setGameSettings(prev => ({
@@ -257,7 +261,9 @@ const Home = () => {
                                                     }}
                                                     className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
                                                 >
-                                                    {gameSettings[key] as number}
+                                                    {setting.valueLabels && setting.valueLabels[gameSettings[key] as number]
+                                                        ? setting.valueLabels[gameSettings[key] as number]
+                                                        : gameSettings[key] as number}
                                                 </motion.span>
                                             </AnimatePresence>
                                         </div>
@@ -276,7 +282,7 @@ const Home = () => {
                                                         [key]: option
                                                     }))}
                                                     className={`flex-1 h-12 ${isActive
-                                                        ? 'bg-lavender-500 text-white hover:bg-lavender-600 border-lavender-500'
+                                                        ? 'bg-active text-white hover:bg-lavender-600 border-active'
                                                         : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
                                                         } transition-colors`}
                                                 >
@@ -477,7 +483,7 @@ const Home = () => {
                             <div
                                 key={gameType.id}
                                 className={`w-full p-4 rounded-2xl border-2 transition-all ${selectedGameType.id === gameType.id
-                                    ? 'border-icy-accent bg-icy-blue-light/30'
+                                    ? 'border-active bg-active/10'
                                     : 'border-gray-200 bg-white'
                                     }`}
                             >
@@ -537,7 +543,7 @@ const Home = () => {
                                         <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
                                             <input
                                                 type="range"
-                                                min={setting.min || 1}
+                                                min={setting.min ?? 1}
                                                 max={setting.max || 10}
                                                 value={gameSettings[key] as number}
                                                 onChange={(e) => setGameSettings(prev => ({
@@ -548,7 +554,9 @@ const Home = () => {
                                             />
                                             <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
                                                 <span className="font-bold text-2xl text-icy-button-bg">
-                                                    {gameSettings[key] as number}
+                                                    {setting.valueLabels && setting.valueLabels[gameSettings[key] as number]
+                                                        ? setting.valueLabels[gameSettings[key] as number]
+                                                        : gameSettings[key] as number}
                                                 </span>
                                             </div>
                                         </div>
@@ -566,7 +574,7 @@ const Home = () => {
                                                             [key]: option
                                                         }))}
                                                         className={`flex-1 h-12 ${isActive
-                                                            ? 'bg-lavender-500 text-white hover:bg-lavender-600 border-lavender-500'
+                                                            ? 'bg-active text-white hover:bg-lavender-600 border-active'
                                                             : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
                                                             } transition-colors`}
                                                     >
@@ -638,7 +646,7 @@ const Home = () => {
                                 <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
                                     <input
                                         type="range"
-                                        min={setting.min || 1}
+                                        min={setting.min ?? 1}
                                         max={setting.max || 10}
                                         value={gameSettings[key] as number}
                                         onChange={(e) => setGameSettings(prev => ({
@@ -662,7 +670,9 @@ const Home = () => {
                                                 }}
                                                 className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
                                             >
-                                                {gameSettings[key] as number}
+                                                {setting.valueLabels && setting.valueLabels[gameSettings[key] as number]
+                                                    ? setting.valueLabels[gameSettings[key] as number]
+                                                    : gameSettings[key] as number}
                                             </motion.span>
                                         </AnimatePresence>
                                     </div>
@@ -681,7 +691,7 @@ const Home = () => {
                                                     [key]: option
                                                 }))}
                                                 className={`flex-1 h-12 ${isActive
-                                                    ? 'bg-lavender-500 text-white hover:bg-lavender-600 border-lavender-500'
+                                                    ? 'bg-active text-white hover:bg-lavender-600 border-active'
                                                     : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
                                                     } transition-colors`}
                                             >
