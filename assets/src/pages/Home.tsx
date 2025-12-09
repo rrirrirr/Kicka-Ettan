@@ -16,7 +16,7 @@ const Home = () => {
     const [selectedGameType, setSelectedGameType] = useState<GameType>(getDefaultGameType());
     const [showGameTypePicker, setShowGameTypePicker] = useState(false);
     const [showGameTypeInfo, setShowGameTypeInfo] = useState(false);
-    const [showAllSettings, setShowAllSettings] = useState(false);
+    const [showGameSettings, setShowGameSettings] = useState(false);
     const [gameSettings, setGameSettings] = useState<Record<string, number | boolean | string>>(getDefaultGameType().defaultSettings);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -172,6 +172,13 @@ const Home = () => {
                             </Button>
                             <Button
                                 variant="outline"
+                                onClick={() => setShowGameSettings(true)}
+                                className="bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center animate-glow border-0"
+                            >
+                                <Settings size={20} className="text-gray-500" />
+                            </Button>
+                            <Button
+                                variant="outline"
                                 onClick={() => setShowGameTypeInfo(true)}
                                 className="bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center animate-glow border-0"
                             >
@@ -225,75 +232,6 @@ const Home = () => {
                             </div>
                         ))}
 
-                    {/* Less Important Settings - Hidden by default */}
-                    {Object.entries(selectedGameType.settingsSchema).some(([_, setting]) => !setting.important) && (
-                        <div>
-                            <Button
-                                variant="ghost"
-                                onClick={() => setShowAllSettings(!showAllSettings)}
-                                className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors"
-                            >
-                                {showAllSettings ? 'hide settings' : 'see all settings'}
-                                {showAllSettings ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </Button>
-
-                            <AnimatePresence>
-                                {showAllSettings && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="space-y-6 overflow-hidden"
-                                    >
-                                        {Object.entries(selectedGameType.settingsSchema)
-                                            .filter(([_, setting]) => !setting.important)
-                                            .map(([key, setting]) => (
-                                                <div key={key} className="pt-4">
-                                                    <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
-                                                        {setting.label.toLowerCase()}
-                                                    </label>
-                                                    {setting.type === 'integer' && (
-                                                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
-                                                            <input
-                                                                type="range"
-                                                                min={setting.min || 1}
-                                                                max={setting.max || 10}
-                                                                value={gameSettings[key] as number}
-                                                                onChange={(e) => setGameSettings(prev => ({
-                                                                    ...prev,
-                                                                    [key]: parseInt(e.target.value)
-                                                                }))}
-                                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-icy-button-bg"
-                                                            />
-                                                            <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
-                                                                <AnimatePresence mode="popLayout" initial={false}>
-                                                                    <motion.span
-                                                                        key={gameSettings[key] as number}
-                                                                        initial={{ opacity: 0, scale: 0, y: 10 }}
-                                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                        exit={{ opacity: 0, scale: 0.5, y: -10 }}
-                                                                        transition={{
-                                                                            type: "spring",
-                                                                            stiffness: 500,
-                                                                            damping: 15,
-                                                                            mass: 0.5
-                                                                        }}
-                                                                        className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
-                                                                    >
-                                                                        {gameSettings[key] as number}
-                                                                    </motion.span>
-                                                                </AnimatePresence>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    )}
 
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
@@ -486,6 +424,58 @@ const Home = () => {
             >
                 <div className="text-gray-600 whitespace-pre-line">
                     {selectedGameType.longDescription}
+                </div>
+            </Dialog>
+
+            {/* Game Settings Dialog */}
+            <Dialog
+                isOpen={showGameSettings}
+                onClose={() => setShowGameSettings(false)}
+                title="game settings"
+            >
+                <div className="space-y-6">
+                    {Object.entries(selectedGameType.settingsSchema).map(([key, setting]) => (
+                        <div key={key}>
+                            <label className="block text-sm font-bold text-gray-700 mb-3 lowercase tracking-tight">
+                                {setting.label.toLowerCase()}
+                            </label>
+                            <p className="text-xs text-gray-500 mb-2">{setting.description}</p>
+                            {setting.type === 'integer' && (
+                                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                                    <input
+                                        type="range"
+                                        min={setting.min || 1}
+                                        max={setting.max || 10}
+                                        value={gameSettings[key] as number}
+                                        onChange={(e) => setGameSettings(prev => ({
+                                            ...prev,
+                                            [key]: parseInt(e.target.value)
+                                        }))}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-icy-button-bg"
+                                    />
+                                    <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
+                                        <AnimatePresence mode="popLayout" initial={false}>
+                                            <motion.span
+                                                key={gameSettings[key] as number}
+                                                initial={{ opacity: 0, scale: 0, y: 10 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.5, y: -10 }}
+                                                transition={{
+                                                    type: "spring",
+                                                    stiffness: 500,
+                                                    damping: 15,
+                                                    mass: 0.5
+                                                }}
+                                                className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
+                                            >
+                                                {gameSettings[key] as number}
+                                            </motion.span>
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </Dialog>
         </div>
