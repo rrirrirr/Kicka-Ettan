@@ -1407,28 +1407,53 @@ const CurlingGameContent = ({
       })}
 
       {/* Render opponent's banned zone during placement phase */}
-      {gameState.phase === "placement" && myColor && gameState.banned_zones && (
-        (() => {
-          const myBannedZone = gameState.banned_zones[myColor];
-          if (!myBannedZone) return null;
+      {gameState.phase === "placement" && (
+        <>
+          {/* Render my placed ban as green ring relative to my view */}
+          {myBans.filter(b => b.placed).map((ban) => {
+            const banSize = (gameState.ban_radius || 50) * 2 * scale;
+            return (
+              <div
+                key={`my-placed-ban-${ban.index}`}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  width: banSize,
+                  height: banSize,
+                  border: "4px solid rgba(74, 222, 128, 0.6)", // green-400 with opacity
+                  left: ban.x * scale,
+                  top: ban.y * scale,
+                  marginLeft: -banSize / 2,
+                  marginTop: -banSize / 2,
+                  zIndex: 0,
+                }}
+              />
+            );
+          })}
 
-          return (
-            <div
-              className="absolute rounded-full pointer-events-none"
-              style={{
-                width: myBannedZone.radius * 2 * scale,
-                height: myBannedZone.radius * 2 * scale,
-                backgroundColor: "rgba(220, 38, 38, 0.3)",
-                border: "3px solid rgba(220, 38, 38, 0.6)",
-                left: myBannedZone.x * scale,
-                top: myBannedZone.y * scale,
-                marginLeft: -myBannedZone.radius * scale,
-                marginTop: -myBannedZone.radius * scale,
-                zIndex: 1,
-              }}
-            />
-          );
-        })()
+          {myColor && gameState.banned_zones && (
+            (() => {
+              const myBannedZone = gameState.banned_zones[myColor];
+              if (!myBannedZone) return null;
+
+              return (
+                <div
+                  className="absolute rounded-full pointer-events-none"
+                  style={{
+                    width: myBannedZone.radius * 2 * scale,
+                    height: myBannedZone.radius * 2 * scale,
+                    backgroundColor: "rgba(220, 38, 38, 0.3)",
+                    border: "3px solid rgba(220, 38, 38, 0.6)",
+                    left: myBannedZone.x * scale,
+                    top: myBannedZone.y * scale,
+                    marginLeft: -myBannedZone.radius * scale,
+                    marginTop: -myBannedZone.radius * scale,
+                    zIndex: 1,
+                  }}
+                />
+              );
+            })()
+          )}
+        </>
       )}
 
       {/* Render placed stones */}
