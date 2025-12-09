@@ -9,6 +9,7 @@ import { config } from '../config';
 import { useSettings } from '../contexts/SettingsContext';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { GAME_TYPES, GameType, getDefaultGameType } from '../data/gameTypes';
+import { saveGameToHistory, getGameHistory } from '../lib/gameHistory';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -66,6 +67,7 @@ const Home = () => {
                     game_type: selectedGameType.id,
                     stones_per_team: gameSettings.stones_per_team,
                     total_rounds: gameSettings.total_rounds,
+                    ban_circle_radius: gameSettings.ban_circle_radius,
                     team1_color: team1Color,
                     team2_color: team2Color
                 }),
@@ -77,22 +79,23 @@ const Home = () => {
 
             const data = await response.json();
 
-            // Save to history
-            const newHistory = [{
-                gameId: data.game_id,
-                timestamp: new Date().toISOString()
-            }, ...history].slice(0, 10); // Keep last 10
+            // Save to history using utility
+            saveGameToHistory(data.game_id, selectedGameType.id);
 
-            localStorage.setItem('kicka_ettan_history', JSON.stringify(newHistory));
+            // Update local state immediately for UI responsiveness
+            const newHistory = getGameHistory();
+            setHistory(newHistory);
 
             navigate(`/game/${data.game_id}`);
         } catch (err) {
+            console.error('Create game error:', err);
             setError('Failed to create game. Please try again.');
             setIsLoading(false);
         }
     };
 
     const lastGame = history[0];
+    const lastGameType = lastGame?.gameTypeId ? GAME_TYPES.find(t => t.id === lastGame.gameTypeId) : null;
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
@@ -343,7 +346,12 @@ const Home = () => {
                         >
                             <div className="flex flex-col items-start gap-0">
                                 <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">last played</span>
-                                <span className="text-sm font-mono text-gray-600">#{lastGame.gameId.slice(0, 8)}</span>
+                                <span className="text-sm font-mono text-gray-600">
+                                    {lastGameType && (
+                                        <span className="font-bold text-periwinkle-600 mr-2">{lastGameType.name.toLowerCase()}</span>
+                                    )}
+                                    #{lastGame.gameId.slice(0, 8)}
+                                </span>
                             </div>
                             <div className="bg-icy-blue-light text-black p-2 rounded-full group-hover:scale-110 transition-transform">
                                 <Play size={16} fill="currentColor" />
@@ -363,20 +371,28 @@ const Home = () => {
 
                                 {showHistory && (
                                     <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                                        {history.slice(1).map(game => (
-                                            <Button
-                                                variant="outline"
-                                                key={game.gameId}
-                                                onClick={() => navigate(`/game/${game.gameId}`)}
-                                                className="w-full bg-white/50 hover:bg-white text-left p-3 rounded-xl border border-gray-100 hover:border-gray-200 animate-glow flex items-center !justify-between group h-auto !shadow-none"
-                                                noHoverAnimation
-                                            >
-                                                <span className="font-mono text-xs text-gray-600">#{game.gameId.slice(0, 8)}</span>
-                                                <span className="text-[10px] text-gray-400 font-normal">
-                                                    {new Date(game.timestamp).toLocaleDateString()}
-                                                </span>
-                                            </Button>
-                                        ))}
+                                        {history.slice(1).map(game => {
+                                            const gameType = game.gameTypeId ? GAME_TYPES.find(t => t.id === game.gameTypeId) : null;
+                                            return (
+                                                <Button
+                                                    variant="outline"
+                                                    key={game.gameId}
+                                                    onClick={() => navigate(`/game/${game.gameId}`)}
+                                                    className="w-full bg-white/50 hover:bg-white text-left p-3 rounded-xl border border-gray-100 hover:border-gray-200 animate-glow flex items-center !justify-between group h-auto !shadow-none"
+                                                    noHoverAnimation
+                                                >
+                                                    <span className="font-mono text-xs text-gray-600">
+                                                        {gameType && (
+                                                            <span className="font-bold text-periwinkle-600 mr-2">{gameType.name.toLowerCase()}</span>
+                                                        )}
+                                                        #{game.gameId.slice(0, 8)}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 font-normal">
+                                                        {new Date(game.timestamp).toLocaleDateString()}
+                                                    </span>
+                                                </Button>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

@@ -30,7 +30,8 @@ const GameRoom = () => {
         chan.join()
             .receive('ok', (response) => {
                 setGameState(response.game_state);
-                saveGameToHistory(gameId);
+                // Save game type from server response to ensure history is accurate
+                saveGameToHistory(gameId, response.game_state.game_type);
             })
             .receive('error', (resp) => {
                 setError(resp.reason || 'Failed to join game');
