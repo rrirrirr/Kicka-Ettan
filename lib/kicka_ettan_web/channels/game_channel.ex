@@ -110,13 +110,77 @@ defmodule KickaEttanWeb.GameChannel do
 
       case GameServer.ready_for_next_round(game_id, player_id) do
         {:ok, _state} -> {:reply, :ok, socket}
-        {:error, reason} -> 
+        {:error, reason} ->
           Logger.warning("ready_for_next_round failed", reason: reason)
           {:reply, {:error, %{reason: reason}}, socket}
       end
     else
-      {:error, :rate_limit_exceeded} -> 
+      {:error, :rate_limit_exceeded} ->
         Logger.warning("ready_for_next_round rate limited")
+        {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+    end
+  end
+
+  @impl true
+  def handle_in("place_ban", payload, socket) do
+    Logger.debug("Received place_ban", payload: payload)
+    with :ok <- check_rate_limit(socket),
+         %{"position" => position} <- payload do
+      game_id = socket.assigns.game_id
+      player_id = socket.assigns.player_id
+
+      case GameServer.place_ban(game_id, player_id, position) do
+        {:ok, _state} -> {:reply, :ok, socket}
+        {:error, reason} ->
+          Logger.warning("place_ban failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
+      end
+    else
+      {:error, :rate_limit_exceeded} ->
+        Logger.warning("place_ban rate limited")
+        {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+      _ ->
+        Logger.warning("place_ban invalid payload", payload: payload)
+        {:reply, {:error, %{reason: "Invalid payload"}}, socket}
+    end
+  end
+
+  @impl true
+  def handle_in("confirm_ban", _params, socket) do
+    Logger.debug("Received confirm_ban")
+    with :ok <- check_rate_limit(socket) do
+      game_id = socket.assigns.game_id
+      player_id = socket.assigns.player_id
+
+      case GameServer.confirm_ban(game_id, player_id) do
+        {:ok, _state} -> {:reply, :ok, socket}
+        {:error, reason} ->
+          Logger.warning("confirm_ban failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
+      end
+    else
+      {:error, :rate_limit_exceeded} ->
+        Logger.warning("confirm_ban rate limited")
+        {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+    end
+  end
+
+  @impl true
+  def handle_in("cancel_ban", _params, socket) do
+    Logger.debug("Received cancel_ban")
+    with :ok <- check_rate_limit(socket) do
+      game_id = socket.assigns.game_id
+      player_id = socket.assigns.player_id
+
+      case GameServer.cancel_ban(game_id, player_id) do
+        {:ok, _state} -> {:reply, :ok, socket}
+        {:error, reason} ->
+          Logger.warning("cancel_ban failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
+      end
+    else
+      {:error, :rate_limit_exceeded} ->
+        Logger.warning("cancel_ban rate limited")
         {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
     end
   end

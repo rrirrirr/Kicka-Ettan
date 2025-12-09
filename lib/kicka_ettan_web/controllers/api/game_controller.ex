@@ -9,22 +9,27 @@ defmodule KickaEttanWeb.API.GameController do
   def create(conn, params) do
     total_rounds = parse_int(params["total_rounds"] || 3)
     stones_per_team = parse_int(params["stones_per_team"] || 3)
+    ban_circle_radius = parse_int(params["ban_circle_radius"] || 50)
+    game_type = params["game_type"]
 
     with :ok <- validate_bounds(total_rounds, 1, 1000, "total_rounds"),
-         :ok <- validate_bounds(stones_per_team, 1, 100, "stones_per_team") do
+         :ok <- validate_bounds(stones_per_team, 1, 100, "stones_per_team"),
+         :ok <- validate_bounds(ban_circle_radius, 20, 100, "ban_circle_radius") do
       game_options = %{
+        game_type: game_type,
         total_rounds: total_rounds,
         stones_per_team: stones_per_team,
+        ban_circle_radius: ban_circle_radius,
         team1_color: params["team1_color"],
         team2_color: params["team2_color"]
       }
-      
+
       case GameSupervisor.create_game(game_options) do
         {:ok, game_id} ->
           conn
           |> put_status(:created)
           |> json(%{game_id: game_id})
-        
+
         {:error, reason} ->
           conn
           |> put_status(:unprocessable_entity)

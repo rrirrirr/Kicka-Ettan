@@ -44,8 +44,8 @@ defmodule KickaEttan.Games.GameType do
   """
   def list_types do
     [
-      KickaEttan.Games.Types.BlindPick
-      # Add more game types here as they are created
+      KickaEttan.Games.Types.BlindPick,
+      KickaEttan.Games.Types.BanPick
     ]
   end
 

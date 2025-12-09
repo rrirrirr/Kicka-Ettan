@@ -36,6 +36,10 @@ defmodule KickaEttan.Games.GameState do
     team_colors: %{red: "#cc0000", yellow: "#185494"},
     history: [],
 
+    # Ban phase data - zones where opponent cannot place stones
+    # Each entry is %{x, y, radius} or nil
+    banned_zones: %{red: nil, yellow: nil},
+
     # Legacy fields for backwards compatibility with frontend
     player_ready: %{},
     ready_for_next_round: %{},
@@ -62,7 +66,8 @@ defmodule KickaEttan.Games.GameState do
     user_settings = options[:settings] || %{}
     merged_settings = Map.merge(user_settings, %{
       total_rounds: options[:total_rounds],
-      stones_per_team: options[:stones_per_team]
+      stones_per_team: options[:stones_per_team],
+      ban_circle_radius: options[:ban_circle_radius]
     }) |> Enum.reject(fn {_k, v} -> is_nil(v) end) |> Map.new()
     
     {:ok, settings} = game_type_module.apply_settings(merged_settings)
@@ -248,6 +253,58 @@ defmodule KickaEttan.Games.GameState do
   end
 
   @doc """
+  Place a ban zone at the specified position.
+  Delegates to the current phase if it handles :place_ban.
+  """
+  def place_ban(game_state, player_id, position) do
+    result = handle_phase_action(game_state, :place_ban, %{
+      player_id: player_id,
+      position: position
+    })
+
+    case result do
+      {:ok, new_state} -> {:ok, new_state}
+      error -> error
+    end
+  end
+
+  @doc """
+  Confirm ban zone placement.
+  Delegates to the current phase if it handles :confirm_ban.
+  """
+  def confirm_ban(game_state, player_id) do
+    result = handle_phase_action(game_state, :confirm_ban, %{player_id: player_id})
+
+    case result do
+      {:ok, new_state} ->
+        # Update legacy player_ready for backwards compatibility
+        new_player_ready = Map.put(new_state.player_ready, player_id, true)
+        new_state = %{new_state | player_ready: new_player_ready}
+        maybe_transition_phase(new_state)
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Cancel ban zone confirmation.
+  Delegates to the current phase if it handles :cancel_ban.
+  """
+  def cancel_ban(game_state, player_id) do
+    result = handle_phase_action(game_state, :cancel_ban, %{player_id: player_id})
+
+    case result do
+      {:ok, new_state} ->
+        new_player_ready = Map.put(new_state.player_ready, player_id, false)
+        {:ok, %{new_state | player_ready: new_player_ready}}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
   Create a view of the game state suitable for sending to clients.
   Handles per-player view during placement phase.
   """
@@ -313,10 +370,13 @@ defmodule KickaEttan.Games.GameState do
     end
   end
 
-  defp advance_to_next_phase(game_state, _result) do
+  defp advance_to_next_phase(game_state, result) do
     definition = game_state.game_type_module.definition()
     phases = definition.phases
     next_index = game_state.current_phase_index + 1
+
+    # Apply any phase result data to game state
+    game_state = apply_phase_result(game_state, result)
 
     if next_index >= length(phases) do
       handle_round_completion(game_state, definition)
@@ -337,6 +397,13 @@ defmodule KickaEttan.Games.GameState do
        }}
     end
   end
+
+  # Apply phase completion results to game state
+  defp apply_phase_result(game_state, %{banned_zones: banned_zones}) do
+    %{game_state | banned_zones: banned_zones}
+  end
+
+  defp apply_phase_result(game_state, _result), do: game_state
 
   defp handle_round_completion(game_state, definition) do
     should_continue =
@@ -376,6 +443,7 @@ defmodule KickaEttan.Games.GameState do
         current_phase_module: first_phase_module,
         player_ready: player_ready,
         stones: %{red: [], yellow: []},
+        banned_zones: %{red: nil, yellow: nil},
         history: history
     }
 
@@ -400,6 +468,7 @@ defmodule KickaEttan.Games.GameState do
 
   defp phase_to_legacy_atom(module) do
     case module do
+      KickaEttan.Games.Phases.BanPhase -> :ban
       KickaEttan.Games.Phases.BlindPickPhase -> :placement
       KickaEttan.Games.Phases.CombinedPhase -> :combined
       _ -> :unknown

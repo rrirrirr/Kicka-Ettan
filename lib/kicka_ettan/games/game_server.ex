@@ -74,6 +74,33 @@ defmodule KickaEttan.Games.GameServer do
     end
   end
 
+  @doc """
+  Place a ban zone at the specified position (ban phase).
+  """
+  def place_ban(game_id, player_id, position) do
+    with {:ok, game_server} <- lookup_game(game_id) do
+      GenServer.call(game_server, {:place_ban, player_id, position}, @timeout)
+    end
+  end
+
+  @doc """
+  Confirm ban zone placement.
+  """
+  def confirm_ban(game_id, player_id) do
+    with {:ok, game_server} <- lookup_game(game_id) do
+      GenServer.call(game_server, {:confirm_ban, player_id}, @timeout)
+    end
+  end
+
+  @doc """
+  Cancel ban zone confirmation.
+  """
+  def cancel_ban(game_id, player_id) do
+    with {:ok, game_server} <- lookup_game(game_id) do
+      GenServer.call(game_server, {:cancel_ban, player_id}, @timeout)
+    end
+  end
+
   # Server callbacks
 
   @impl true
@@ -160,9 +187,51 @@ defmodule KickaEttan.Games.GameServer do
         Logger.info("Player ready for next round", player_id: player_id)
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
-      
+
       {:error, reason} = error ->
         Logger.warning("Failed to mark player ready", player_id: player_id, reason: reason)
+        {:reply, error, game_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:place_ban, player_id, position}, _from, game_state) do
+    case GameState.place_ban(game_state, player_id, position) do
+      {:ok, new_state} ->
+        Logger.info("Player placed ban", player_id: player_id, position: position)
+        broadcast_update(new_state)
+        {:reply, {:ok, new_state}, new_state}
+
+      {:error, reason} = error ->
+        Logger.warning("Failed to place ban", player_id: player_id, position: position, reason: reason)
+        {:reply, error, game_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:confirm_ban, player_id}, _from, game_state) do
+    case GameState.confirm_ban(game_state, player_id) do
+      {:ok, new_state} ->
+        Logger.info("Player confirmed ban", player_id: player_id)
+        broadcast_update(new_state)
+        {:reply, {:ok, new_state}, new_state}
+
+      {:error, reason} = error ->
+        Logger.warning("Failed to confirm ban", player_id: player_id, reason: reason)
+        {:reply, error, game_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:cancel_ban, player_id}, _from, game_state) do
+    case GameState.cancel_ban(game_state, player_id) do
+      {:ok, new_state} ->
+        Logger.info("Player canceled ban", player_id: player_id)
+        broadcast_update(new_state)
+        {:reply, {:ok, new_state}, new_state}
+
+      {:error, reason} = error ->
+        Logger.warning("Failed to cancel ban", player_id: player_id, reason: reason)
         {:reply, error, game_state}
     end
   end

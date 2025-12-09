@@ -27,13 +27,17 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
     [:place_stone, :confirm_placement, :cancel_placement]
   end
 
+  # Stone radius in logical units (matches frontend STONE_RADIUS constant)
+  @stone_radius 14.5
+
   @impl true
   def handle_action(:place_stone, args, phase_state, game_state) do
     %{player_id: player_id, stone_index: stone_index, position: position} = args
 
     with {:ok, player} <- find_player(game_state, player_id),
          :ok <- validate_stone_index(stone_index, game_state.stones_per_team),
-         :ok <- validate_position(position) do
+         :ok <- validate_position(position),
+         :ok <- validate_not_in_banned_zone(position, player.color, game_state) do
       color = player.color
 
       stones =
@@ -96,7 +100,8 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
           {:ok, player} ->
             opponent_color = if player.color == :red, do: :yellow, else: :red
             stones = Map.put(base_view.stones, opponent_color, [])
-            Map.put(base_view, :stones, stones)
+            base_view
+            |> Map.put(:stones, stones)
 
           _ ->
             base_view
@@ -106,9 +111,11 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
       end
 
     # Add phase-specific data
+    # Include banned_zones so frontend can render them
     Map.merge(view, %{
       phase: :placement,
-      player_ready: phase_state.player_ready
+      player_ready: phase_state.player_ready,
+      banned_zones: game_state.banned_zones
     })
   end
 
@@ -138,6 +145,30 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
   end
 
   defp validate_position(_), do: {:error, :invalid_placement}
+
+  defp validate_not_in_banned_zone(%{"x" => x, "y" => y}, color, game_state) do
+    banned_zone = get_in(game_state, [Access.key(:banned_zones), color])
+
+    case banned_zone do
+      nil ->
+        # No banned zone for this player
+        :ok
+
+      %{x: ban_x, y: ban_y, radius: ban_radius} ->
+        # Check if stone overlaps with banned zone
+        # Stone overlaps if distance between centers < stone_radius + ban_radius
+        distance = :math.sqrt(:math.pow(x - ban_x, 2) + :math.pow(y - ban_y, 2))
+
+        if distance < @stone_radius + ban_radius do
+          {:error, :placement_in_banned_zone}
+        else
+          :ok
+        end
+
+      _ ->
+        :ok
+    end
+  end
 
   defp validate_all_stones_placed(game_state, color) do
     placed_stones = game_state.stones[color] || []

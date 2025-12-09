@@ -149,6 +149,12 @@ const ColorGuidePage: React.FC = () => {
                             hex="#D22730"
                             description="Team color, accents"
                         />
+                        <ColorSwatch
+                            name="Ban Red"
+                            cssVar="--ban-red"
+                            hex="#C41E3A"
+                            description="Ban zones, restrictions"
+                        />
                     </div>
                 </Section>
 

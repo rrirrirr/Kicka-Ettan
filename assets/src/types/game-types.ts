@@ -17,6 +17,12 @@ export interface StonePosition {
   color?: PlayerColor;
 }
 
+export interface BannedZone {
+  x: number;
+  y: number;
+  radius: number;
+}
+
 export interface GameState {
   game_id: string;
   players: Player[];
@@ -32,11 +38,20 @@ export interface GameState {
     yellow: number;
   };
   status: "waiting" | "playing" | "finished";
-  phase: "placement" | "combined" | "measure";
+  phase: "ban" | "placement" | "combined" | "measure";
   stones_per_team: number;
   team_colors?: { red: string; yellow: string };
   player_ready?: Record<string, boolean>;
   history?: any[]; // Define HistoryRound type if possible
+  banned_zones?: {
+    red: BannedZone | null;
+    yellow: BannedZone | null;
+  };
+  ban_positions?: {
+    red: BannedZone | null;
+    yellow: BannedZone | null;
+  };
+  ban_radius?: number;
 }
 
 export interface Stone {

@@ -26,9 +26,9 @@ export const GAME_TYPES: GameType[] = [
         id: 'blind_pick',
         name: 'Blind Pick',
         shortDescription: 'Place stones without seeing your opponent',
-        longDescription: `In Blind Pick mode, both players place their stones simultaneously 
-without being able to see where their opponent places theirs. 
-Once both players confirm their placements, all stones are revealed 
+        longDescription: `In Blind Pick mode, both players place their stones simultaneously
+without being able to see where their opponent places theirs.
+Once both players confirm their placements, all stones are revealed
 and any collisions are resolved.`,
         settingsSchema: {
             stones_per_team: {
@@ -54,9 +54,52 @@ and any collisions are resolved.`,
             stones_per_team: 3,
             total_rounds: 3
         }
+    },
+    {
+        id: 'ban_pick',
+        name: 'Ban Pick',
+        shortDescription: 'Ban a zone, then place stones blind',
+        longDescription: `In Ban Pick mode, each round starts with a strategic ban phase.
+Each player places a circular zone where their opponent cannot place stones.
+Then both players place their stones simultaneously without seeing the opponent's
+placements (like Blind Pick). Once confirmed, all stones are revealed and
+collisions resolved. The ban zones add a layer of strategic depth!`,
+        settingsSchema: {
+            stones_per_team: {
+                type: 'integer',
+                label: 'Stones per Team',
+                description: 'Number of stones each team can place per round',
+                min: 1,
+                max: 8,
+                default: 3,
+                important: true
+            },
+            total_rounds: {
+                type: 'integer',
+                label: 'Number of Rounds',
+                description: 'How many rounds to play',
+                min: 1,
+                max: 10,
+                default: 3,
+                important: false
+            },
+            ban_circle_radius: {
+                type: 'integer',
+                label: 'Ban Circle Size',
+                description: 'Radius of the banned zone circle (in cm)',
+                min: 20,
+                max: 100,
+                default: 50,
+                important: true
+            }
+        },
+        defaultSettings: {
+            stones_per_team: 3,
+            total_rounds: 3,
+            ban_circle_radius: 50
+        }
     }
-    // Future game types will be added here:
-    // - ban_mode: Pick and ban stones before placement
+    // Future game types:
     // - turn_based: Take turns placing stones with visibility
 ];
 
