@@ -119,21 +119,21 @@ const Home = () => {
             </Dialog>
 
             <div className="card-gradient backdrop-blur-md p-8 rounded-3xl shadow-2xl w-full max-w-md text-center relative overflow-hidden z-10">
-                <div className="absolute top-0 left-0 w-48 h-48 bg-[var(--icy-accent)] rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
-                <div className="absolute bottom-0 right-0 w-64 h-64 bg-[var(--icy-blue-medium)] rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
+                <div className="absolute top-0 left-0 w-48 h-48 bg-icy-accent rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
+                <div className="absolute bottom-0 right-0 w-64 h-64 bg-icy-blue-medium rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
 
                 <GameTitle className="mb-4 relative z-10" />
                 <p className="mb-8 text-gray-600 font-medium text-center relative z-10 flex items-center justify-center gap-2">
                     Finally, a game your lead can't mess up.
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         shape="circle"
                         size="sm"
                         onClick={() => setShowInfo(true)}
-                        className="w-6 h-6 bg-white/90 hover:bg-white backdrop-blur-md shadow flex-shrink-0 p-0"
+                        className="!w-6 !h-6 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
                         aria-label="About this project"
                     >
-                        <Info size={14} className="text-gray-700 group-hover:text-[var(--icy-blue-medium)] transition-colors" />
+                        <Info size={16} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
                     </Button>
                 </p>
 
@@ -155,7 +155,7 @@ const Home = () => {
                                 max="8"
                                 value={stonesPerPlayer}
                                 onChange={(e) => setStonesPerPlayer(parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--icy-button-bg)]"
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-icy-button-bg"
                             />
                             <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
                                 <AnimatePresence mode="popLayout" initial={false}>
@@ -170,7 +170,7 @@ const Home = () => {
                                             damping: 15,
                                             mass: 0.5
                                         }}
-                                        className="font-bold text-2xl text-[var(--icy-button-bg)] absolute inset-0 flex items-center justify-center"
+                                        className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
                                     >
                                         {stonesPerPlayer}
                                     </motion.span>
@@ -257,7 +257,7 @@ const Home = () => {
                     isLoading={isLoading}
                     shape="pill"
                     size="xl"
-                    className="w-full bg-[var(--icy-accent)] hover:bg-[var(--icy-accent-hover)] text-white shadow-none animate-glow relative z-10 mb-4 text-lg py-4"
+                    className="w-full bg-icy-accent hover:bg-icy-accent-hover text-white shadow-none animate-glow relative z-10 mb-4 text-lg py-4"
                 >
                     <Play size={20} fill="currentColor" />
                     create game
@@ -265,9 +265,10 @@ const Home = () => {
 
                 <Button
                     onClick={openSettings}
+                    variant="outline"
                     shape="pill"
                     size="xl"
-                    className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 animate-glow relative z-10 text-lg py-4 shadow-none"
+                    className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 animate-glow relative z-10 text-lg py-4 shadow-none border-0"
                 >
                     <Settings size={20} />
                     settings
@@ -278,7 +279,7 @@ const Home = () => {
                 <div className="mt-6 w-full max-w-md">
                     <Card className="p-6 z-10">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 lowercase tracking-tight">
-                            <History size={20} className="text-[var(--icy-button-bg)]" />
+                            <History size={20} className="text-icy-button-bg" />
                             recent games
                         </h3>
 
@@ -292,7 +293,7 @@ const Home = () => {
                                 <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">last played</span>
                                 <span className="text-sm font-mono text-gray-600">#{lastGame.gameId.slice(0, 8)}</span>
                             </div>
-                            <div className="bg-[var(--icy-blue-light)] text-black p-2 rounded-full group-hover:scale-110 transition-transform">
+                            <div className="bg-icy-blue-light text-black p-2 rounded-full group-hover:scale-110 transition-transform">
                                 <Play size={16} fill="currentColor" />
                             </div>
                         </Button>
