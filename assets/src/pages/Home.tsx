@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, History, ChevronDown, ChevronUp, Info, Settings, Repeat } from 'lucide-react';
+import { Play, History, ChevronDown, ChevronUp, ChevronLeft, Info, Settings, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import GameTitle from '../components/GameTitle';
@@ -15,6 +15,8 @@ const Home = () => {
     const { openSettings } = useSettings();
     const [selectedGameType, setSelectedGameType] = useState<GameType>(getDefaultGameType());
     const [showGameTypePicker, setShowGameTypePicker] = useState(false);
+    const [pickerView, setPickerView] = useState<'list' | 'settings' | 'info'>('list');
+    const [pickerGameType, setPickerGameType] = useState<GameType>(getDefaultGameType());
     const [showGameTypeInfo, setShowGameTypeInfo] = useState(false);
     const [showGameSettings, setShowGameSettings] = useState(false);
     const [gameSettings, setGameSettings] = useState<Record<string, number | boolean | string>>(getDefaultGameType().defaultSettings);
@@ -388,28 +390,142 @@ const Home = () => {
             {/* Game Type Picker Dialog */}
             <Dialog
                 isOpen={showGameTypePicker}
-                onClose={() => setShowGameTypePicker(false)}
-                title="select game type"
+                onClose={() => {
+                    setShowGameTypePicker(false);
+                    setPickerView('list');
+                }}
+                title={pickerView === 'list' ? 'select game type' : pickerView === 'settings' ? 'game settings' : pickerGameType.name.toLowerCase()}
             >
-                <div className="space-y-4">
-                    {GAME_TYPES.map(gameType => (
-                        <button
-                            key={gameType.id}
-                            onClick={() => {
-                                setSelectedGameType(gameType);
-                                setGameSettings(gameType.defaultSettings);
-                                setShowGameTypePicker(false);
-                            }}
-                            className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${selectedGameType.id === gameType.id
-                                ? 'border-icy-accent bg-icy-blue-light/30'
-                                : 'border-gray-200 hover:border-gray-300 bg-white'
-                                }`}
+                {pickerView === 'list' ? (
+                    <div className="space-y-4">
+                        {GAME_TYPES.map(gameType => (
+                            <div
+                                key={gameType.id}
+                                className={`w-full p-4 rounded-2xl border-2 transition-all ${selectedGameType.id === gameType.id
+                                    ? 'border-icy-accent bg-icy-blue-light/30'
+                                    : 'border-gray-200 bg-white'
+                                    }`}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedGameType(gameType);
+                                            setGameSettings(gameType.defaultSettings);
+                                            setShowGameTypePicker(false);
+                                            setPickerView('list');
+                                        }}
+                                        className="flex-1 text-left"
+                                    >
+                                        <h3 className="font-bold text-gray-800">{gameType.name}</h3>
+                                        <p className="text-sm text-gray-500 mt-1">{gameType.shortDescription}</p>
+                                    </button>
+                                    <div className="flex gap-1">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPickerGameType(gameType);
+                                                setPickerView('settings');
+                                            }}
+                                            className="bg-gray-50 hover:bg-gray-100 !p-2 h-auto !rounded-xl flex items-center justify-center border-0"
+                                        >
+                                            <Settings size={18} className="text-gray-500" />
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPickerGameType(gameType);
+                                                setPickerView('info');
+                                            }}
+                                            className="bg-gray-50 hover:bg-gray-100 !p-2 h-auto !rounded-xl flex items-center justify-center border-0"
+                                        >
+                                            <Info size={18} className="text-gray-500" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : pickerView === 'settings' ? (
+                    <div>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setPickerView('list')}
+                            className="mb-4 flex items-center gap-1 text-gray-600 hover:text-gray-800 -ml-2"
                         >
-                            <h3 className="font-bold text-gray-800">{gameType.name}</h3>
-                            <p className="text-sm text-gray-500 mt-1">{gameType.shortDescription}</p>
-                        </button>
-                    ))}
-                </div>
+                            <ChevronLeft size={18} />
+                            <span>back</span>
+                        </Button>
+                        <div className="space-y-6">
+                            {Object.entries(pickerGameType.settingsSchema).map(([key, setting]) => (
+                                <div key={key}>
+                                    <label className="block text-sm font-bold text-gray-700 mb-3 lowercase tracking-tight">
+                                        {setting.label.toLowerCase()}
+                                    </label>
+                                    <p className="text-xs text-gray-500 mb-2">{setting.description}</p>
+                                    {setting.type === 'integer' && (
+                                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                                            <input
+                                                type="range"
+                                                min={setting.min || 1}
+                                                max={setting.max || 10}
+                                                value={gameSettings[key] as number}
+                                                onChange={(e) => setGameSettings(prev => ({
+                                                    ...prev,
+                                                    [key]: parseInt(e.target.value)
+                                                }))}
+                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-icy-button-bg"
+                                            />
+                                            <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
+                                                <span className="font-bold text-2xl text-icy-button-bg">
+                                                    {gameSettings[key] as number}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <Button
+                            onClick={() => {
+                                setSelectedGameType(pickerGameType);
+                                setShowGameTypePicker(false);
+                                setPickerView('list');
+                            }}
+                            className="w-full mt-6"
+                        >
+                            select {pickerGameType.name.toLowerCase()}
+                        </Button>
+                    </div>
+                ) : (
+                    <div>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setPickerView('list')}
+                            className="mb-4 flex items-center gap-1 text-gray-600 hover:text-gray-800 -ml-2"
+                        >
+                            <ChevronLeft size={18} />
+                            <span>back</span>
+                        </Button>
+                        <div className="text-gray-600 whitespace-pre-line">
+                            {pickerGameType.longDescription}
+                        </div>
+                        <Button
+                            onClick={() => {
+                                setSelectedGameType(pickerGameType);
+                                setGameSettings(pickerGameType.defaultSettings);
+                                setShowGameTypePicker(false);
+                                setPickerView('list');
+                            }}
+                            className="w-full mt-6"
+                        >
+                            select {pickerGameType.name.toLowerCase()}
+                        </Button>
+                    </div>
+                )}
             </Dialog>
 
             {/* Game Type Info Dialog */}
