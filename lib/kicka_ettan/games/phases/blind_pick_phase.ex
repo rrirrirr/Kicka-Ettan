@@ -30,6 +30,13 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
   # Stone radius in logical units (matches frontend STONE_RADIUS constant)
   @stone_radius 14.5
 
+  # Sheet boundary constants (matching frontend constants)
+  @sheet_width 475
+  @view_top_offset 640  # Same as HOG_LINE_OFFSET
+  @hog_line_offset 640
+  @hog_line_width 10
+  @back_line_offset 183
+
   @impl true
   def handle_action(:place_stone, args, phase_state, game_state) do
     %{player_id: player_id, stone_index: stone_index, position: position} = args
@@ -37,7 +44,7 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
     with {:ok, player} <- find_player(game_state, player_id),
          :ok <- validate_stone_index(stone_index, game_state.stones_per_team),
          :ok <- validate_position(position),
-         :ok <- validate_not_in_banned_zone(position, player.color, game_state) do
+         {:ok, adjusted_position} <- adjust_for_banned_zone(position, player.color, game_state) do
       color = player.color
 
       stones =
@@ -45,9 +52,9 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
           current_stones = current_stones || []
 
           if stone_index < length(current_stones) do
-            List.replace_at(current_stones, stone_index, position)
+            List.replace_at(current_stones, stone_index, adjusted_position)
           else
-            current_stones ++ [position]
+            current_stones ++ [adjusted_position]
           end
         end)
 
@@ -146,28 +153,75 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
 
   defp validate_position(_), do: {:error, :invalid_placement}
 
-  defp validate_not_in_banned_zone(%{"x" => x, "y" => y}, color, game_state) do
+  # Adjusts stone position if overlapping with ban zone:
+  # - If fully inside ban zone: returns error (stone should be reset to bar)
+  # - If partially overlapping and valid position: pushes stone out to just touch ban zone edge
+  # - If partially overlapping but pushed out of bounds: returns error
+  # - If not overlapping: returns original position
+  defp adjust_for_banned_zone(%{"x" => x, "y" => y} = position, color, game_state) do
     banned_zone = get_in(game_state, [Access.key(:banned_zones), color])
 
     case banned_zone do
       nil ->
         # No banned zone for this player
-        :ok
+        {:ok, position}
 
       %{x: ban_x, y: ban_y, radius: ban_radius} ->
-        # Check if stone overlaps with banned zone
-        # Stone overlaps if distance between centers < stone_radius + ban_radius
-        distance = :math.sqrt(:math.pow(x - ban_x, 2) + :math.pow(y - ban_y, 2))
+        dx = x - ban_x
+        dy = y - ban_y
+        distance = :math.sqrt(dx * dx + dy * dy)
+        min_distance = @stone_radius + ban_radius
 
-        if distance < @stone_radius + ban_radius do
-          {:error, :placement_in_banned_zone}
-        else
-          :ok
+        cond do
+          # Stone is fully inside ban zone (no part is outside)
+          distance + @stone_radius <= ban_radius ->
+            {:error, :placement_in_banned_zone}
+
+          # Stone partially overlaps - push it out
+          distance < min_distance ->
+            # Calculate direction from ban center to stone center
+            {nx, ny} = if distance == 0 do
+              # Stone exactly at center - push upward
+              {0, -1}
+            else
+              {dx / distance, dy / distance}
+            end
+
+            # Push stone so it just touches the ban zone edge
+            new_x = ban_x + nx * min_distance
+            new_y = ban_y + ny * min_distance
+            new_position = %{"x" => new_x, "y" => new_y}
+
+            # Check if pushed position is within valid bounds
+            if is_position_within_bounds(new_x, new_y) do
+              {:ok, new_position}
+            else
+              # Pushed position is out of bounds - reject placement
+              {:error, :placement_in_banned_zone}
+            end
+
+          # No overlap
+          true ->
+            {:ok, position}
         end
 
       _ ->
-        :ok
+        {:ok, position}
     end
+  end
+
+  # Check if a position is within valid placement bounds
+  defp is_position_within_bounds(x, y) do
+    hog_line_y = @view_top_offset - @hog_line_offset
+    hog_line_bottom_edge = hog_line_y + @hog_line_width / 2
+    back_line_y = @view_top_offset + @back_line_offset
+
+    min_x = @stone_radius
+    max_x = @sheet_width - @stone_radius
+    min_y = hog_line_bottom_edge + @stone_radius
+    max_y = back_line_y + @stone_radius
+
+    x >= min_x and x <= max_x and y >= min_y and y <= max_y
   end
 
   defp validate_all_stones_placed(game_state, color) do

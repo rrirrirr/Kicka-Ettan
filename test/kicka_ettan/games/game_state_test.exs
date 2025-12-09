@@ -99,6 +99,91 @@ defmodule KickaEttan.Games.GameStateTest do
     end
   end
 
+  describe "place_stone with banned zones" do
+    setup do
+      state = GameState.new(stones_per_team: 3)
+      {:ok, state} = GameState.join_game(state, "p1", "red")
+      {:ok, state} = GameState.join_game(state, "p2", "yellow")
+      
+      # Set up banned zone: yellow's ban restricts red at (200, 300) with radius 50
+      banned_zones = %{
+        red: %{x: 200, y: 300, radius: 50},
+        yellow: nil
+      }
+      state = %{state | banned_zones: banned_zones}
+      
+      %{state: state}
+    end
+
+    test "pushes stone out when partially overlapping ban zone", %{state: state} do
+      # Place stone at edge of ban zone - should be pushed out
+      # Ban zone center: (200, 300), radius: 50
+      # Stone radius: 14.5
+      # Min distance for non-overlap: 50 + 14.5 = 64.5
+      # Place stone 40 units away from ban center (inside the overlap zone)
+      pos = %{"x" => 200, "y" => 340}  # 40 units below ban center
+      
+      {:ok, new_state} = GameState.place_stone(state, "p1", 0, pos)
+      
+      placed = hd(new_state.stones.red)
+      # Stone should be pushed to min_distance from ban center (64.5)
+      distance = :math.sqrt(
+        :math.pow(placed["x"] - 200, 2) + :math.pow(placed["y"] - 300, 2)
+      )
+      assert_in_delta distance, 64.5, 0.1
+    end
+
+    test "rejects stone when fully inside ban zone", %{state: state} do
+      # Place stone at center of ban zone - fully inside (no part outside)
+      # For a stone to be fully inside: distance + stone_radius <= ban_radius
+      # Stone radius: 14.5, Ban radius: 50
+      # Max distance for fully inside: 50 - 14.5 = 35.5
+      pos = %{"x" => 200, "y" => 300}  # Exactly at ban center
+      
+      assert {:error, :placement_in_banned_zone} = GameState.place_stone(state, "p1", 0, pos)
+    end
+
+    test "allows placement when not overlapping ban zone", %{state: state} do
+      # Place stone far from ban zone
+      pos = %{"x" => 400, "y" => 400}
+      
+      {:ok, new_state} = GameState.place_stone(state, "p1", 0, pos)
+      
+      placed = hd(new_state.stones.red)
+      assert placed == pos
+    end
+
+    test "yellow player is not affected by red's ban zone", %{state: state} do
+      # Red has a banned zone, yellow doesn't - yellow should not be restricted
+      pos = %{"x" => 200, "y" => 300}  # At the red's ban center
+      
+      {:ok, new_state} = GameState.place_stone(state, "p2", 0, pos)
+      
+      placed = hd(new_state.stones.yellow)
+      assert placed == pos
+    end
+
+    test "rejects placement if pushed position would be out of bounds", %{state: _state} do
+      # Create a game with ban zone near the edge of the sheet
+      state = GameState.new(stones_per_team: 3)
+      {:ok, state} = GameState.join_game(state, "p1", "red")
+      {:ok, state} = GameState.join_game(state, "p2", "yellow")
+      
+      # Ban zone at left edge - pushing would go out of bounds
+      # Ban radius 50 + stone radius 14.5 = 64.5, but only 30 pixels from edge
+      banned_zones = %{
+        red: %{x: 30, y: 300, radius: 50},  # Ban zone very close to left edge
+        yellow: nil
+      }
+      state = %{state | banned_zones: banned_zones}
+      
+      # Try to place stone on the left side of ban zone - would push it off the sheet
+      pos = %{"x" => 20, "y" => 300}
+      
+      assert {:error, :placement_in_banned_zone} = GameState.place_stone(state, "p1", 0, pos)
+    end
+  end
+
   describe "confirm_placement/2" do
     setup do
       state = GameState.new(stones_per_team: 2)
