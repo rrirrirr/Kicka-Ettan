@@ -12,7 +12,7 @@ defmodule KickaEttanWeb.API.GameController do
     ban_circle_radius = parse_int(params["ban_circle_radius"] || 50)
     game_type = params["game_type"]
 
-    with :ok <- validate_bounds(total_rounds, 1, 1000, "total_rounds"),
+    with :ok <- validate_bounds(total_rounds, 0, 1000, "total_rounds"),
          :ok <- validate_bounds(stones_per_team, 1, 100, "stones_per_team"),
          :ok <- validate_bounds(ban_circle_radius, 20, 100, "ban_circle_radius") do
       game_options = %{

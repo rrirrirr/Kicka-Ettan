@@ -42,6 +42,7 @@ export interface GameState {
   phase: "ban" | "placement" | "combined" | "measure";
   stones_per_team: number;
   team_colors?: { red: string; yellow: string };
+  settings?: Record<string, any>;
   player_ready?: Record<string, boolean>;
   history?: any[]; // Define HistoryRound type if possible
   banned_zones?: {

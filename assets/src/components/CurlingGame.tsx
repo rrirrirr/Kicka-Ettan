@@ -79,6 +79,7 @@ import { StoneInspector } from "./StoneInspector";
 import { MeasurementType } from "../contexts/SettingsContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { RoundStartOverlay } from "./RoundStartOverlay";
+import { GameEndOverlay } from "./GameEndOverlay";
 import { TutorialProvider } from "../contexts/TutorialContext";
 import { PhaseTutorial } from "./tutorial";
 
@@ -2275,6 +2276,15 @@ const CurlingGameContent = ({
         roundNumber={gameState.current_round}
         phaseName={gameState.phase === 'ban' ? 'ban phase' : gameState.phase === 'placement' ? 'placement phase' : 'resolution phase'}
         onComplete={handleRoundOverlayComplete}
+      />
+
+      {/* Game End Overlay */}
+      <GameEndOverlay
+        isVisible={gameState.status === 'finished'}
+        scores={gameState.scores || { red: 0, yellow: 0 }}
+        myColor={myColor}
+        teamColors={gameState.team_colors}
+        onReturnHome={() => window.location.href = '/'}
       />
 
       {/* Phase Tutorial - automatically shows for registered phases */}

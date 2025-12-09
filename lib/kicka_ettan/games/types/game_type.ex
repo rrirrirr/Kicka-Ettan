@@ -59,8 +59,8 @@ defmodule KickaEttan.Games.GameType do
   end
 
   def get_type(type_id) when is_binary(type_id) do
-    get_type(String.to_existing_atom(type_id))
-  rescue
-    ArgumentError -> nil
+    Enum.find(list_types(), fn mod ->
+      Atom.to_string(mod.definition().id) == type_id
+    end)
   end
 end

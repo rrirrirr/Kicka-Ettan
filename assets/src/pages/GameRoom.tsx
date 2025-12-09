@@ -125,6 +125,21 @@ const GameRoom = () => {
                         {gameType ? gameType.name : 'unknown game'}
                     </div>
 
+                    {/* Game Settings */}
+                    {gameState.settings && (
+                        <div className="text-gray-500 text-sm font-medium lowercase tracking-wide -mt-3 mb-2">
+                            {gameState.settings.total_rounds !== undefined && gameState.settings.total_rounds !== 0 && (
+                                <span>{gameState.settings.total_rounds} rounds</span>
+                            )}
+                            {gameState.settings.total_rounds !== undefined && gameState.settings.total_rounds !== 0 && gameState.settings.stones_per_team !== undefined && (
+                                <span className="mx-2 text-gray-300">•</span>
+                            )}
+                            {gameState.settings.stones_per_team !== undefined && (
+                                <span>{gameState.settings.stones_per_team} stones</span>
+                            )}
+                        </div>
+                    )}
+
                     {/* Team colors - bigger dots */}
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
@@ -144,6 +159,8 @@ const GameRoom = () => {
                             }}
                         />
                     </div>
+
+
 
                     {/* Waiting text with animated dots */}
                     <div className="text-xl text-gray-700 lowercase tracking-tight">
