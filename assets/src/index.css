@@ -82,6 +82,10 @@
   --lavender-800: #5b21b6;
   --lavender-900: #4c1d95;
 
+  /* Active state color */
+  --active: var(--lavender-500);
+  --active-hover: var(--lavender-600);
+
   /* Periwinkle Blue - Complements Lavender */
   --periwinkle-50: #f0f4ff;
   --periwinkle-100: #e0e7ff;
@@ -270,6 +274,10 @@ body {
   --color-lime-100: var(--lime-100);
   --color-lime-600: var(--lime-600);
   --color-lime-700: var(--lime-700);
+
+  /* Active state color */
+  --color-active: var(--active);
+  --color-active-hover: var(--active-hover);
 }
 
 @layer base {
