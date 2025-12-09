@@ -1,164 +1,187 @@
 defmodule KickaEttan.Games.GameState do
   @moduledoc """
-  Defines the structure and operations for the game state.
+  Game State Engine
+  
+  Manages game state and delegates actions to the current phase.
+  Handles phase transitions based on the game type's phase flow.
   """
   @derive Jason.Encoder
   require Logger
+
+  alias KickaEttan.Games.GameType
+  alias KickaEttan.Games.Types.BlindPick
+
   defstruct [
+    # Core identity
     game_id: nil,
     players: [],
+    created_at: nil,
+
+    # Game type configuration
+    game_type_module: BlindPick,
+    settings: %{},
+
+    # Phase engine state
+    current_phase_module: nil,
+    current_phase_index: 0,
+    phase_state: %{},
+
+    # Round tracking
     current_round: 1,
     total_rounds: 3,
+
+    # Shared game data
     stones_per_team: 3,
     stones: %{red: [], yellow: []},
-    player_ready: %{},
-    phase: :placement,
-    ready_for_next_round: %{},
-    history: [],
     team_colors: %{red: "#cc0000", yellow: "#185494"},
-    created_at: nil
-  ]
+    history: [],
 
-  # Sheet and stone dimensions (matching frontend constants.ts)
-  @stone_radius 14.5      # cm - 29cm diameter / 2 (regulation curling stone)
-  @stone_diameter 29.0    # cm - regulation curling stone diameter
-  @sheet_width 475.0      # cm - sheet width
-  @hog_line_offset 640.0  # cm - from tee line (top of playable area)
-  @back_line_offset 183.0 # cm - from tee line (bottom of playable area)
-  
-  # Boundaries for stone centers (accounting for stone radius)
-  @min_x @stone_radius
-  @max_x @sheet_width - @stone_radius
-  # In the frontend view, Y increases downward from hog line
-  # minY corresponds to stone just below hog line, maxY to stone just above back line
-  @min_y @stone_radius
-  @max_y @hog_line_offset + @back_line_offset + @stone_radius
-  
-  # Max collision resolution iterations
-  @max_collision_iterations 20
+    # Legacy fields for backwards compatibility with frontend
+    player_ready: %{},
+    ready_for_next_round: %{},
+    phase: :placement
+  ]
 
   @doc """
   Create a new game state with the given options.
   """
   def new(options) do
+    # Determine game type
+    game_type_module =
+      case options[:game_type] do
+        nil -> BlindPick
+        type_id when is_atom(type_id) -> GameType.get_type(type_id) || BlindPick
+        type_id when is_binary(type_id) -> GameType.get_type(type_id) || BlindPick
+        module when is_atom(module) -> module
+      end
+
+    # Get definition and apply settings
+    definition = game_type_module.definition()
+    
+    # Priority: direct options > settings > defaults
+    user_settings = options[:settings] || %{}
+    merged_settings = Map.merge(user_settings, %{
+      total_rounds: options[:total_rounds],
+      stones_per_team: options[:stones_per_team]
+    }) |> Enum.reject(fn {_k, v} -> is_nil(v) end) |> Map.new()
+    
+    {:ok, settings} = game_type_module.apply_settings(merged_settings)
+
     team_colors = %{
       red: options[:team1_color] || "#cc0000",
       yellow: options[:team2_color] || "#185494"
     }
 
-    %__MODULE__{
+    # Get first phase
+    [first_phase | _] = definition.phases
+    first_phase_module = normalize_phase(first_phase)
+
+    game_state = %__MODULE__{
       game_id: options[:game_id] || generate_game_id(),
-      total_rounds: options[:total_rounds] || 3,
-      stones_per_team: options[:stones_per_team] || 3,
+      game_type_module: game_type_module,
+      settings: settings,
+      total_rounds: settings[:total_rounds] || 3,
+      stones_per_team: settings[:stones_per_team] || 3,
       team_colors: team_colors,
+      current_phase_module: first_phase_module,
+      current_phase_index: 0,
       created_at: DateTime.utc_now()
     }
+
+    # Initialize first phase
+    {:ok, phase_state} = first_phase_module.init(game_state)
+
+    %{game_state | phase_state: phase_state, phase: phase_to_legacy_atom(first_phase_module)}
   end
 
   @doc """
   Join the game. Handles reconnection and automatic color assignment.
   """
   def join_game(game_state, player_id, requested_color \\ nil) do
-    # 1. Check if player is already in the game (Reconnection)
     if Enum.any?(game_state.players, fn p -> p.id == player_id end) do
       {:ok, game_state}
     else
-      # 2. Check if game is full
       if length(game_state.players) >= 2 do
         {:error, :game_full}
       else
-        # 3. Assign color
         taken_colors = Enum.map(game_state.players, & &1.color)
-        
-        # Determine color based on request and availability
-        color = case requested_color do
-          "red" -> if :red in taken_colors, do: :yellow, else: :red
-          "yellow" -> if :yellow in taken_colors, do: :red, else: :yellow
-          _ -> if :red in taken_colors, do: :yellow, else: :red
-        end
-        
+
+        color =
+          case requested_color do
+            "red" -> if :red in taken_colors, do: :yellow, else: :red
+            "yellow" -> if :yellow in taken_colors, do: :red, else: :yellow
+            _ -> if :red in taken_colors, do: :yellow, else: :red
+          end
+
         player = %{id: player_id, color: color}
         players = [player | game_state.players]
         player_ready = Map.put(game_state.player_ready, player_id, false)
         ready_for_next_round = Map.put(game_state.ready_for_next_round, player_id, false)
-        
-        {:ok, %{game_state | 
-          players: players, 
-          player_ready: player_ready,
-          ready_for_next_round: ready_for_next_round
-        }}
+
+        # Re-initialize phase state with new player
+        {:ok, phase_state} = game_state.current_phase_module.init(%{game_state | players: players})
+
+        {:ok,
+         %{
+           game_state
+           | players: players,
+             player_ready: player_ready,
+             ready_for_next_round: ready_for_next_round,
+             phase_state: phase_state
+         }}
       end
     end
   end
 
   @doc """
   Place a stone at the specified position.
+  Delegates to current phase.
   """
   def place_stone(game_state, player_id, stone_index, position) do
-    # Find player color
-    with player when not is_nil(player) <- find_player(game_state, player_id),
-         color <- player.color,
-         true <- is_valid_stone_index?(stone_index, game_state.stones_per_team),
-         true <- is_valid_position?(position) do
-      
-      # Store in stones
-      stones = Map.update!(game_state.stones, color, fn stones ->
-        current_stones = stones || []
-        if stone_index < length(current_stones) do
-          List.replace_at(current_stones, stone_index, position)
-        else
-          current_stones ++ [position]
-        end
-      end)
-      {:ok, %{game_state | stones: stones}}
-    else
-      nil -> {:error, :player_not_found}
-      false -> {:error, :invalid_placement}
-    end
+    handle_phase_action(game_state, :place_stone, %{
+      player_id: player_id,
+      stone_index: stone_index,
+      position: position
+    })
   end
 
   @doc """
-  Mark a player as ready with their stone placement.
+  Confirm stone placement.
+  Delegates to current phase.
   """
   def confirm_placement(game_state, player_id) do
-    with player when not is_nil(player) <- find_player(game_state, player_id),
-         color <- player.color do
-      
-      placed_stones = game_state.stones[color] || []
-      
-      if length(placed_stones) >= game_state.stones_per_team do
-        player_ready = Map.put(game_state.player_ready, player_id, true)
-        new_state = %{game_state | player_ready: player_ready}
-        
-        Logger.debug("Player #{player_id} confirmed placement. Ready map: #{inspect(player_ready)}")
+    result = handle_phase_action(game_state, :confirm_placement, %{player_id: player_id})
 
-        # Check if all players have confirmed
-        if all_players_ready?(new_state) do
-          Logger.debug("All players ready! Transitioning to combined phase.")
-          # Move to combined view - resolve collisions first
-          {:ok, resolved_state} = resolve_collisions(new_state)
-          {:ok, %{resolved_state | phase: :combined}}
-        else
-          Logger.debug("Waiting for other players. Ready: #{inspect(player_ready)}")
-          {:ok, new_state}
-        end
-      else
-        {:error, :not_all_stones_placed}
-      end
-    else
-      nil -> {:error, :player_not_found}
+    case result do
+      {:ok, new_state} ->
+        # Update legacy player_ready for backwards compatibility
+        new_player_ready = Map.put(new_state.player_ready, player_id, true)
+        new_state = %{new_state | player_ready: new_player_ready}
+
+        # Check for phase transition
+        maybe_transition_phase(new_state)
+
+      error ->
+        error
     end
   end
 
   @doc """
-  Revoke confirmation of stone placement.
+  Cancel stone placement confirmation.
   """
   def cancel_placement(game_state, player_id) do
     with player when not is_nil(player) <- find_player(game_state, player_id) do
       if game_state.phase == :placement do
-        player_ready = Map.put(game_state.player_ready, player_id, false)
-        Logger.debug("Player #{player_id} canceled placement. Ready map: #{inspect(player_ready)}")
-        {:ok, %{game_state | player_ready: player_ready}}
+        result = handle_phase_action(game_state, :cancel_placement, %{player_id: player_id})
+
+        case result do
+          {:ok, new_state} ->
+            new_player_ready = Map.put(new_state.player_ready, player_id, false)
+            {:ok, %{new_state | player_ready: new_player_ready}}
+
+          error ->
+            error
+        end
       else
         {:error, :invalid_phase}
       end
@@ -175,53 +198,30 @@ defmodule KickaEttan.Games.GameState do
   end
 
   @doc """
-  Resolve collisions between stones.
-  """
-  def resolve_collisions(game_state) do
-    # Combine all stones
-    red_stones = game_state.stones.red |> Enum.with_index() |> Enum.map(fn {pos, idx} -> Map.put(pos, :index, idx) |> Map.put(:color, :red) end)
-    yellow_stones = game_state.stones.yellow |> Enum.with_index() |> Enum.map(fn {pos, idx} -> Map.put(pos, :index, idx) |> Map.put(:color, :yellow) end)
-    all_stones = red_stones ++ yellow_stones
-    
-    # Resolve collisions
-    resolved_stones = do_resolve_collisions(all_stones)
-    
-    # Split back into red and yellow
-    {red, yellow} = Enum.reduce(resolved_stones, {[], []}, fn stone, {red_acc, yellow_acc} ->
-      pos = Map.take(stone, ["x", "y"])
-      case stone.color do
-        :red -> {red_acc ++ [pos], yellow_acc}
-        :yellow -> {red_acc, yellow_acc ++ [pos]}
-      end
-    end)
-    
-    # Update the game state
-    stones = %{red: red, yellow: yellow}
-    {:ok, %{game_state | stones: stones}}
-  end
-
-  @doc """
-  Mark a player as ready for the next round.
-  When the first player clicks, the round immediately starts on the server.
-  The other player can still view the combined phase until they click.
+  Mark player as ready for next round.
   """
   def ready_for_next_round(game_state, player_id) do
     with player when not is_nil(player) <- find_player(game_state, player_id) do
       cond do
-        # Already in placement phase - just mark player as starting (for client_view filtering)
         game_state.phase == :placement ->
           ready_for_next_round = Map.put(game_state.ready_for_next_round, player_id, true)
           {:ok, %{game_state | ready_for_next_round: ready_for_next_round}}
-        
-        # First player clicking from combined phase - start the round immediately
+
         game_state.phase == :combined ->
-          # Mark this player as ready
-          ready_for_next_round = Map.put(game_state.ready_for_next_round, player_id, true)
-          new_state = %{game_state | ready_for_next_round: ready_for_next_round}
+          # Also update the game state's ready_for_next_round map
+          updated_ready = Map.put(game_state.ready_for_next_round, player_id, true)
+          game_state = %{game_state | ready_for_next_round: updated_ready}
           
-          # Start the next round immediately
-          start_next_round(new_state)
-        
+          result = handle_phase_action(game_state, :ready_for_next_round, %{player_id: player_id})
+
+          case result do
+            {:ok, new_state} ->
+              maybe_transition_phase(new_state)
+
+            error ->
+              error
+          end
+
         true ->
           {:ok, game_state}
       end
@@ -238,52 +238,32 @@ defmodule KickaEttan.Games.GameState do
   end
 
   @doc """
-  Start the next round.
-  Uses any stones that were placed early (in next_round_stones) by players
-  who already clicked "Start New Round".
+  Resolve collisions between stones.
+  This delegates to the CombinedPhase logic.
   """
-  def start_next_round(game_state) do
-    # Save current round to history
-    history_item = %{
-      round: game_state.current_round,
-      stones: game_state.stones
-    }
-    history = [history_item | game_state.history]
-
-    # Reset for next round
-    # Keep ready_for_next_round as-is (player who clicked is marked true)
-    # Reset player_ready and stones
-    player_ready = Map.new(game_state.player_ready, fn {id, _} -> {id, false} end)
-    
-    {:ok, %{game_state | 
-      current_round: game_state.current_round + 1,
-      phase: :placement,
-      player_ready: player_ready,
-      stones: %{red: [], yellow: []},
-      history: history
-    }}
+  def resolve_collisions(game_state) do
+    alias KickaEttan.Games.Phases.CombinedPhase
+    {:ok, phase_state} = CombinedPhase.init(game_state)
+    {:ok, %{game_state | stones: phase_state.resolved_stones}}
   end
 
   @doc """
   Create a view of the game state suitable for sending to clients.
-  Handles per-player view during placement phase when players can 
-  independently start the next round.
+  Handles per-player view during placement phase.
   """
   def client_view(game_state, player_id \\ nil) do
-    base_view = Map.from_struct(game_state)
-    
-    # Sanitize the view based on the game phase and player
-    case game_state.phase do
-      :placement when not is_nil(player_id) ->
-        player = find_player(game_state, player_id)
-        if player do
-          player_color = player.color
-          opponent_color = if player_color == :red, do: :yellow, else: :red
-          
-          # Check if this player has clicked "start new round" (for rounds after first)
+    if game_state.current_phase_module do
+      base_view = game_state.current_phase_module.client_view(
+        game_state.phase_state,
+        game_state,
+        player_id
+      )
+
+      # Handle the special case where player hasn't started next round yet
+      case game_state.phase do
+        :placement when not is_nil(player_id) ->
           player_started = Map.get(game_state.ready_for_next_round, player_id, false)
-          
-          # For players who haven't started yet AND there's history, show previous round's combined
+
           if not player_started and length(game_state.history) > 0 do
             [last_round | _] = game_state.history
             base_view
@@ -291,157 +271,138 @@ defmodule KickaEttan.Games.GameState do
             |> Map.put(:current_round, last_round.round)
             |> Map.put(:stones, last_round.stones)
           else
-            # Normal placement phase - ALWAYS hide opponent stones
-            stones = Map.put(base_view.stones, opponent_color, [])
-            Map.put(base_view, :stones, stones)
+            base_view
           end
-        else
+
+        _ ->
           base_view
-        end
-      
-      :combined when not is_nil(player_id) ->
-        # Combined phase - show all stones
-        base_view
-      
-      _ ->
-        # For other phases or nil player_id, show all stones
-        base_view
+      end
+    else
+      Map.from_struct(game_state)
     end
   end
 
-  # Helper functions
-  
+  # Private functions
+
+  defp handle_phase_action(game_state, action, args) do
+    phase_module = game_state.current_phase_module
+
+    if phase_module && action in phase_module.handles_actions() do
+      case phase_module.handle_action(action, args, game_state.phase_state, game_state) do
+        {:ok, new_phase_state, new_game_state} ->
+          {:ok, %{new_game_state | phase_state: new_phase_state}}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      {:error, :action_not_handled_by_phase}
+    end
+  end
+
+  defp maybe_transition_phase(game_state) do
+    phase_module = game_state.current_phase_module
+
+    case phase_module.check_completion(game_state.phase_state, game_state) do
+      {:complete, result} ->
+        Logger.info("Phase #{inspect(phase_module)} completed with result: #{inspect(result)}")
+        advance_to_next_phase(game_state, result)
+
+      :continue ->
+        {:ok, game_state}
+    end
+  end
+
+  defp advance_to_next_phase(game_state, _result) do
+    definition = game_state.game_type_module.definition()
+    phases = definition.phases
+    next_index = game_state.current_phase_index + 1
+
+    if next_index >= length(phases) do
+      handle_round_completion(game_state, definition)
+    else
+      next_phase = Enum.at(phases, next_index)
+      next_phase_module = normalize_phase(next_phase)
+      {:ok, phase_state} = next_phase_module.init(game_state)
+
+      Logger.info("Transitioning to phase: #{inspect(next_phase_module)}")
+
+      {:ok,
+       %{
+         game_state
+         | current_phase_module: next_phase_module,
+           current_phase_index: next_index,
+           phase_state: phase_state,
+           phase: phase_to_legacy_atom(next_phase_module)
+       }}
+    end
+  end
+
+  defp handle_round_completion(game_state, definition) do
+    should_continue =
+      case definition.loop_type do
+        :infinite -> true
+        {:rounds, max_rounds} -> game_state.current_round < max_rounds
+        {:until, _condition} -> true
+      end
+
+    if should_continue do
+      start_next_round(game_state)
+    else
+      Logger.info("Game completed after #{game_state.current_round} rounds")
+      {:ok, %{game_state | phase: :game_over}}
+    end
+  end
+
+  defp start_next_round(game_state) do
+    history_item = %{
+      round: game_state.current_round,
+      stones: game_state.stones
+    }
+
+    history = [history_item | game_state.history]
+
+    player_ready = Map.new(game_state.player_ready, fn {id, _} -> {id, false} end)
+    # Keep ready_for_next_round as-is - player who clicked is marked true
+
+    definition = game_state.game_type_module.definition()
+    [first_phase | _] = definition.phases
+    first_phase_module = normalize_phase(first_phase)
+
+    new_game_state = %{
+      game_state
+      | current_round: game_state.current_round + 1,
+        current_phase_index: 0,
+        current_phase_module: first_phase_module,
+        player_ready: player_ready,
+        stones: %{red: [], yellow: []},
+        history: history
+    }
+
+    {:ok, phase_state} = first_phase_module.init(new_game_state)
+
+    Logger.info("Starting round #{new_game_state.current_round}")
+
+    {:ok,
+     %{
+       new_game_state
+       | phase_state: phase_state,
+         phase: phase_to_legacy_atom(first_phase_module)
+     }}
+  end
+
   defp find_player(game_state, player_id) do
     Enum.find(game_state.players, fn p -> p.id == player_id end)
   end
-  
-  defp is_valid_stone_index?(index, max_stones) do
-    index >= 0 and index < max_stones
-  end
-  
-  defp is_valid_position?(%{"x" => x, "y" => y}) when is_number(x) and is_number(y) do
-    # Validate position is within playable area (with some tolerance for edge cases)
-    # Using slightly larger bounds than collision clamping to allow positions near edges
-    x >= 0 and x <= @sheet_width and y >= 0 and y <= @max_y + @stone_radius
-  end
-  
-  defp is_valid_position?(%{x: x, y: y}) when is_number(x) and is_number(y) do
-    # Handle atom keys too (internal calls)
-    x >= 0 and x <= @sheet_width and y >= 0 and y <= @max_y + @stone_radius
-  end
-  
-  defp is_valid_position?(_), do: false
-  
-  defp do_resolve_collisions(stones) do
-    # Resolve stone-to-stone collisions using iterative relaxation.
-    # Algorithm:
-    # 1. For each pair of overlapping stones, push them apart along their center line
-    # 2. Clamp all stones to sheet boundaries after each iteration
-    # 3. Repeat until no overlaps remain or max iterations reached
-    #
-    # This converges for typical curling stone arrangements where overlaps
-    # are minor. For pathological cases (many stones in same spot), some
-    # overlap may remain after max iterations.
-    
-    fixed_point_iteration(stones, &resolve_one_iteration/1, @max_collision_iterations)
-  end
-  
-  defp resolve_one_iteration(stones) do
-    # Step 1: Resolve all pairwise collisions
-    separated = resolve_all_collisions(stones)
-    
-    # Step 2: Clamp all stones to sheet boundaries
-    Enum.map(separated, &clamp_to_boundaries/1)
-  end
-  
-  defp resolve_all_collisions(stones) do
-    # Find and resolve all pairwise collisions
-    stone_count = length(stones)
-    
-    Enum.reduce(0..(stone_count - 1), stones, fn i, acc ->
-      stone1 = Enum.at(acc, i)
-      
-      Enum.reduce((i + 1)..(stone_count - 1)//1, acc, fn j, inner_acc ->
-        stone2 = Enum.at(inner_acc, j)
-        
-        case calculate_overlap(stone1, stone2) do
-          {:overlap, overlap, nx, ny} ->
-            # Push stones apart by half the overlap each, plus small buffer
-            separate_overlapping_stones(inner_acc, i, j, overlap, nx, ny)
-          :no_overlap ->
-            inner_acc
-        end
-      end)
-    end)
-  end
-  
-  defp calculate_overlap(stone1, stone2) do
-    dx = get_coord(stone1, "x") - get_coord(stone2, "x")
-    dy = get_coord(stone1, "y") - get_coord(stone2, "y")
-    distance = :math.sqrt(dx * dx + dy * dy)
-    
-    # Stones overlap if distance < diameter
-    if distance < @stone_diameter do
-      # Avoid division by zero for perfectly overlapping stones
-      distance = max(distance, 0.001)
-      
-      # Unit vector from stone2 to stone1
-      nx = dx / distance
-      ny = dy / distance
-      
-      overlap = @stone_diameter - distance
-      {:overlap, overlap, nx, ny}
-    else
-      :no_overlap
-    end
-  end
-  
-  defp separate_overlapping_stones(stones, idx1, idx2, overlap, nx, ny) do
-    stone1 = Enum.at(stones, idx1)
-    stone2 = Enum.at(stones, idx2)
-    
-    # Move each stone by half the overlap (no buffer - stones will touch exactly)
-    move_dist = overlap / 2
-    
-    # Stone1 moves in direction of normal (away from stone2)
-    stone1_new = update_position(stone1, move_dist * nx, move_dist * ny)
-    # Stone2 moves in opposite direction
-    stone2_new = update_position(stone2, -move_dist * nx, -move_dist * ny)
-    
-    stones
-    |> List.replace_at(idx1, stone1_new)
-    |> List.replace_at(idx2, stone2_new)
-  end
-  
-  defp clamp_to_boundaries(stone) do
-    x = get_coord(stone, "x")
-    y = get_coord(stone, "y")
-    
-    clamped_x = x |> max(@min_x) |> min(@max_x)
-    clamped_y = y |> max(@min_y) |> min(@max_y)
-    
-    Map.merge(stone, %{"x" => clamped_x, "y" => clamped_y})
-  end
-  
-  defp update_position(stone, dx, dy) do
-    Map.merge(stone, %{
-      "x" => get_coord(stone, "x") + dx,
-      "y" => get_coord(stone, "y") + dy
-    })
-  end
-  
-  # Helper to get coordinate regardless of string or atom key
-  defp get_coord(stone, key) when is_binary(key) do
-    stone[key] || stone[String.to_atom(key)] || 0
-  end
-  
-  defp fixed_point_iteration(value, _fun, 0), do: value
-  defp fixed_point_iteration(value, fun, max_iterations) do
-    new_value = fun.(value)
-    if new_value == value do
-      new_value
-    else
-      fixed_point_iteration(new_value, fun, max_iterations - 1)
+
+  defp normalize_phase({module, _args}), do: module
+  defp normalize_phase(module) when is_atom(module), do: module
+
+  defp phase_to_legacy_atom(module) do
+    case module do
+      KickaEttan.Games.Phases.BlindPickPhase -> :placement
+      KickaEttan.Games.Phases.CombinedPhase -> :combined
+      _ -> :unknown
     end
   end
 
