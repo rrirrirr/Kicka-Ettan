@@ -2100,13 +2100,23 @@ const CurlingGameContent = ({
                       </div>
                     </div>
                   </Button>
-                  <Button
-                    onClick={handleNextRound}
-                    variant="primary"
-                    className="flex-grow h-12 text-base"
-                  >
-                    start next round
-                  </Button>
+                  {gameState.total_rounds > 0 && gameState.current_round >= gameState.total_rounds ? (
+                    <Button
+                      onClick={() => window.location.href = '/'}
+                      variant="primary"
+                      className="flex-grow h-12 text-base"
+                    >
+                      exit game
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleNextRound}
+                      variant="primary"
+                      className="flex-grow h-12 text-base"
+                    >
+                      start next round
+                    </Button>
+                  )}
                 </div>
               )}
 
