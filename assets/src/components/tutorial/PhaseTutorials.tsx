@@ -7,6 +7,7 @@ import {
   StoneTapDemo,
   MeasurementCycleDemo,
   StepIndicatorDemo,
+  BanDragDemo,
 } from "./TutorialAnimations";
 
 // ============================================
@@ -70,6 +71,21 @@ export const PHASE_TUTORIALS: Record<string, PhaseTutorialConfig> = {
         description:
           "The indicator shows which measurement is active. Each zone (house, guard) has its own measurement sequence. You can change the active measurement types by clicking on any of the icons toggle.",
         animation: <StepIndicatorDemo />,
+      },
+    ],
+  },
+
+  // Ban phase tutorial
+  ban: {
+    id: "ban-tutorial",
+    delay: 400,
+    steps: [
+      {
+        id: "ban-placement",
+        title: "Place Your Ban",
+        description:
+          "Drag the ban marker from the bottom bar onto the sheet. Valid placement areas are highlighted. The ban ring will block other player to place stones in area.",
+        animation: <BanDragDemo />,
       },
     ],
   },

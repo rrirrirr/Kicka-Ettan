@@ -546,9 +546,8 @@ export const StepIndicatorDemo: React.FC = () => {
           {steps.map((step, i) => (
             <motion.div
               key={i}
-              className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200 ${
-                i === activeStep ? step.activeClass : step.inactiveClass
-              }`}
+              className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200 ${i === activeStep ? step.activeClass : step.inactiveClass
+                }`}
               animate={{
                 scale: i === activeStep ? 1.1 : 1,
               }}
@@ -774,17 +773,17 @@ export const PlacementMethodsDemo: React.FC = () => {
           <AnimatePresence>
             {((phase === "drag" && animState >= 2) ||
               (phase === "tap" && animState >= 2)) && (
-              <motion.div
-                className="absolute"
-                style={{ left: 55, top: 45 }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              >
-                <PlacementStone color="#cc0000" size={30} />
-              </motion.div>
-            )}
+                <motion.div
+                  className="absolute"
+                  style={{ left: 55, top: 45 }}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                >
+                  <PlacementStone color="#cc0000" size={30} />
+                </motion.div>
+              )}
           </AnimatePresence>
         </div>
 
@@ -994,6 +993,190 @@ export const LoupeEdgeDemo: React.FC = () => {
             <GrabCursor size={28} />
           </motion.div>
         </div>
+      </div>
+    </AnimationContainer>
+  );
+};
+
+// ============================================
+// BAN TUTORIAL ANIMATIONS
+// ============================================
+
+// Ban marker helper (visual match for DraggableBan)
+const BanMarker: React.FC<{ size: number; opacity?: number }> = ({
+  size,
+  opacity = 1,
+}) => (
+  <div
+    style={{
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      border: "4px dashed #C41E3A",
+      backgroundColor: "rgba(196, 30, 58, 0.25)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      opacity,
+      boxSizing: "border-box", // Ensure border is included in size
+    }}
+  >
+    {/* X icon drawn with CSS to avoid extra deps in this file if possible, or use SVG */}
+    <svg
+      width={size * 0.5}
+      height={size * 0.5}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#C41E3A"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </div>
+);
+
+// Drag ban marker to place it
+export const BanDragDemo: React.FC = () => {
+  const HOUSE_COLORS = {
+    ring12: "#185494", // Blue outer
+    ring8: "#ffffff", // White
+    ring4: "#D22730", // Red inner
+    button: "#ffffff", // White center
+    stroke: "#252333",
+    ice: "#F0F8FF",
+  };
+
+  return (
+    <AnimationContainer>
+      <div className="relative" style={{ width: 160, height: 185 }}>
+        {/* Label */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
+          <div className="text-sm font-bold text-icy-black whitespace-nowrap px-3 py-1 bg-white/90 rounded-full shadow-sm">
+            Drag to ban area
+          </div>
+        </div>
+
+        {/* Sheet area */}
+        <div
+          className="absolute inset-x-2 top-8 bottom-10 rounded-lg border border-gray-200 overflow-hidden"
+          style={{ backgroundColor: HOUSE_COLORS.ice }}
+        >
+          {/* Curling house rings */}
+          <svg
+            className="absolute inset-0"
+            viewBox="0 0 140 110"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* 12-foot ring (blue) */}
+            <circle
+              cx="70"
+              cy="70"
+              r="40"
+              fill={HOUSE_COLORS.ring12}
+              stroke={HOUSE_COLORS.stroke}
+              strokeWidth="0.5"
+            />
+            {/* 8-foot ring (white) */}
+            <circle
+              cx="70"
+              cy="70"
+              r="28"
+              fill={HOUSE_COLORS.ring8}
+              stroke={HOUSE_COLORS.stroke}
+              strokeWidth="0.5"
+            />
+            {/* 4-foot ring (red) */}
+            <circle
+              cx="70"
+              cy="70"
+              r="16"
+              fill={HOUSE_COLORS.ring4}
+              stroke={HOUSE_COLORS.stroke}
+              strokeWidth="0.5"
+            />
+            {/* Button (white center) */}
+            <circle
+              cx="70"
+              cy="70"
+              r="5"
+              fill={HOUSE_COLORS.button}
+              stroke={HOUSE_COLORS.stroke}
+              strokeWidth="0.5"
+            />
+            {/* T-line */}
+            <line
+              x1="0"
+              y1="70"
+              x2="140"
+              y2="70"
+              stroke={HOUSE_COLORS.stroke}
+              strokeWidth="1"
+            />
+            {/* Center line */}
+            <line
+              x1="70"
+              y1="0"
+              x2="70"
+              y2="110"
+              stroke={HOUSE_COLORS.stroke}
+              strokeWidth="1"
+            />
+          </svg>
+        </div>
+
+        {/* Ban bar at bottom */}
+        <div className="absolute bottom-0 inset-x-2 h-10 bg-white rounded-lg shadow-md flex items-center justify-center gap-2 px-3 z-0">
+          <div className="opacity-30">
+            <BanMarker size={24} />
+          </div>
+        </div>
+
+        {/* Animated Marker - Moves then stays */}
+        <motion.div
+          initial={{ x: 72, y: 160, opacity: 0 }}
+          animate={{
+            x: [72, 72, 72, 72, 72, 72],
+            y: [160, 160, 160, 92, 92, 92], // Start -> Wait -> Drag -> Drop -> Stay -> Stay
+            opacity: [0, 1, 1, 1, 1, 0], // Fade In -> Visible -> Stay -> Fade Out
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            times: [0, 0.1, 0.25, 0.5, 0.9, 1], // 0.5 to 0.9 is ~1.6s + drag time = 2s roughly
+            repeatDelay: 0.5,
+          }}
+          className="absolute z-10 pointer-events-none"
+          style={{ left: 0, top: 0 }}
+        >
+          <div className="absolute" style={{ left: -16, top: -16 }}>
+            <BanMarker size={32} />
+          </div>
+        </motion.div>
+
+        {/* Animated Hand - Moves then disappears */}
+        <motion.div
+          initial={{ x: 72, y: 160, opacity: 0 }}
+          animate={{
+            x: [72, 72, 72, 72, 72, 72],
+            y: [160, 160, 160, 92, 92, 92],
+            opacity: [0, 1, 1, 1, 0, 0], // Fade In -> Visible -> Drop -> Fade Out -> Gone
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            times: [0, 0.1, 0.25, 0.5, 0.6, 1],
+            repeatDelay: 0.5,
+          }}
+          className="absolute z-10 pointer-events-none"
+          style={{ left: 0, top: 0 }}
+        >
+          <div className="absolute" style={{ left: -2, top: -2 }}>
+            <GrabCursor size={28} />
+          </div>
+        </motion.div>
       </div>
     </AnimationContainer>
   );
