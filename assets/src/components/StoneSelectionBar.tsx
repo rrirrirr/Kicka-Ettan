@@ -36,8 +36,12 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
                 <AnimatePresence mode="popLayout">
                     {unplacedStones.map((stone) => (
                         <motion.div
-                            key={stone.index}
+                            key={`${stone.index}-${stone.resetCount || 0}`}
                             layout
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.5, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             className="relative"
                         >
                             <DraggableStone
@@ -50,14 +54,6 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
                                 opacity={stone.index === draggedStoneIndex ? 0 : 1}
                                 customColor={teamColors ? teamColors[myColor] : undefined}
                             />
-                            {(stone.resetCount || 0) > 0 && (
-                                <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
-                                    className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"
-                                />
-                            )}
                         </motion.div>
                     ))}
                 </AnimatePresence>
