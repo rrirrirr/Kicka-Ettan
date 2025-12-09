@@ -9,6 +9,7 @@ export interface GameTypeSetting {
     max?: number;
     default: number | boolean | string;
     options?: string[];
+    important?: boolean; // If true, shown on front page; otherwise hidden in "more settings"
 }
 
 export interface GameType {
@@ -36,7 +37,8 @@ and any collisions are resolved.`,
                 description: 'Number of stones each team can place per round',
                 min: 1,
                 max: 8,
-                default: 3
+                default: 3,
+                important: true
             },
             total_rounds: {
                 type: 'integer',
@@ -44,7 +46,8 @@ and any collisions are resolved.`,
                 description: 'How many rounds to play',
                 min: 1,
                 max: 10,
-                default: 3
+                default: 3,
+                important: false
             }
         },
         defaultSettings: {
