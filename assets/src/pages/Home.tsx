@@ -247,7 +247,7 @@ const Home = () => {
                                     )}
                                 </label>
                                 {setting.type === 'integer' && (
-                                    <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                                    <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
                                         <input
                                             type="range"
                                             min={setting.min ?? 1}
@@ -499,24 +499,33 @@ const Home = () => {
                             {GAME_TYPES.map(gameType => (
                                 <div
                                     key={gameType.id}
-                                    className={`w-full p-4 rounded-2xl border-2 transition-all ${selectedGameType.id === gameType.id
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => {
+                                        setSelectedGameType(gameType);
+                                        setGameSettings(gameType.defaultSettings);
+                                        setShowGameTypePicker(false);
+                                        setPickerView('list');
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setSelectedGameType(gameType);
+                                            setGameSettings(gameType.defaultSettings);
+                                            setShowGameTypePicker(false);
+                                            setPickerView('list');
+                                        }
+                                    }}
+                                    className={`w-full p-4 rounded-2xl border-2 transition-all cursor-pointer group hover:shadow-md hover:border-gray-300 ${selectedGameType.id === gameType.id
                                         ? 'border-active bg-active/10'
                                         : 'border-gray-200 bg-white'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedGameType(gameType);
-                                                setGameSettings(gameType.defaultSettings);
-                                                setShowGameTypePicker(false);
-                                                setPickerView('list');
-                                            }}
-                                            className="flex-1 text-left"
-                                        >
-                                            <h3 className="font-bold text-gray-800">{gameType.name}</h3>
+                                        <div className="flex-1 text-left">
+                                            <h3 className="font-bold text-gray-800 group-hover:text-gray-900 transition-colors">{gameType.name}</h3>
                                             <p className="text-sm text-gray-500 mt-1">{gameType.shortDescription}</p>
-                                        </button>
+                                        </div>
                                         <div className="flex gap-1">
                                             <Button
                                                 variant="outline"
@@ -557,7 +566,7 @@ const Home = () => {
                                         </label>
                                         <p className="text-xs text-gray-500 mb-2">{setting.description}</p>
                                         {setting.type === 'integer' && (
-                                            <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                                            <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
                                                 <input
                                                     type="range"
                                                     min={setting.min ?? 1}
@@ -661,7 +670,7 @@ const Home = () => {
                             </label>
                             <p className="text-xs text-gray-500 mb-2">{setting.description}</p>
                             {setting.type === 'integer' && (
-                                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
                                     <input
                                         type="range"
                                         min={setting.min ?? 1}
