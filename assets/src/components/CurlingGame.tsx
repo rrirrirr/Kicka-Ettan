@@ -1384,7 +1384,8 @@ const CurlingGameContent = ({
         return (
           <div
             key={ban.index}
-            className="absolute rounded-full border-4 border-dashed flex items-center justify-center"
+            className={`absolute rounded-full border-4 border-dashed flex items-center justify-center ${!isBanReady ? 'draggable-ban-on-sheet' : ''}`}
+            onPointerDown={handleSheetPointerDown}
             style={{
               width: banSize,
               height: banSize,
@@ -1396,7 +1397,7 @@ const CurlingGameContent = ({
               marginTop: -banSize / 2,
               zIndex: 3,
               cursor: isBanReady ? "default" : "grab",
-              pointerEvents: "none", // Let clicks pass through to sheet handler like stones do
+              pointerEvents: isBanReady ? "none" : "auto",
               opacity: isDraggingThisBan ? 0.3 : 1,
             }}
           >
@@ -1440,7 +1441,35 @@ const CurlingGameContent = ({
 
           return (
             stone.placed && (
-              <div key={`stone-wrapper-${stone.index}`}>
+              <div
+                key={`stone-wrapper-${stone.index}`}
+                className={!isReady ? 'stone-hover-container absolute' : 'absolute'}
+                onPointerDown={handleSheetPointerDown}
+                style={{
+                  left: stone.x * scale,
+                  top: stone.y * scale,
+                  width: stonePixelSize,
+                  height: stonePixelSize,
+                  marginLeft: -stonePixelSize / 2,
+                  marginTop: -stonePixelSize / 2,
+                  zIndex: 10,
+                }}
+              >
+                {/* Hover ring - visible on container hover */}
+                {!isReady && (
+                  <div
+                    className="hover-ring absolute rounded-full"
+                    style={{
+                      width: stonePixelSize + 6,
+                      height: stonePixelSize + 6,
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.8)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
                 {/* Ghost Stone (stays in place while dragging) */}
                 {isDraggingThisStone && (
                   <div
@@ -1454,11 +1483,9 @@ const CurlingGameContent = ({
                           ? "#cc0000"
                           : "#e6b800",
                       border: `2px solid #777777`,
-                      boxShadow: `inset 0 0 0 1px #00000055`, // darker shade approximation
-                      left: stone.x * scale,
-                      top: stone.y * scale,
-                      marginLeft: -stonePixelSize / 2,
-                      marginTop: -stonePixelSize / 2,
+                      boxShadow: `inset 0 0 0 1px #00000055`,
+                      left: 0,
+                      top: 0,
                       opacity: 0.3,
                       zIndex: 5,
                     }}
@@ -1482,13 +1509,9 @@ const CurlingGameContent = ({
                   key={`my-${stone.index}-${stone.x}-${stone.y}${forLoupe ? "-loupe" : ""}`}
                   color={myColor}
                   index={stone.index}
-                  position={{
-                    x: stone.x * scale,
-                    y: stone.y * scale,
-                  }}
+                  position={{ x: 0, y: 0 }}
                   onDragEnd={forLoupe ? () => { } : handleStoneDragEnd}
-                  // onDrag={forLoupe ? undefined : handleStoneDrag} // Removed unused prop
-                  isPlaced={true}
+                  isPlaced={false}
                   size={stonePixelSize}
                   customColor={
                     gameState.team_colors
@@ -1496,9 +1519,8 @@ const CurlingGameContent = ({
                       : undefined
                   }
                   onClick={(e) => e.stopPropagation()}
-                  // Hide the actual draggable stone while dragging to prevent jitter and use proxy instead
                   opacity={isDraggingThisStone ? 0 : 1}
-                  interactive={false} // Let sheet handle events for smart targeting
+                  interactive={false}
                 />
               </div>
             )

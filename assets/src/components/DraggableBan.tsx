@@ -55,7 +55,7 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
             dragMomentum={false}
             dragElastic={0}
             whileDrag={{ scale: 1.1, zIndex: 100 }}
-            whileHover={{ filter: 'brightness(1.1)' }}
+            whileHover={{ cursor: 'grab' }}
             onDragEnd={(_event, info) => {
                 const x = info.point.x;
                 const y = info.point.y;

@@ -291,6 +291,42 @@ body {
     transition-property: transform, box-shadow, background-color;
   }
 
+  /* Hover ring for draggable elements on the sheet */
+  .draggable-on-sheet {
+    cursor: grab;
+    transition: box-shadow 0.15s ease-out;
+  }
+
+  .draggable-on-sheet:hover {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Parent hover approach - parent has pointer-events, child ring appears on hover */
+  .stone-hover-container {
+    pointer-events: auto;
+    cursor: grab;
+  }
+
+  .stone-hover-container .hover-ring {
+    opacity: 0;
+    transition: opacity 0.15s ease-out;
+    pointer-events: none;
+  }
+
+  .stone-hover-container:hover .hover-ring {
+    opacity: 1;
+  }
+
+  /* Hover ring for draggable ban circles */
+  .draggable-ban-on-sheet {
+    cursor: grab;
+    transition: box-shadow 0.15s ease-out;
+  }
+
+  .draggable-ban-on-sheet:hover {
+    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.6), 0 0 12px rgba(196, 30, 58, 0.3);
+  }
+
   .glass-panel {
     @apply bg-white/80 backdrop-blur-md border border-white/50 shadow-lg;
   }
