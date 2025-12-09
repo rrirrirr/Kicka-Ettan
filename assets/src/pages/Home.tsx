@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, History, ChevronDown, ChevronUp, ChevronLeft, Info, Settings, Repeat } from 'lucide-react';
+import { Play, History, ChevronDown, ChevronUp, Info, Settings, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import GameTitle from '../components/GameTitle';
@@ -8,6 +8,7 @@ import { Dialog, Card, Button } from '../components/ui';
 import { config } from '../config';
 import { useSettings } from '../contexts/SettingsContext';
 import { SettingsDialog } from '../components/SettingsDialog';
+import { DialogBackButton } from '../components/ui/DialogBackButton';
 import { GAME_TYPES, GameType, getDefaultGameType } from '../data/gameTypes';
 import { saveGameToHistory, getGameHistory } from '../lib/gameHistory';
 
@@ -83,6 +84,13 @@ const Home = () => {
         setIsLoading(true);
         setError(null);
         try {
+            // Convert ban_circle_radius from string label to numeric value if needed
+            const banRadiusSetting = selectedGameType.settingsSchema.ban_circle_radius;
+            let banRadiusValue = gameSettings.ban_circle_radius;
+            if (banRadiusSetting?.type === 'select' && typeof banRadiusValue === 'string' && banRadiusSetting.optionValues) {
+                banRadiusValue = banRadiusSetting.optionValues[banRadiusValue];
+            }
+
             const response = await fetch(`${config.apiUrl}/api/games`, {
                 method: 'POST',
                 headers: {
@@ -92,7 +100,7 @@ const Home = () => {
                     game_type: selectedGameType.id,
                     stones_per_team: gameSettings.stones_per_team,
                     total_rounds: gameSettings.total_rounds,
-                    ban_circle_radius: gameSettings.ban_circle_radius,
+                    ban_circle_radius: banRadiusValue,
                     team1_color: team1Color,
                     team2_color: team2Color
                 }),
@@ -253,6 +261,29 @@ const Home = () => {
                                                 </motion.span>
                                             </AnimatePresence>
                                         </div>
+                                    </div>
+                                )}
+                                {setting.type === 'select' && setting.options && (
+                                    <div className="flex gap-2">
+                                        {setting.options.map((option) => {
+                                            const isActive = gameSettings[key] === option;
+                                            return (
+                                                <Button
+                                                    key={option}
+                                                    variant="outline"
+                                                    onClick={() => setGameSettings(prev => ({
+                                                        ...prev,
+                                                        [key]: option
+                                                    }))}
+                                                    className={`flex-1 h-12 ${isActive
+                                                        ? 'bg-lavender-500 text-white hover:bg-lavender-600 border-lavender-500'
+                                                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                                                        } transition-colors`}
+                                                >
+                                                    {option}
+                                                </Button>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -436,6 +467,9 @@ const Home = () => {
                     setPickerView('list');
                 }}
                 title={pickerView === 'list' ? 'select game type' : pickerView === 'settings' ? 'game settings' : pickerGameType.name.toLowerCase()}
+                backButton={pickerView !== 'list' ? (
+                    <DialogBackButton onClick={() => setPickerView('list')} />
+                ) : undefined}
             >
                 {pickerView === 'list' ? (
                     <div className="space-y-4">
@@ -492,14 +526,6 @@ const Home = () => {
                     </div>
                 ) : pickerView === 'settings' ? (
                     <div>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setPickerView('list')}
-                            className="mb-4 flex items-center gap-1 text-gray-600 hover:text-gray-800 -ml-2"
-                        >
-                            <ChevronLeft size={18} />
-                            <span>back</span>
-                        </Button>
                         <div className="space-y-6">
                             {Object.entries(pickerGameType.settingsSchema).map(([key, setting]) => (
                                 <div key={key}>
@@ -527,6 +553,29 @@ const Home = () => {
                                             </div>
                                         </div>
                                     )}
+                                    {setting.type === 'select' && setting.options && (
+                                        <div className="flex gap-2">
+                                            {setting.options.map((option) => {
+                                                const isActive = gameSettings[key] === option;
+                                                return (
+                                                    <Button
+                                                        key={option}
+                                                        variant="outline"
+                                                        onClick={() => setGameSettings(prev => ({
+                                                            ...prev,
+                                                            [key]: option
+                                                        }))}
+                                                        className={`flex-1 h-12 ${isActive
+                                                            ? 'bg-lavender-500 text-white hover:bg-lavender-600 border-lavender-500'
+                                                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                                                            } transition-colors`}
+                                                    >
+                                                        {option}
+                                                    </Button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -543,14 +592,6 @@ const Home = () => {
                     </div>
                 ) : (
                     <div>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setPickerView('list')}
-                            className="mb-4 flex items-center gap-1 text-gray-600 hover:text-gray-800 -ml-2"
-                        >
-                            <ChevronLeft size={18} />
-                            <span>back</span>
-                        </Button>
                         <div className="text-gray-600 whitespace-pre-line">
                             {pickerGameType.longDescription}
                         </div>
@@ -625,6 +666,29 @@ const Home = () => {
                                             </motion.span>
                                         </AnimatePresence>
                                     </div>
+                                </div>
+                            )}
+                            {setting.type === 'select' && setting.options && (
+                                <div className="flex gap-2">
+                                    {setting.options.map((option) => {
+                                        const isActive = gameSettings[key] === option;
+                                        return (
+                                            <Button
+                                                key={option}
+                                                variant="outline"
+                                                onClick={() => setGameSettings(prev => ({
+                                                    ...prev,
+                                                    [key]: option
+                                                }))}
+                                                className={`flex-1 h-12 ${isActive
+                                                    ? 'bg-lavender-500 text-white hover:bg-lavender-600 border-lavender-500'
+                                                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                                                    } transition-colors`}
+                                            >
+                                                {option}
+                                            </Button>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

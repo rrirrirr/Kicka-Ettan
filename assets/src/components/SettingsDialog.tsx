@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog } from './ui/Dialog';
-import { Button } from './ui/Button';
-import { ChevronLeft } from 'lucide-react';
+
+import { DialogBackButton } from './ui/DialogBackButton';
 import { useSettings } from '../contexts/SettingsContext';
 import { SettingsMainView } from './settings/SettingsMainView';
 import { SettingsMeasurementsView } from './settings/SettingsMeasurementsView';
@@ -48,15 +48,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             className="!p-0 overflow-hidden"
             headerClassName="shrink-0 px-6 py-4 sm:py-6"
             backButton={view !== 'main' ? (
-                <Button
-                    variant="ghost"
-                    shape="circle"
-                    size="icon"
-                    onClick={() => setView('main')}
-                    className="-ml-2 hover:bg-gray-100 transition-colors"
-                >
-                    <ChevronLeft size={24} />
-                </Button>
+                <DialogBackButton onClick={() => setView('main')} />
             ) : undefined}
         >
             <div className="flex-grow overflow-y-auto px-6 pt-2 pb-6 sm:p-6">
