@@ -26,6 +26,7 @@ import {
   NEAR_HOUSE_THRESHOLD,
 } from "../utils/constants";
 import { resolveCollisions } from "../utils/physics";
+import { adjustStoneForBanZone } from "../utils/banZoneUtils";
 import { useGameDimensions } from "../hooks/useGameDimensions";
 import { GameState, StonePosition, PlayerColor } from "../types/game-types";
 
@@ -348,7 +349,23 @@ const CurlingGameContent = ({
           myStones,
         );
 
-        updateStonePosition(index, resolvedX, resolvedY, true);
+        // Check for ban zone overlap (only during placement phase)
+        const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+        const banAdjustment = adjustStoneForBanZone(resolvedX, resolvedY, myBannedZone);
+
+        if (banAdjustment.resetToBar) {
+          // Stone is fully inside ban zone - reset to bar
+          setMyStones((prev) =>
+            prev.map((s) =>
+              s.index === index
+                ? { ...s, placed: false, resetCount: (s.resetCount || 0) + 1 }
+                : s,
+            ),
+          );
+        } else {
+          // Use adjusted position (pushed out or original)
+          updateStonePosition(index, banAdjustment.position.x, banAdjustment.position.y, true);
+        }
       } else {
         // Dropped outside - reset to bar
         setMyStones((prev) =>
@@ -444,12 +461,21 @@ const CurlingGameContent = ({
                     clampedY,
                     myStones,
                   );
-                  updateStonePosition(
-                    stoneToPlace.index,
-                    resolvedX,
-                    resolvedY,
-                    true,
-                  );
+
+                  // Check for ban zone overlap
+                  const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+                  const banAdjustment = adjustStoneForBanZone(resolvedX, resolvedY, myBannedZone);
+
+                  if (!banAdjustment.resetToBar) {
+                    // Place with adjusted position (or original if not overlapping)
+                    updateStonePosition(
+                      stoneToPlace.index,
+                      banAdjustment.position.x,
+                      banAdjustment.position.y,
+                      true,
+                    );
+                  }
+                  // If resetToBar is true, we silently don't place (user tried to place fully in ban zone)
                 }
               } else {
                 // Clicked on Stone -> Highlight/Select (existing behavior)
@@ -968,8 +994,17 @@ const CurlingGameContent = ({
         myStones,
       );
 
-      // Place the stone
-      updateStonePosition(stoneToPlace.index, resolvedX, resolvedY, true);
+      // Check for ban zone overlap
+      const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+      const banAdjustment = adjustStoneForBanZone(resolvedX, resolvedY, myBannedZone);
+
+      if (banAdjustment.resetToBar) {
+        // Stone would be fully inside ban zone - don't place
+        return;
+      }
+
+      // Place the stone with adjusted position
+      updateStonePosition(stoneToPlace.index, banAdjustment.position.x, banAdjustment.position.y, true);
 
       // Enter PENDING state to allow immediate dragging
       startPendingGesture(stoneToPlace.index, "placement");
@@ -2181,6 +2216,7 @@ const CurlingGameContent = ({
       <RoundStartOverlay
         isVisible={showRoundStartOverlay}
         roundNumber={gameState.current_round}
+        phaseName={gameState.phase === 'ban' ? 'ban phase' : gameState.phase === 'placement' ? 'placement phase' : 'resolution phase'}
         onComplete={handleRoundOverlayComplete}
       />
 

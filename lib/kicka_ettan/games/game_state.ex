@@ -309,34 +309,39 @@ defmodule KickaEttan.Games.GameState do
   Handles per-player view during placement phase.
   """
   def client_view(game_state, player_id \\ nil) do
-    if game_state.current_phase_module do
-      base_view = game_state.current_phase_module.client_view(
-        game_state.phase_state,
-        game_state,
-        player_id
-      )
+    game_type_id = game_state.game_type_module.definition().id |> Atom.to_string()
 
-      # Handle the special case where player hasn't started next round yet
-      case game_state.phase do
-        :placement when not is_nil(player_id) ->
-          player_started = Map.get(game_state.ready_for_next_round, player_id, false)
+    view = 
+      if game_state.current_phase_module do
+        base_view = game_state.current_phase_module.client_view(
+          game_state.phase_state,
+          game_state,
+          player_id
+        )
 
-          if not player_started and length(game_state.history) > 0 do
-            [last_round | _] = game_state.history
+        # Handle the special case where player hasn't started next round yet
+        case game_state.phase do
+          :placement when not is_nil(player_id) ->
+            player_started = Map.get(game_state.ready_for_next_round, player_id, false)
+
+            if not player_started and length(game_state.history) > 0 do
+              [last_round | _] = game_state.history
+              base_view
+              |> Map.put(:phase, :combined)
+              |> Map.put(:current_round, last_round.round)
+              |> Map.put(:stones, last_round.stones)
+            else
+              base_view
+            end
+
+          _ ->
             base_view
-            |> Map.put(:phase, :combined)
-            |> Map.put(:current_round, last_round.round)
-            |> Map.put(:stones, last_round.stones)
-          else
-            base_view
-          end
-
-        _ ->
-          base_view
+        end
+      else
+        Map.from_struct(game_state)
       end
-    else
-      Map.from_struct(game_state)
-    end
+
+    Map.put(view, :game_type, game_type_id)
   end
 
   # Private functions

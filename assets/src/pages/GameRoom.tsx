@@ -11,6 +11,8 @@ import { GameState } from '../types/game-types';
 
 
 
+import { GAME_TYPES } from '../data/gameTypes';
+
 const GameRoom = () => {
     const { gameId } = useParams<{ gameId: string }>();
     const [gameState, setGameState] = useState<GameState | null>(null);
@@ -107,6 +109,8 @@ const GameRoom = () => {
         );
     }
 
+    const gameType = GAME_TYPES.find(gt => gt.id === gameState.game_type);
+
     // Lobby View
     return (
         <div className="min-h-screen p-4">
@@ -116,9 +120,9 @@ const GameRoom = () => {
                 </header>
 
                 <Card className="p-8 text-center flex flex-col items-center gap-6">
-                    {/* Blind pick info */}
+                    {/* Game Type info */}
                     <div className="text-4xl font-black text-gray-900 lowercase tracking-tight">
-                        Blind pick {gameState.stones_per_team}
+                        {gameType ? gameType.name : 'unknown game'}
                     </div>
 
                     {/* Team colors - bigger dots */}

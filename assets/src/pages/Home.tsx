@@ -14,13 +14,38 @@ import { saveGameToHistory, getGameHistory } from '../lib/gameHistory';
 const Home = () => {
     const navigate = useNavigate();
     const { openSettings } = useSettings();
-    const [selectedGameType, setSelectedGameType] = useState<GameType>(getDefaultGameType());
+    const [selectedGameType, setSelectedGameType] = useState<GameType>(() => {
+        const saved = localStorage.getItem('kicka_ettan_game_type_id');
+        if (saved) {
+            const found = GAME_TYPES.find(t => t.id === saved);
+            if (found) return found;
+        }
+        return getDefaultGameType();
+    });
     const [showGameTypePicker, setShowGameTypePicker] = useState(false);
     const [pickerView, setPickerView] = useState<'list' | 'settings' | 'info'>('list');
     const [pickerGameType, setPickerGameType] = useState<GameType>(getDefaultGameType());
     const [showGameTypeInfo, setShowGameTypeInfo] = useState(false);
     const [showGameSettings, setShowGameSettings] = useState(false);
-    const [gameSettings, setGameSettings] = useState<Record<string, number | boolean | string>>(getDefaultGameType().defaultSettings);
+    const [gameSettings, setGameSettings] = useState<Record<string, number | boolean | string>>(() => {
+        const saved = localStorage.getItem('kicka_ettan_game_settings');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to parse saved settings', e);
+            }
+        }
+        return getDefaultGameType().defaultSettings;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('kicka_ettan_game_type_id', selectedGameType.id);
+    }, [selectedGameType.id]);
+
+    useEffect(() => {
+        localStorage.setItem('kicka_ettan_game_settings', JSON.stringify(gameSettings));
+    }, [gameSettings]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showHistory, setShowHistory] = useState(false);

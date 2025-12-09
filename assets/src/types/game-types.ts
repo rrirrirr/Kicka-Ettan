@@ -25,6 +25,7 @@ export interface BannedZone {
 
 export interface GameState {
   game_id: string;
+  game_type: string;
   players: Player[];
   stones: {
     red: StonePosition[];

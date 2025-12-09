@@ -5,10 +5,11 @@ import { overlayBackdrop, roundStartContainer, roundStartText } from '../utils/a
 interface RoundStartOverlayProps {
     isVisible: boolean;
     roundNumber: number;
+    phaseName?: string;
     onComplete?: () => void;
 }
 
-export const RoundStartOverlay = ({ isVisible, roundNumber, onComplete }: RoundStartOverlayProps) => {
+export const RoundStartOverlay = ({ isVisible, roundNumber, phaseName, onComplete }: RoundStartOverlayProps) => {
     useEffect(() => {
         if (isVisible && onComplete) {
             // Auto-dismiss after 2 seconds (animation + reading time)
@@ -54,7 +55,7 @@ export const RoundStartOverlay = ({ isVisible, roundNumber, onComplete }: RoundS
                             className="text-xl md:text-2xl font-medium text-white/80 lowercase tracking-wide"
                             variants={roundStartText}
                         >
-                            blind placement phase
+                            {phaseName || 'placement phase'}
                         </motion.p>
 
                         {/* Decorative Line */}
