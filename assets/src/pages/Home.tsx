@@ -151,10 +151,6 @@ const Home = () => {
                 )}
 
                 <div className="mb-8 space-y-6 text-left relative z-10">
-                    {/* Game Settings Title */}
-                    <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
-                        game settings
-                    </label>
 
                     {/* Game Type Selector - styled like team color buttons */}
                     <div>
