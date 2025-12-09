@@ -150,18 +150,24 @@ const Home = () => {
                 )}
 
                 <div className="mb-8 space-y-6 text-left relative z-10">
-                    {/* Game Type Selector - Title is the button */}
+                    {/* Game Settings Title */}
+                    <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
+                        game settings
+                    </label>
+
+                    {/* Game Type Selector - styled like team color buttons */}
                     <div>
-                        <button
+                        <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
+                            game type
+                        </label>
+                        <Button
+                            variant="outline"
                             onClick={() => setShowGameTypePicker(true)}
-                            className="flex items-center gap-2 mb-2 group cursor-pointer"
+                            className="w-full bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
                         >
-                            <h2 className="text-2xl font-bold text-gray-800 lowercase tracking-tight group-hover:text-icy-accent transition-colors">
-                                {selectedGameType.name}
-                            </h2>
-                            <Repeat size={18} className="text-gray-400 group-hover:text-icy-accent transition-colors" />
-                        </button>
-                        <p className="text-sm text-gray-500 mb-4">{selectedGameType.shortDescription}</p>
+                            <Repeat size={20} className="text-icy-accent" />
+                            <span className="font-bold text-gray-700 lowercase text-base">{selectedGameType.name}</span>
+                        </Button>
                     </div>
 
                     {/* Important Settings - Always shown */}
