@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/app-DNssdaa4.js",
+    "file": "assets/app-CmrtyBbK.js",
     "name": "app",
     "src": "index.html",
     "isEntry": true,
@@ -10,11 +10,11 @@
       "src/pages/ColorGuidePage.tsx"
     ],
     "css": [
-      "assets/app-Dh_FsvAH.css"
+      "assets/app-erQBjrtV.css"
     ]
   },
   "src/pages/ButtonGuidePage.tsx": {
-    "file": "assets/ButtonGuidePage-BhrZydoa.js",
+    "file": "assets/ButtonGuidePage-BrwML3gk.js",
     "name": "ButtonGuidePage",
     "src": "src/pages/ButtonGuidePage.tsx",
     "isDynamicEntry": true,
@@ -23,7 +23,7 @@
     ]
   },
   "src/pages/ColorGuidePage.tsx": {
-    "file": "assets/ColorGuidePage-B--mVomT.js",
+    "file": "assets/ColorGuidePage-CThXdImq.js",
     "name": "ColorGuidePage",
     "src": "src/pages/ColorGuidePage.tsx",
     "isDynamicEntry": true,
@@ -32,7 +32,7 @@
     ]
   },
   "src/pages/DevPage.tsx": {
-    "file": "assets/DevPage-qiW5XDuj.js",
+    "file": "assets/DevPage-6SbvaAR0.js",
     "name": "DevPage",
     "src": "src/pages/DevPage.tsx",
     "isDynamicEntry": true,
