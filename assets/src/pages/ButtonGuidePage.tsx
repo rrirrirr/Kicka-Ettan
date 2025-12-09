@@ -140,7 +140,7 @@ const ButtonGuidePage = () => {
                                 <Button
                                     size="xl"
                                     shape="pill"
-                                    className="w-full md:w-auto bg-[var(--icy-accent)] hover:bg-[var(--icy-accent-hover)] shadow-lg"
+                                    className="w-full md:w-auto bg-icy-accent hover:bg-icy-accent-hover shadow-lg"
                                 >
                                     <Play size={24} fill="currentColor" />
                                     create game

@@ -10,14 +10,14 @@ const NotFound: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="p-12 text-center max-w-md w-full relative overflow-hidden">
         {/* Decorative elements matching GameRoom */}
-        <div className="absolute top-0 left-0 w-48 h-48 bg-[var(--icy-accent)] rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-[var(--icy-blue-medium)] rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
+        <div className="absolute top-0 left-0 w-48 h-48 bg-icy-accent rounded-full -translate-x-1/3 -translate-y-1/3 opacity-10 blur-2xl"></div>
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-icy-blue-medium rounded-full translate-x-1/4 translate-y-1/4 opacity-10 blur-3xl"></div>
 
         <div className="relative z-10 space-y-8">
-          <h1 className="text-8xl font-bold text-[var(--icy-blue-dark)] opacity-50">404</h1>
+          <h1 className="text-8xl font-bold text-icy-blue-dark opacity-50">404</h1>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-[var(--icy-blue-dark)]">Page Not Found</h2>
+            <h2 className="text-2xl font-bold text-icy-blue-dark">Page Not Found</h2>
             <p className="text-gray-600 font-medium">
               This page didn't reach the hog line.
             </p>

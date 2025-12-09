@@ -74,9 +74,9 @@ const GameRoom = () => {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
                 <Card className="p-8 text-center max-w-md w-full border border-red-100">
-                    <h2 className="text-2xl font-bold text-[var(--icy-accent)] mb-4">Error</h2>
+                    <h2 className="text-2xl font-bold text-icy-accent mb-4">Error</h2>
                     <p className="font-medium text-gray-700">{error}</p>
-                    <a href="/" className="mt-6 inline-block text-[var(--icy-blue-medium)] font-bold hover:underline">Go Home</a>
+                    <a href="/" className="mt-6 inline-block text-icy-blue-medium font-bold hover:underline">Go Home</a>
                 </Card>
             </div>
         );
@@ -85,7 +85,7 @@ const GameRoom = () => {
     if (!gameState) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <p className="text-xl font-bold text-[var(--icy-blue-medium)] animate-pulse">Connecting...</p>
+                <p className="text-xl font-bold text-icy-blue-medium animate-pulse">Connecting...</p>
             </div>
         );
     }
@@ -220,7 +220,7 @@ const GameRoom = () => {
                         <svg className="w-5 h-5 text-lavender-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span className="font-medium text-[var(--icy-black)]">Invite link copied to clipboard!</span>
+                        <span className="font-medium text-icy-black">Invite link copied to clipboard!</span>
                     </div>
                 </div>
             )}

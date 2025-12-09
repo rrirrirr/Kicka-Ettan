@@ -175,6 +175,21 @@ body {
   --radius-xl: calc(var(--radius) + 4px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Icy color palette - enables text-icy-*, bg-icy-*, border-icy-*, etc. */
+  --color-icy-black: var(--icy-black);
+  --color-icy-black-hover: var(--icy-black-hover);
+  --color-icy-black-active: var(--icy-black-active);
+  --color-icy-blue-medium: var(--icy-blue-medium);
+  --color-icy-blue-light: var(--icy-blue-light);
+  --color-icy-blue-dark: var(--icy-blue-dark);
+  --color-icy-white: var(--icy-white);
+  --color-icy-red: var(--icy-red);
+  --color-icy-accent: var(--icy-accent);
+  --color-icy-accent-hover: var(--icy-accent-hover);
+  --color-icy-button-bg: var(--icy-button-bg);
+  --color-icy-button-text: var(--icy-button-text);
+  --color-icy-button-hover: var(--icy-button-hover);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -188,6 +203,7 @@ body {
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--color-destructive-hover);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

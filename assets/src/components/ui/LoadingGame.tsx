@@ -12,7 +12,7 @@ export const LoadingGame: React.FC = () => {
 
                 {/* Ticker Text (Inside the dot) */}
                 <motion.div
-                    className="absolute whitespace-nowrap font-['Outfit'] font-bold text-2xl tracking-widest lowercase text-[var(--icy-black)]"
+                    className="absolute whitespace-nowrap font-['Outfit'] font-bold text-2xl tracking-widest lowercase text-icy-black"
                     initial={{ x: "-150%" }}
                     animate={{ x: "150%" }}
                     transition={{

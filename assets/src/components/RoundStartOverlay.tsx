@@ -28,7 +28,7 @@ export const RoundStartOverlay = ({ isVisible, roundNumber, onComplete }: RoundS
                     exit="exit"
                 >
                     {/* Backdrop */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-[var(--icy-black)]/80 to-[var(--icy-black)]/90 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-icy-black/80 to-icy-black/90 backdrop-blur-sm" />
 
                     {/* Content */}
                     <motion.div
@@ -59,7 +59,7 @@ export const RoundStartOverlay = ({ isVisible, roundNumber, onComplete }: RoundS
 
                         {/* Decorative Line */}
                         <motion.div
-                            className="mt-6 w-24 h-1 rounded-full bg-gradient-to-r from-[var(--lavender-400)] to-[var(--periwinkle-400)]"
+                            className="mt-6 w-24 h-1 rounded-full bg-gradient-to-r from-lavender-400 to-periwinkle-400"
                             variants={roundStartText}
                         />
                     </motion.div>

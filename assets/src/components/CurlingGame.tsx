@@ -1177,7 +1177,7 @@ const CurlingGameContent = ({
   );
 
   return (
-    <motion.div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-2xl md:shadow-2xl bg-[var(--icy-white)] backdrop-blur-md transition-all duration-300 overflow-hidden select-none">
+    <motion.div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-2xl md:shadow-2xl bg-icy-white backdrop-blur-md transition-all duration-300 overflow-hidden select-none">
       {/* Full-height Sidelines (Mobile Only) */}
       <div
         className="absolute inset-y-0 border-x border-gray-200 md:border-none pointer-events-none z-0 left-1/2 -translate-x-1/2"
@@ -1540,7 +1540,10 @@ const CurlingGameContent = ({
                 <div className="w-full flex gap-2">
                   <Button
                     onClick={() => setShowMeasurements(!showMeasurements)}
-                    className={`w-12 h-12 rounded-2xl p-0 relative group ${showMeasurements ? "" : "bg-gray-400 hover:bg-gray-500 text-white shadow-none"}`}
+                    variant="ghost"
+                    className={`w-12 h-12 rounded-2xl p-0 relative group ${showMeasurements
+                      ? "bg-icy-button-bg hover:bg-icy-button-hover text-white shadow-md"
+                      : "bg-gray-200 hover:bg-icy-button-bg/20 text-icy-button-bg shadow-none"}`}
                     aria-label="Toggle measurements"
                   >
                     <Ruler size={20} />

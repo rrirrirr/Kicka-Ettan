@@ -9,6 +9,7 @@ import NotFound from './pages/NotFound';
 // Only load DevPage in development
 const DevPage = React.lazy(() => import('./pages/DevPage'));
 const ButtonGuidePage = React.lazy(() => import('./pages/ButtonGuidePage'));
+const ColorGuidePage = React.lazy(() => import('./pages/ColorGuidePage'));
 import { SettingsProvider } from './contexts/SettingsContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import { pageTransition } from './utils/animations';
@@ -46,6 +47,11 @@ const AnimatedRoutes = () => {
             <Route path="/dev/buttons" element={
               <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
                 <PageWrapper><ButtonGuidePage /></PageWrapper>
+              </Suspense>
+            } />
+            <Route path="/dev/colors" element={
+              <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <PageWrapper><ColorGuidePage /></PageWrapper>
               </Suspense>
             } />
           </>
