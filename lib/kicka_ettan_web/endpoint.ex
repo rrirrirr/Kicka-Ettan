@@ -49,6 +49,7 @@ defmodule KickaEttanWeb.Endpoint do
   plug Corsica,
     origins: Application.compile_env(:kicka_ettan, :cors_origins, [~r{^http://localhost:\d+$}]),
     allow_headers: :all,
+    allow_methods: :all,
     allow_credentials: true
 
   plug Sentry.PlugContext

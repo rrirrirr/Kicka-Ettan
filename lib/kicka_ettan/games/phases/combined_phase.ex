@@ -20,8 +20,8 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
 
   @impl true
   def init(game_state) do
-    # Resolve collisions when entering combined phase
-    resolved_stones = resolve_stone_collisions(game_state.stones)
+    # Resolve collisions when entering combined phase (including ban zones)
+    resolved_stones = resolve_stone_collisions(game_state.stones, game_state.banned_zones)
 
     # Track who is ready for next round
     player_ready =
@@ -85,7 +85,7 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
     end
   end
 
-  defp resolve_stone_collisions(stones) do
+  defp resolve_stone_collisions(stones, banned_zones) do
     red_stones =
       stones.red
       |> Enum.with_index()
@@ -101,7 +101,7 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
       end)
 
     all_stones = red_stones ++ yellow_stones
-    resolved = do_resolve_collisions(all_stones)
+    resolved = do_resolve_collisions(all_stones, banned_zones)
 
     # Split back into red and yellow
     {red, yellow} =
@@ -117,13 +117,14 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
     %{red: red, yellow: yellow}
   end
 
-  defp do_resolve_collisions(stones) do
-    fixed_point_iteration(stones, &resolve_one_iteration/1, @max_collision_iterations)
+  defp do_resolve_collisions(stones, banned_zones) do
+    fixed_point_iteration(stones, &resolve_one_iteration(&1, banned_zones), @max_collision_iterations)
   end
 
-  defp resolve_one_iteration(stones) do
+  defp resolve_one_iteration(stones, banned_zones) do
     separated = resolve_all_pairwise(stones)
-    Enum.map(separated, &clamp_to_boundaries/1)
+    ban_adjusted = Enum.map(separated, &push_out_of_ban_zone(&1, banned_zones))
+    Enum.map(ban_adjusted, &clamp_to_boundaries/1)
   end
 
   defp resolve_all_pairwise(stones) do
@@ -173,6 +174,36 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
     stones
     |> List.replace_at(idx1, stone1_new)
     |> List.replace_at(idx2, stone2_new)
+  end
+
+  # Push a stone out of its applicable ban zone if overlapping
+  # Red stones are affected by red's banned zone, yellow by yellow's
+  defp push_out_of_ban_zone(stone, banned_zones) do
+    color = stone.color
+    ban_zone = Map.get(banned_zones || %{}, color)
+    
+    case ban_zone do
+      nil -> stone
+      %{x: ban_x, y: ban_y, radius: ban_radius} ->
+        x = get_coord(stone, "x")
+        y = get_coord(stone, "y")
+        dx = x - ban_x
+        dy = y - ban_y
+        distance = :math.sqrt(dx * dx + dy * dy)
+        min_distance = @stone_radius + ban_radius
+        
+        if distance < min_distance and distance > 0 do
+          # Push stone out to just touch the ban zone edge
+          nx = dx / distance
+          ny = dy / distance
+          new_x = ban_x + nx * min_distance
+          new_y = ban_y + ny * min_distance
+          Map.merge(stone, %{"x" => new_x, "y" => new_y})
+        else
+          stone
+        end
+      _ -> stone
+    end
   end
 
   defp clamp_to_boundaries(stone) do

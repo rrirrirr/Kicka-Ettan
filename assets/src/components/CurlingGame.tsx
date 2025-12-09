@@ -25,8 +25,7 @@ import {
   HOUSE_RADIUS_12,
   NEAR_HOUSE_THRESHOLD,
 } from "../utils/constants";
-import { resolveCollisions } from "../utils/physics";
-import { adjustStoneForBanZone } from "../utils/banZoneUtils";
+import { resolveAllCollisions } from "../utils/physics";
 import { useGameDimensions } from "../hooks/useGameDimensions";
 import { GameState, StonePosition, PlayerColor } from "../types/game-types";
 
@@ -342,19 +341,17 @@ const CurlingGameContent = ({
         );
         const clampedY = Math.max(minY, Math.min(maxY, rawY));
 
-        // Resolve collisions
-        const { x: resolvedX, y: resolvedY } = resolveCollisions(
+        // Resolve all collisions iteratively (stone-to-stone, ban zone, boundaries)
+        const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+        const result = resolveAllCollisions(
           index,
           clampedX,
           clampedY,
           myStones,
+          myBannedZone,
         );
 
-        // Check for ban zone overlap (only during placement phase)
-        const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
-        const banAdjustment = adjustStoneForBanZone(resolvedX, resolvedY, myBannedZone);
-
-        if (banAdjustment.resetToBar) {
+        if (result.resetToBar) {
           // Stone is fully inside ban zone - reset to bar
           setMyStones((prev) =>
             prev.map((s) =>
@@ -364,8 +361,8 @@ const CurlingGameContent = ({
             ),
           );
         } else {
-          // Use adjusted position (pushed out or original)
-          updateStonePosition(index, banAdjustment.position.x, banAdjustment.position.y, true);
+          // Use resolved position
+          updateStonePosition(index, result.x, result.y, true);
         }
       } else {
         // Dropped outside - reset to bar
@@ -456,23 +453,22 @@ const CurlingGameContent = ({
                   );
                   const clampedY = Math.max(minY, Math.min(maxY, rawY));
 
-                  const { x: resolvedX, y: resolvedY } = resolveCollisions(
+                  // Resolve all collisions iteratively
+                  const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+                  const result = resolveAllCollisions(
                     stoneToPlace.index,
                     clampedX,
                     clampedY,
                     myStones,
+                    myBannedZone,
                   );
 
-                  // Check for ban zone overlap
-                  const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
-                  const banAdjustment = adjustStoneForBanZone(resolvedX, resolvedY, myBannedZone);
-
-                  if (!banAdjustment.resetToBar) {
-                    // Place with adjusted position (or original if not overlapping)
+                  if (!result.resetToBar) {
+                    // Place with resolved position
                     updateStonePosition(
                       stoneToPlace.index,
-                      banAdjustment.position.x,
-                      banAdjustment.position.y,
+                      result.x,
+                      result.y,
                       true,
                     );
                   }
@@ -987,25 +983,23 @@ const CurlingGameContent = ({
       );
       const clampedY = Math.max(minY, Math.min(maxY, rawY));
 
-      // Resolve collisions
-      const { x: resolvedX, y: resolvedY } = resolveCollisions(
+      // Resolve all collisions iteratively (stone-to-stone, ban zone, boundaries)
+      const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+      const result = resolveAllCollisions(
         stoneToPlace.index,
         clampedX,
         clampedY,
         myStones,
+        myBannedZone,
       );
 
-      // Check for ban zone overlap
-      const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
-      const banAdjustment = adjustStoneForBanZone(resolvedX, resolvedY, myBannedZone);
-
-      if (banAdjustment.resetToBar) {
+      if (result.resetToBar) {
         // Stone would be fully inside ban zone - don't place
         return;
       }
 
-      // Place the stone with adjusted position
-      updateStonePosition(stoneToPlace.index, banAdjustment.position.x, banAdjustment.position.y, true);
+      // Place the stone with resolved position
+      updateStonePosition(stoneToPlace.index, result.x, result.y, true);
 
       // Enter PENDING state to allow immediate dragging
       startPendingGesture(stoneToPlace.index, "placement");
