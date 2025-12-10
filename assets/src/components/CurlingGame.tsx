@@ -1480,12 +1480,12 @@ const CurlingGameContent = ({
                   <div
                     className="hover-ring absolute rounded-full"
                     style={{
-                      width: stonePixelSize + 6,
-                      height: stonePixelSize + 6,
+                      width: stonePixelSize,
+                      height: stonePixelSize,
                       left: '50%',
                       top: '50%',
                       transform: 'translate(-50%, -50%)',
-                      boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.8)',
+                      boxShadow: '0 0 0 2px #8b5cf6cc',
                       pointerEvents: 'none',
                     }}
                   />
