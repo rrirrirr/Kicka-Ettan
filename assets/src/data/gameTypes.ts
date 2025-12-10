@@ -28,10 +28,11 @@ export const GAME_TYPES: GameType[] = [
         id: 'blind_pick',
         name: 'Blind Pick',
         shortDescription: 'Place stones without seeing your opponent',
-        longDescription: `In Blind Pick mode, both players place their stones simultaneously
-without being able to see where their opponent places theirs.
-Once both players confirm their placements, all stones are revealed
-and any collisions are resolved.`,
+        longDescription: `Both players place their stones simultaneously without seeing where their opponent places theirs.
+
+Once both players confirm their placements, all stones are revealed and any collisions are resolved automatically.
+
+Simple, fast, and all about reading your opponent's mind!`,
         settingsSchema: {
             stones_per_team: {
                 type: 'integer',
@@ -64,11 +65,13 @@ and any collisions are resolved.`,
         id: 'ban_pick',
         name: 'Ban Pick',
         shortDescription: 'Ban a zone, then place stones blind',
-        longDescription: `In Ban Pick mode, each round starts with a strategic ban phase.
-Each player places a circular zone where their opponent cannot place stones.
-Then both players place their stones simultaneously without seeing the opponent's
-placements (like Blind Pick). Once confirmed, all stones are revealed and
-collisions resolved. The ban zones add a layer of strategic depth!`,
+        longDescription: `Ban Pick adds a strategic ban phase before stone placement.
+
+Each player places a circular "ban zone" where their opponent cannot place any stones. This forces creative positioning and rewards smart area denial.
+
+After banning, both players place their stones simultaneously without seeing the opponent's placements — just like Blind Pick. Once confirmed, all stones are revealed and collisions resolved.
+
+The ban zones add a layer of strategic depth!`,
         settingsSchema: {
             stones_per_team: {
                 type: 'integer',

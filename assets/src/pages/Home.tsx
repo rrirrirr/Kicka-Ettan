@@ -145,27 +145,29 @@ const Home = () => {
                 onClose={() => setShowInfo(false)}
                 title="about kicka · ettan"
             >
-                <p>
-                    <strong className="text-gray-900">Kicka Ettan</strong> (Kick the Lead) is a setup tool for real curling games. It helps teams pre-position their lead stones digitally before playing on the actual ice.
-                </p>
+                <div className="space-y-5 px-2">
+                    <p className="text-base text-gray-700 leading-relaxed">
+                        <strong className="text-gray-900">Kicka Ettan</strong> (Kick the Lead) is a setup tool for real curling games. It helps teams pre-position their lead stones digitally before playing on the actual ice.
+                    </p>
 
-                <p>
-                    Instead of physically playing your lead stones, both teams use this app to strategically place them. Once decided, you set up the real stones on the ice in those positions and continue playing the rest of the end normally.
-                </p>
+                    <p className="text-base text-gray-700 leading-relaxed">
+                        Instead of physically playing your lead stones, both teams use this app to strategically place them. Once decided, you set up the real stones on the ice in those positions and continue playing the rest of the end normally.
+                    </p>
 
-                <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
-                    <h3 className="font-bold text-gray-900 mb-2 text-xs uppercase tracking-wider">How It Works</h3>
-                    <ol className="space-y-2 text-xs">
-                        <li><strong>1.</strong> Both teams digitally place their lead stones during the placement phase</li>
-                        <li><strong>2.</strong> After confirmation, all stone positions are revealed</li>
-                        <li><strong>3.</strong> Go to the rink and physically set up stones in those exact positions</li>
-                        <li><strong>4.</strong> Play the rest of the end with real stones from this setup</li>
-                    </ol>
+                    <div className="bg-white/50 p-5 rounded-xl border border-gray-100">
+                        <h3 className="font-bold text-gray-900 mb-3 text-xs uppercase tracking-wider">How It Works</h3>
+                        <ol className="space-y-2.5 text-sm text-gray-700">
+                            <li><strong className="text-gray-900">1.</strong> Both teams digitally place their lead stones during the placement phase</li>
+                            <li><strong className="text-gray-900">2.</strong> After confirmation, all stone positions are revealed</li>
+                            <li><strong className="text-gray-900">3.</strong> Go to the rink and physically set up stones in those exact positions</li>
+                            <li><strong className="text-gray-900">4.</strong> Play the rest of the end with real stones from this setup</li>
+                        </ol>
+                    </div>
+
+                    <p className="text-sm text-gray-500 italic">
+                        Skip the stones everyone forgets about anyway and get to the good part.
+                    </p>
                 </div>
-
-                <p className="text-xs text-gray-500 italic">
-                    Skip the stones everyone forgets about anyway and get to the good part.
-                </p>
             </Dialog>
 
             <div className="card-gradient backdrop-blur-md p-8 rounded-3xl shadow-2xl w-full max-w-md text-center relative overflow-hidden z-10">
@@ -625,10 +627,12 @@ const Home = () => {
                             </Button>
                         </div>
                     ) : (
-                        <div>
-                            <div className="text-gray-600 whitespace-pre-line">
-                                {pickerGameType.longDescription}
-                            </div>
+                        <div className="space-y-4 px-2">
+                            {pickerGameType.longDescription.split('\n\n').map((paragraph, i) => (
+                                <p key={i} className="text-base text-gray-700 leading-relaxed">
+                                    {paragraph}
+                                </p>
+                            ))}
                             <Button
                                 onClick={() => {
                                     setSelectedGameType(pickerGameType);
@@ -651,8 +655,12 @@ const Home = () => {
                 onClose={() => setShowGameTypeInfo(false)}
                 title={selectedGameType.name.toLowerCase()}
             >
-                <div className="text-gray-600 whitespace-pre-line">
-                    {selectedGameType.longDescription}
+                <div className="space-y-4 px-2">
+                    {selectedGameType.longDescription.split('\n\n').map((paragraph, i) => (
+                        <p key={i} className="text-base text-gray-700 leading-relaxed">
+                            {paragraph}
+                        </p>
+                    ))}
                 </div>
             </Dialog>
 
@@ -739,43 +747,45 @@ const Home = () => {
                 onClose={() => setShowBanSizeInfo(false)}
                 title="ban circle sizes"
             >
-                <p className="mb-4">
-                    The ban circle determines how much space you can block from your opponent during the ban phase.
-                </p>
+                <div className="space-y-5 px-2">
+                    <p className="text-base text-gray-700 leading-relaxed">
+                        The ban circle determines how much space you can block from your opponent during the ban phase.
+                    </p>
 
-                <div className="space-y-4">
-                    <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
-                        <h3 className="font-bold text-gray-900 mb-1 text-sm">Small</h3>
-                        <p className="text-xs text-gray-600">
-                            Radius: 30px — A tight restriction that blocks just a specific area. Best for pinpoint denials.
-                        </p>
+                    <div className="space-y-3">
+                        <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
+                            <h3 className="font-bold text-gray-900 mb-1.5 text-sm">Small</h3>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                Radius: 30px — A tight restriction that blocks just a specific area. Best for pinpoint denials.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
+                            <h3 className="font-bold text-gray-900 mb-1.5 text-sm">Medium</h3>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                Radius: 60px — The default size. Balanced coverage for blocking key positions.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
+                            <h3 className="font-bold text-gray-900 mb-1.5 text-sm">Large</h3>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                Radius: 90px — Covers a wider area. Great for blocking entire zones or forcing opponents away.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
+                            <h3 className="font-bold text-gray-900 mb-1.5 text-sm">XL</h3>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                Radius: 120px — Maximum coverage. Makes large portions of the sheet unavailable.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
-                        <h3 className="font-bold text-gray-900 mb-1 text-sm">Medium</h3>
-                        <p className="text-xs text-gray-600">
-                            Radius: 60px — The default size. Balanced coverage for blocking key positions.
-                        </p>
-                    </div>
-
-                    <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
-                        <h3 className="font-bold text-gray-900 mb-1 text-sm">Large</h3>
-                        <p className="text-xs text-gray-600">
-                            Radius: 90px — Covers a wider area. Great for blocking entire zones or forcing opponents away.
-                        </p>
-                    </div>
-
-                    <div className="bg-white/50 p-4 rounded-xl border border-gray-100">
-                        <h3 className="font-bold text-gray-900 mb-1 text-sm">XL</h3>
-                        <p className="text-xs text-gray-600">
-                            Radius: 120px — Maximum coverage. Makes large portions of the sheet unavailable.
-                        </p>
-                    </div>
+                    <p className="text-sm text-gray-500 italic">
+                        Choose a size that fits your strategy — smaller for precision, larger for area control.
+                    </p>
                 </div>
-
-                <p className="text-xs text-gray-500 italic mt-4">
-                    Choose a size that fits your strategy — smaller for precision, larger for area control.
-                </p>
             </Dialog>
         </div>
     );
