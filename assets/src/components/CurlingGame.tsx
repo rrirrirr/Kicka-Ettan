@@ -1405,25 +1405,32 @@ const CurlingGameContent = ({
       {gameState.phase === "placement" && (
         <>
           {/* Render my placed ban as green ring relative to my view */}
-          {myBans.filter(b => b.placed).map((ban) => {
-            const banSize = (gameState.ban_radius || 50) * 2 * scale;
+          {myColor && gameState.banned_zones && (() => {
+            // My ban is stored in the opposite color's banned_zone (because they're swapped)
+            // If I'm red, my ban is in banned_zones.yellow (it restricts yellow)
+            // If I'm yellow, my ban is in banned_zones.red (it restricts red)
+            const opponentColor = myColor === "red" ? "yellow" : "red";
+            const myBanPosition = gameState.banned_zones[opponentColor];
+            if (!myBanPosition) return null;
+
+            const banSize = myBanPosition.radius * 2 * scale;
             return (
               <div
-                key={`my-placed-ban-${ban.index}`}
+                key={`my-placed-ban`}
                 className="absolute rounded-full pointer-events-none"
                 style={{
                   width: banSize,
                   height: banSize,
                   border: "4px solid rgba(74, 222, 128, 0.6)", // green-400 with opacity
-                  left: ban.x * scale,
-                  top: ban.y * scale,
+                  left: myBanPosition.x * scale,
+                  top: myBanPosition.y * scale,
                   marginLeft: -banSize / 2,
                   marginTop: -banSize / 2,
                   zIndex: 0,
                 }}
               />
             );
-          })}
+          })()}
 
           {myColor && gameState.banned_zones && (
             (() => {
