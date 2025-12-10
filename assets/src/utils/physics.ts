@@ -162,6 +162,14 @@ const clampToBoundaries = (x: number, y: number): { x: number; y: number } => {
  * 
  * The loop continues until position stabilizes or max iterations reached.
  */
+/**
+ * Helper: Create a position key for tracking visited positions
+ * Uses fixed precision to handle floating point comparisons
+ */
+const positionKey = (x: number, y: number): string => {
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+};
+
 export const resolveAllCollisions = (
     currentIndex: number,
     currentX: number,
@@ -172,6 +180,10 @@ export const resolveAllCollisions = (
     const MAX_ITERATIONS = 10;
     let x = currentX;
     let y = currentY;
+
+    // Track visited positions to detect oscillation
+    const visitedPositions = new Set<string>();
+    visitedPositions.add(positionKey(x, y));
 
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
         const prevX = x;
@@ -203,11 +215,25 @@ export const resolveAllCollisions = (
         if (x === prevX && y === prevY) {
             break;
         }
+
+        // Check for oscillation (returning to a previously visited position)
+        const currentKey = positionKey(x, y);
+        if (visitedPositions.has(currentKey)) {
+            // Oscillation detected - stone is stuck between constraints
+            // Reset to bar to avoid invalid placement
+            return { x, y, resetToBar: true };
+        }
+        visitedPositions.add(currentKey);
     }
 
-    // Final check: if somehow still out of bounds, reset
-    // This shouldn't happen with proper clamping but safety first
+    // Final validation: check if position is still in an invalid state
+    // (still overlapping ban zone or out of bounds after max iterations)
     if (!isPositionWithinBounds(x, y)) {
+        return { x, y, resetToBar: true };
+    }
+
+    // Check if still overlapping ban zone after all iterations
+    if (isStoneOverlappingBanZone(x, y, banZone)) {
         return { x, y, resetToBar: true };
     }
 

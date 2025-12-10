@@ -118,7 +118,91 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
   end
 
   defp do_resolve_collisions(stones, banned_zones) do
-    fixed_point_iteration(stones, &resolve_one_iteration(&1, banned_zones), @max_collision_iterations)
+    # Use oscillation-aware iteration that tracks visited states
+    resolve_with_oscillation_detection(stones, banned_zones, @max_collision_iterations, MapSet.new())
+  end
+
+  # Oscillation-aware collision resolution
+  # Tracks visited position sets and detects when stones get stuck oscillating
+  defp resolve_with_oscillation_detection(stones, banned_zones, 0, _visited) do
+    # Max iterations reached - validate and reset stuck stones
+    validate_and_reset_stuck_stones(stones, banned_zones)
+  end
+
+  defp resolve_with_oscillation_detection(stones, banned_zones, iterations_left, visited) do
+    # Create a position signature for the current state
+    current_signature = stones_position_signature(stones)
+
+    # Check for oscillation (returning to a previously visited state)
+    if MapSet.member?(visited, current_signature) do
+      Logger.warning("Collision oscillation detected, resetting stuck stones")
+      validate_and_reset_stuck_stones(stones, banned_zones)
+    else
+      # Apply one iteration of collision resolution
+      new_stones = resolve_one_iteration(stones, banned_zones)
+
+      # Check for convergence
+      if new_stones == stones do
+        # Converged - do final validation
+        validate_and_reset_stuck_stones(new_stones, banned_zones)
+      else
+        # Continue with updated visited set
+        new_visited = MapSet.put(visited, current_signature)
+        resolve_with_oscillation_detection(new_stones, banned_zones, iterations_left - 1, new_visited)
+      end
+    end
+  end
+
+  # Create a position signature for the stone set (for oscillation detection)
+  defp stones_position_signature(stones) do
+    stones
+    |> Enum.map(fn stone ->
+      # Multiply by 1.0 to ensure float before rounding (handles integer inputs)
+      x = (get_coord(stone, "x") * 1.0) |> Float.round(2)
+      y = (get_coord(stone, "y") * 1.0) |> Float.round(2)
+      {stone.index, stone.color, x, y}
+    end)
+    |> Enum.sort()
+  end
+
+  # Validate final positions and reset any stones still in invalid positions
+  defp validate_and_reset_stuck_stones(stones, banned_zones) do
+    Enum.map(stones, fn stone ->
+      if is_stone_in_valid_position?(stone, banned_zones) do
+        stone
+      else
+        # Stone is stuck in invalid position - reset to bar (off-sheet position)
+        Logger.warning("Resetting stuck stone #{inspect(stone.color)} ##{stone.index} to bar")
+        Map.merge(stone, %{"x" => -100.0, "y" => -100.0, :reset_to_bar => true})
+      end
+    end)
+  end
+
+  # Check if a stone is in a valid position (not overlapping ban zone, within bounds)
+  defp is_stone_in_valid_position?(stone, banned_zones) do
+    x = get_coord(stone, "x")
+    y = get_coord(stone, "y")
+    color = stone.color
+    ban_zone = Map.get(banned_zones || %{}, color)
+
+    # Check bounds
+    in_bounds = x >= @stone_radius and 
+                x <= @sheet_width - @stone_radius and
+                y >= @stone_radius and
+                y <= @hog_line_offset + @back_line_offset + @stone_radius
+
+    # Check ban zone
+    not_in_ban = case ban_zone do
+      nil -> true
+      %{x: ban_x, y: ban_y, radius: ban_radius} ->
+        dx = x - ban_x
+        dy = y - ban_y
+        distance = :math.sqrt(dx * dx + dy * dy)
+        distance >= @stone_radius + ban_radius
+      _ -> true
+    end
+
+    in_bounds and not_in_ban
   end
 
   defp resolve_one_iteration(stones, banned_zones) do
@@ -227,17 +311,5 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
 
   defp get_coord(stone, key) when is_binary(key) do
     stone[key] || stone[String.to_atom(key)] || 0
-  end
-
-  defp fixed_point_iteration(value, _fun, 0), do: value
-
-  defp fixed_point_iteration(value, fun, max_iterations) do
-    new_value = fun.(value)
-
-    if new_value == value do
-      new_value
-    else
-      fixed_point_iteration(new_value, fun, max_iterations - 1)
-    end
   end
 end
