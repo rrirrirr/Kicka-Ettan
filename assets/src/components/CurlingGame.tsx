@@ -81,6 +81,7 @@ import { RoundStartOverlay } from "./RoundStartOverlay";
 import { GameEndOverlay } from "./GameEndOverlay";
 import { TutorialProvider } from "../contexts/TutorialContext";
 import { PhaseTutorial } from "./tutorial";
+import { PhaseHelpDialog } from "./PhaseHelpDialog";
 
 // ... existing imports ...
 
@@ -2200,21 +2201,12 @@ const CurlingGameContent = ({
       </div>
 
       {/* Help Dialog */}
-      <Dialog
+      <PhaseHelpDialog
         isOpen={showHelp}
         onClose={() => setShowHelp(false)}
-        title="how to play"
-      >
-        <p>
-          <strong className="text-gray-900">1. Place Stones:</strong> Click
-          where you want to place your stone or drag your stones from the bottom
-          bar onto the sheet.
-        </p>
-        <p>
-          <strong className="text-gray-900">2. Confirm:</strong> Once all stones
-          are placed, tap "Finish Placement" to lock them in.
-        </p>
-      </Dialog>
+        phase={gameState.phase}
+        gameType={gameState.game_type}
+      />
 
       <SettingsDialog />
 

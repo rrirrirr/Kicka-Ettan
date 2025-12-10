@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, History, ChevronDown, ChevronUp, Info, Settings, Repeat } from 'lucide-react';
+import { Play, History, ChevronDown, ChevronUp, Info, Settings, Repeat, BookOpen, CircleSlash } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import GameTitle from '../components/GameTitle';
@@ -144,6 +144,8 @@ const Home = () => {
                 isOpen={showInfo}
                 onClose={() => setShowInfo(false)}
                 title="about kicka · ettan"
+                variant="info"
+                headerIcon={<Info size={48} className="text-gray-400" />}
             >
                 <div className="space-y-5 px-2">
                     <p className="text-base text-gray-700 leading-relaxed">
@@ -164,7 +166,7 @@ const Home = () => {
                         </ol>
                     </div>
 
-                    <p className="text-sm text-gray-500 italic">
+                    <p className="text-sm text-gray-500 italic text-center">
                         Skip the stones everyone forgets about anyway and get to the good part.
                     </p>
                 </div>
@@ -653,7 +655,9 @@ const Home = () => {
             <Dialog
                 isOpen={showGameTypeInfo}
                 onClose={() => setShowGameTypeInfo(false)}
-                title={selectedGameType.name.toLowerCase()}
+                title={`about · ${selectedGameType.name.toLowerCase()}`}
+                variant="info"
+                headerIcon={<BookOpen size={48} className="text-gray-400" />}
             >
                 <div className="space-y-4 px-2">
                     {selectedGameType.longDescription.split('\n\n').map((paragraph, i) => (
@@ -746,6 +750,8 @@ const Home = () => {
                 isOpen={showBanSizeInfo}
                 onClose={() => setShowBanSizeInfo(false)}
                 title="ban circle sizes"
+                variant="info"
+                headerIcon={<CircleSlash size={48} className="text-gray-400" />}
             >
                 <div className="space-y-5 px-2">
                     <p className="text-base text-gray-700 leading-relaxed">
@@ -782,7 +788,7 @@ const Home = () => {
                         </div>
                     </div>
 
-                    <p className="text-sm text-gray-500 italic">
+                    <p className="text-sm text-gray-500 italic text-center">
                         Choose a size that fits your strategy — smaller for precision, larger for area control.
                     </p>
                 </div>

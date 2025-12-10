@@ -142,19 +142,19 @@ export const TutorialDialog: React.FC<TutorialDialogProps> = ({
                                 {!isLastStep && (
                                     <button
                                         onClick={handleSkip}
-                                        className="flex-1 py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors"
+                                        className="flex-1 py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors lowercase"
                                     >
-                                        Skip
+                                        skip
                                     </button>
                                 )}
                                 <Button
                                     onClick={handleNext}
-                                    className={`${isLastStep ? 'flex-1' : 'flex-[2]'} h-12`}
+                                    className={`${isLastStep ? 'flex-1' : 'flex-[2]'} h-12 lowercase`}
                                     noHoverAnimation
                                 >
-                                    {isLastStep ? 'Got it!' : (
+                                    {isLastStep ? 'got it!' : (
                                         <>
-                                            Next
+                                            next
                                             <ChevronRight size={18} className="ml-1" />
                                         </>
                                     )}

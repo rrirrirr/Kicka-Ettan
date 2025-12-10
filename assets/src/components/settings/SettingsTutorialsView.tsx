@@ -6,15 +6,17 @@ import { TutorialDialog } from '../tutorial/TutorialDialog';
 
 // Human-readable names for phases
 const PHASE_NAMES: Record<string, string> = {
-    'placement': 'Stone Placement',
-    'combined': 'Measurements',
+    'placement': 'stone placement',
+    'combined': 'measurements',
+    'ban': 'ban phase',
     // Add new phase names here as they're added
 };
 
 // Descriptions for each tutorial
 const PHASE_DESCRIPTIONS: Record<string, string> = {
-    'placement': 'Learn how to place stones on the sheet',
-    'combined': 'Learn how to view and cycle through measurements',
+    'placement': 'learn how to place stones on the sheet',
+    'combined': 'learn how to view and cycle through measurements',
+    'ban': 'learn how to place your ban zone',
 };
 
 export const SettingsTutorialsView: React.FC = () => {
@@ -67,9 +69,9 @@ export const SettingsTutorialsView: React.FC = () => {
                         </div>
                         <button
                             onClick={() => handleWatchTutorial(config)}
-                            className="px-4 py-2 text-sm font-semibold text-lavender-600 hover:text-lavender-700 hover:bg-lavender-50 rounded-lg transition-colors shrink-0"
+                            className="px-4 py-2 text-sm font-semibold text-lavender-600 hover:text-lavender-700 hover:bg-lavender-50 rounded-lg transition-colors shrink-0 lowercase"
                         >
-                            {hasSeen ? 'Watch Again' : 'Watch'}
+                            {hasSeen ? 'watch again' : 'watch'}
                         </button>
                     </div>
                 );
@@ -97,12 +99,12 @@ export const SettingsTutorialsView: React.FC = () => {
                             </div>
                             <div className="text-left">
                                 <h3 className="text-base font-bold text-icy-black">
-                                    {showResetConfirm ? 'Tutorials Reset!' : 'Reset All Tutorials'}
+                                    {showResetConfirm ? 'tutorials reset!' : 'reset all tutorials'}
                                 </h3>
                                 <p className="text-sm text-gray-500">
                                     {showResetConfirm
-                                        ? 'Tutorials will show automatically again'
-                                        : 'Show all tutorials again when entering phases'
+                                        ? 'tutorials will show automatically again'
+                                        : 'show all tutorials again when entering phases'
                                     }
                                 </p>
                             </div>
@@ -114,7 +116,7 @@ export const SettingsTutorialsView: React.FC = () => {
             {/* Empty state */}
             {tutorials.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                    No tutorials available
+                    no tutorials available
                 </div>
             )}
 

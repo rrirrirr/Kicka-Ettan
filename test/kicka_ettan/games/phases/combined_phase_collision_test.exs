@@ -359,4 +359,165 @@ defmodule KickaEttan.Games.Phases.CombinedPhaseCollisionTest do
       assert length(all_stones) == 6
     end
   end
+
+  # =========================================================================
+  # CONCENTRIC SEARCH FALLBACK TESTS
+  # =========================================================================
+  describe "CombinedPhase - Concentric Search Fallback" do
+    test "finds valid position when pushed out of bounds by stone collision" do
+      # Stone near corner with another overlapping - likely to oscillate or get stuck
+      state = setup_combined_phase(
+        [{@stone_radius + 2, @stone_radius + 2}, {@stone_radius + 5, @stone_radius + 5}],
+        []
+      )
+      
+      {:ok, resolved} = GameState.resolve_collisions(state)
+      
+      all_stones = resolved.stones.red
+      
+      # All stones should be in valid positions (not reset to bar)
+      Enum.each(all_stones, fn stone ->
+        assert stone["x"] >= @stone_radius, "Stone x position too small: #{stone["x"]}"
+        assert stone["y"] >= @stone_radius, "Stone y position too small: #{stone["y"]}"
+        # Check not reset to bar
+        assert stone["x"] > 0, "Stone was reset to bar"
+      end)
+    end
+
+    test "finds valid position when squeezed between ban zone and boundary" do
+      # Ban zone near boundary with stone in between
+      banned_zones = %{
+        red: %{x: @stone_radius + 60, y: 400, radius: 40},
+        yellow: nil
+      }
+      # Stone at left edge, overlapping with ban zone pushing toward boundary
+      state = setup_combined_phase([{@stone_radius + 30, 400}], [], banned_zones)
+      
+      {:ok, resolved} = GameState.resolve_collisions(state)
+      
+      [stone] = resolved.stones.red
+      
+      # Should find a valid position (not in ban zone, not out of bounds)
+      assert stone["x"] >= @stone_radius, "Stone pushed out of bounds"
+      assert stone["x"] > 0, "Stone was reset to bar"
+      
+      # Should be outside ban zone
+      dist = distance(stone_pos(stone), {@stone_radius + 60, 400})
+      assert dist >= 40 + @stone_radius - 0.5 or stone["x"] < @stone_radius + 60 - 40 - @stone_radius
+    end
+
+    test "multiple stones crowded in corner find valid positions" do
+      # Several stones placed in a tight cluster near corner
+      red_stones = [
+        {@stone_radius + 5, @stone_radius + 5},
+        {@stone_radius + 10, @stone_radius + 10},
+        {@stone_radius + 8, @stone_radius + 12}
+      ]
+      state = setup_combined_phase(red_stones, [])
+      
+      {:ok, resolved} = GameState.resolve_collisions(state)
+      
+      all_stones = resolved.stones.red
+      
+      # All stones should be in valid positions
+      Enum.each(all_stones, fn stone ->
+        assert stone["x"] >= @stone_radius
+        assert stone["y"] >= @stone_radius
+        assert stone["x"] > 0, "Stone was reset to bar"
+      end)
+      
+      # All stones should be properly separated
+      for i <- 0..(length(all_stones) - 2),
+          j <- (i + 1)..(length(all_stones) - 1) do
+        s1 = Enum.at(all_stones, i)
+        s2 = Enum.at(all_stones, j)
+        dist = distance(stone_pos(s1), stone_pos(s2))
+        assert dist >= @stone_diameter - 0.5
+      end
+    end
+
+    test "stone pushed by collision into ban zone near boundary finds valid position" do
+      # Ban zone near right boundary
+      banned_zones = %{
+        red: %{x: @sheet_width - 60, y: 400, radius: 40},
+        yellow: nil
+      }
+      # Red stone that will be pushed right (toward ban zone and boundary)
+      state = setup_combined_phase(
+        [{@sheet_width - 100, 400}],
+        [{@sheet_width - 95, 400}],  # Yellow stone pushes red to the right
+        banned_zones
+      )
+      
+      {:ok, resolved} = GameState.resolve_collisions(state)
+      
+      [red] = resolved.stones.red
+      [yellow] = resolved.stones.yellow
+      
+      # Neither stone should be reset to bar
+      assert red["x"] > 0, "Red stone was reset to bar"
+      assert yellow["x"] > 0, "Yellow stone was reset to bar"
+      
+      # Both should be within bounds
+      assert red["x"] >= @stone_radius and red["x"] <= @sheet_width - @stone_radius
+      assert yellow["x"] >= @stone_radius and yellow["x"] <= @sheet_width - @stone_radius
+    end
+
+    test "oscillating stones find stable positions through concentric search" do
+      # Create a scenario that might cause oscillation:
+      # Stones in a tight triangle formation
+      center_x = 200
+      center_y = 400
+      offset = 10  # Less than stone radius, guaranteed overlap
+      
+      state = setup_combined_phase(
+        [{center_x, center_y}, {center_x + offset, center_y}, {center_x + offset/2, center_y + offset}],
+        [{center_x - offset, center_y}, {center_x - offset/2, center_y + offset}]
+      )
+      
+      {:ok, resolved} = GameState.resolve_collisions(state)
+      
+      all_stones = resolved.stones.red ++ resolved.stones.yellow
+      
+      # All 5 stones should be properly separated
+      assert length(all_stones) == 5
+      
+      for i <- 0..(length(all_stones) - 2),
+          j <- (i + 1)..(length(all_stones) - 1) do
+        s1 = Enum.at(all_stones, i)
+        s2 = Enum.at(all_stones, j)
+        dist = distance(stone_pos(s1), stone_pos(s2))
+        assert dist >= @stone_diameter - 0.5,
+          "Stones #{i} and #{j} too close: #{dist}"
+      end
+    end
+
+    test "stone trapped between two ban zones finds valid position" do
+      # Two opposing ban zones with a stone in between
+      banned_zones = %{
+        red: %{x: 200, y: 400, radius: 50},  # Red's ban zone on left
+        yellow: nil
+      }
+      # Two red stones - one will push the other toward ban zone
+      state = setup_combined_phase(
+        [{250, 400}, {255, 400}],  # Second stone pushes first toward ban zone
+        [],
+        banned_zones
+      )
+      
+      {:ok, resolved} = GameState.resolve_collisions(state)
+      
+      all_stones = resolved.stones.red
+      
+      # Both stones should be in valid positions
+      Enum.each(all_stones, fn stone ->
+        # Not reset to bar
+        assert stone["x"] > 0, "Stone was reset to bar"
+        
+        # Outside red's ban zone
+        dist = distance(stone_pos(stone), {200, 400})
+        assert dist >= 50 + @stone_radius - 0.5, "Stone still in ban zone"
+      end)
+    end
+  end
 end

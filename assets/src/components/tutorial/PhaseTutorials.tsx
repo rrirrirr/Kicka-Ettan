@@ -31,14 +31,14 @@ export const PHASE_TUTORIALS: Record<string, PhaseTutorialConfig> = {
     steps: [
       {
         id: "placement-methods",
-        title: "Place Your Stones",
+        title: "place your stones",
         description:
           "Drag stones from the bar at the bottom onto the sheet. You can also tap anywhere on the sheet to place a stone, then drag to adjust its position.",
         animation: <PlacementMethodsDemo />,
       },
       {
         id: "loupe-behavior",
-        title: "Using the Loupe",
+        title: "using the loupe",
         description:
           "When dragging, a magnifying loupe appears for precise placement. Near the edges, the loupe will squeeze to the side — you can still place stones at the edge, just keep moving your finger there.",
         animation: <LoupeEdgeDemo />,
@@ -53,21 +53,21 @@ export const PHASE_TUTORIALS: Record<string, PhaseTutorialConfig> = {
     steps: [
       {
         id: "tap-stone",
-        title: "Tap a Stone",
+        title: "tap a stone",
         description:
           "Tap any stone on the sheet to select it and see its measurements.",
         animation: <StoneTapDemo />,
       },
       {
         id: "cycle-measurements",
-        title: "Cycle Measurements",
+        title: "cycle measurements",
         description:
           "Tap the same stone again to cycle through different measurement types: ring distance, T-line, and center line.",
         animation: <MeasurementCycleDemo />,
       },
       {
         id: "step-indicator",
-        title: "Measurement Steps",
+        title: "measurement steps",
         description:
           "The indicator shows which measurement is active. Each zone (house, guard) has its own measurement sequence. You can change the active measurement types by clicking on any of the icons toggle.",
         animation: <StepIndicatorDemo />,
@@ -82,7 +82,7 @@ export const PHASE_TUTORIALS: Record<string, PhaseTutorialConfig> = {
     steps: [
       {
         id: "ban-placement",
-        title: "Place Your Ban",
+        title: "place your ban",
         description:
           "Drag the ban marker from the bottom bar onto the sheet. Valid placement areas are highlighted. The ban ring will block other player to place stones in area.",
         animation: <BanDragDemo />,
