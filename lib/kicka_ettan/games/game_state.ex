@@ -202,18 +202,12 @@ defmodule KickaEttan.Games.GameState do
     Enum.all?(game_state.player_ready, fn {_id, ready} -> ready end)
   end
 
-  @doc """
-  Mark player as ready for next round.
-  """
   def ready_for_next_round(game_state, player_id) do
     with player when not is_nil(player) <- find_player(game_state, player_id) do
       cond do
-        game_state.phase == :placement ->
-          ready_for_next_round = Map.put(game_state.ready_for_next_round, player_id, true)
-          {:ok, %{game_state | ready_for_next_round: ready_for_next_round}}
-
         game_state.phase == :combined ->
-          # Also update the game state's ready_for_next_round map
+          # Player is clicking "Next Round" from combined phase
+          # Update ready_for_next_round and trigger phase transition
           updated_ready = Map.put(game_state.ready_for_next_round, player_id, true)
           game_state = %{game_state | ready_for_next_round: updated_ready}
           
@@ -226,6 +220,12 @@ defmodule KickaEttan.Games.GameState do
             error ->
               error
           end
+
+        game_state.phase in [:ban, :placement] ->
+          # Server has already moved to next round, but this player was still viewing combined.
+          # Just mark them as "started" so they see the current phase.
+          updated_ready = Map.put(game_state.ready_for_next_round, player_id, true)
+          {:ok, %{game_state | ready_for_next_round: updated_ready}}
 
         true ->
           {:ok, game_state}
@@ -320,8 +320,9 @@ defmodule KickaEttan.Games.GameState do
         )
 
         # Handle the special case where player hasn't started next round yet
+        # This applies to both :ban phase (Ban Pick) and :placement phase (Blind Pick)
         case game_state.phase do
-          :placement when not is_nil(player_id) ->
+          phase when phase in [:placement, :ban] and not is_nil(player_id) ->
             player_started = Map.get(game_state.ready_for_next_round, player_id, false)
 
             if not player_started and length(game_state.history) > 0 do
@@ -440,6 +441,7 @@ defmodule KickaEttan.Games.GameState do
 
     player_ready = Map.new(game_state.player_ready, fn {id, _} -> {id, false} end)
     # Keep ready_for_next_round as-is - player who clicked is marked true
+    # The other player can still see combined phase until they click next round
 
     definition = game_state.game_type_module.definition()
     [first_phase | _] = definition.phases
