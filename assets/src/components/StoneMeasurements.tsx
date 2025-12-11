@@ -58,7 +58,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
     smartUnits
   } = useSettings();
 
-  // Helper to format distance based on settings
+  // Helper to format distance based on settings - returns text string for SVG
   const formatDistance = (cm: number): string => {
     // Helper to format as metric
     const formatMetric = () => `${Math.round(cm)}cm`;
@@ -83,16 +83,28 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
             return baseUnitSystem === 'imperial' ? formatImperial() : formatMetric();
           case 'stone':
             const stones = cm / (STONE_RADIUS * 2);
-            return `${stones.toFixed(1)} stones`;
+            return `${stones.toFixed(1)}`;
           case 'broom':
             const brooms = cm / 120; // Assuming 1.2m broom
-            return `${brooms.toFixed(1)} brooms`;
+            return `${brooms.toFixed(1)}`;
         }
       }
     }
 
     // Fallback to base unit system
     return baseUnitSystem === 'imperial' ? formatImperial() : formatMetric();
+  };
+
+  // Helper to get the icon component for the current unit
+  const getUnitIcon = (cm: number): 'stone' | 'broom' | null => {
+    if (unitSystem === 'smart') {
+      const rule = smartUnits.find(r => cm <= r.maxDistance);
+      if (rule) {
+        if (rule.unit === 'stone') return 'stone';
+        if (rule.unit === 'broom') return 'broom';
+      }
+    }
+    return null;
   };
 
   // Combine all stones into a single array for rendering
@@ -312,6 +324,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               displaySettings={displaySettings}
               opacity={opacity}
               formatDistance={formatDistance}
+              getUnitIcon={getUnitIcon}
               isHighlighted={isHighlighted}
               highlightedStone={highlightedStone}
               shouldShowInToggle={shouldShowGuardInToggle}
@@ -332,6 +345,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               displaySettings={displaySettings}
               opacity={opacity}
               formatDistance={formatDistance}
+              getUnitIcon={getUnitIcon}
               isHighlighted={isHighlighted}
               highlightedStone={highlightedStone}
               shouldShowInToggle={shouldShowTLineInToggle}
@@ -356,6 +370,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               displaySettings={displaySettings}
               opacity={opacity}
               formatDistance={formatDistance}
+              getUnitIcon={getUnitIcon}
               isHighlighted={isHighlighted}
               highlightedStone={highlightedStone}
               shouldShowInToggle={shouldShowCenterLineInToggle}
@@ -384,6 +399,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               displaySettings={displaySettings}
               opacity={opacity}
               formatDistance={formatDistance}
+              getUnitIcon={getUnitIcon}
               isHighlighted={isHighlighted}
               highlightedStone={highlightedStone}
               shouldShowInToggle={shouldShowClosestRingInToggle}
@@ -410,6 +426,7 @@ export const StoneMeasurements: React.FC<StoneMeasurementsProps> = ({
               displaySettings={displaySettings}
               opacity={opacity}
               formatDistance={formatDistance}
+              getUnitIcon={getUnitIcon}
               isHighlighted={isHighlighted}
               highlightedStone={highlightedStone}
               allStones={allStones}

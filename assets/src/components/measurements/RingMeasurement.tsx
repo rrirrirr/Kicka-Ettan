@@ -1,5 +1,6 @@
 import React from 'react';
 import { STONE_RADIUS, BUTTON_RADIUS } from '../../utils/constants';
+import { MeasurementIcon } from './MeasurementIcon';
 
 interface RingMeasurementProps {
 
@@ -7,6 +8,7 @@ interface RingMeasurementProps {
     displaySettings: any;
     opacity: string;
     formatDistance: (cm: number) => string;
+    getUnitIcon?: (cm: number) => 'stone' | 'broom' | null;
     isHighlighted: boolean;
     highlightedStone: any;
     shouldShowInToggle: boolean;
@@ -32,6 +34,7 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
     displaySettings,
     opacity,
     formatDistance,
+    getUnitIcon,
     isHighlighted,
     highlightedStone,
     shouldShowInToggle,
@@ -201,12 +204,15 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                                         // Calculate split percentages same as other rings
                                         const overlapDistance = Math.abs(minDistToRingEdge);
                                         const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+                                        const showDistance = overlapPercent1 < 25;
+                                        const iconType = showDistance ? getUnitIcon?.(overlapDistance) : null;
+                                        const distanceText = showDistance ? formatDistance(overlapDistance) : `${overlapPercent1}%`;
 
                                         return (
                                             <>
                                                 {/* Cyan text (no outline needed) */}
                                                 <text
-                                                    x="0"
+                                                    x={iconType ? "-6" : "0"}
                                                     y="0"
                                                     fill="var(--color-cyan-600)"
                                                     fontSize={fontSize}
@@ -214,10 +220,13 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                                                     textAnchor="middle"
                                                     dominantBaseline="middle"
                                                 >
-                                                    {overlapPercent1 < 25
-                                                        ? formatDistance(overlapDistance)
-                                                        : `${overlapPercent1}%`}
+                                                    {distanceText}
                                                 </text>
+                                                {iconType && (
+                                                    <g transform="translate(6, -5)">
+                                                        <MeasurementIcon type={iconType} color="var(--color-cyan-600)" opacity={opacity} />
+                                                    </g>
+                                                )}
                                             </>
                                         );
                                     }
@@ -227,6 +236,9 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                                         // Calculate split percentages for overlap display
                                         const overlapDistance = Math.abs(minDistToRingEdge);
                                         const overlapPercent1 = Math.round((overlapDistance / (STONE_RADIUS * 2)) * 100);
+                                        const showDistance = overlapPercent1 < 25;
+                                        const iconType = showDistance ? getUnitIcon?.(overlapDistance) : null;
+                                        const distanceText = showDistance ? formatDistance(overlapDistance) : `${overlapPercent1}%`;
 
                                         return (
                                             <g>
@@ -261,7 +273,7 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                                                 {/* Percentage Text */}
                                                 {/* Cyan text (no outline) */}
                                                 <text
-                                                    x={overlapPercent1 < 25 ? "20" : "10"}
+                                                    x={iconType ? (showDistance ? "14" : "10") : (showDistance ? "20" : "10")}
                                                     y="0"
                                                     fill="var(--color-cyan-600)"
                                                     fontSize={fontSize}
@@ -269,18 +281,24 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                                                     textAnchor="middle"
                                                     dominantBaseline="middle"
                                                 >
-                                                    {overlapPercent1 < 25
-                                                        ? formatDistance(overlapDistance)
-                                                        : `${overlapPercent1}%`}
+                                                    {distanceText}
                                                 </text>
+                                                {iconType && (
+                                                    <g transform="translate(26, -5)">
+                                                        <MeasurementIcon type={iconType} color="var(--color-cyan-600)" opacity={opacity} />
+                                                    </g>
+                                                )}
                                             </g>
                                         );
                                     } else {
+                                        const iconType = getUnitIcon?.(displayDistanceToRing);
+                                        const distanceText = formatDistance(displayDistanceToRing);
+
                                         return (
                                             <>
                                                 {/* Cyan text (no outline) */}
                                                 <text
-                                                    x="0"
+                                                    x={iconType ? "-6" : "0"}
                                                     y="0"
                                                     fill="var(--color-cyan-600)" // Cyan-600 (high visibility on white)
                                                     fontSize={fontSize}
@@ -288,8 +306,13 @@ export const RingMeasurement: React.FC<RingMeasurementProps> = ({
                                                     textAnchor="middle"
                                                     dominantBaseline="middle"
                                                 >
-                                                    {formatDistance(displayDistanceToRing)}
+                                                    {distanceText}
                                                 </text>
+                                                {iconType && (
+                                                    <g transform="translate(6, -5)">
+                                                        <MeasurementIcon type={iconType} color="var(--color-cyan-600)" opacity={opacity} />
+                                                    </g>
+                                                )}
                                             </>
                                         );
                                     }

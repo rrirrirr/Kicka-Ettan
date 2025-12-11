@@ -1,0 +1,98 @@
+name: Deploy to Test
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.15'
+          otp-version: '26'
+
+      - name: Setup Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get --only prod
+          cd assets && $HOME/.bun/bin/bun install
+
+      - name: Build frontend
+        run: |
+          cd assets
+          $HOME/.bun/bin/bun run build
+          cd ..
+
+      - name: Build release
+        env:
+          MIX_ENV: prod
+        run: |
+          mix compile
+          mix assets.deploy
+          mix release
+
+      - name: Create deployment tarball
+        run: |
+          cd _build/prod/rel/kicka_ettan
+          tar -czf ${{ github.workspace }}/kicka_ettan.tar.gz .
+
+      - name: Deploy to Digital Ocean
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "kicka_ettan.tar.gz"
+          target: "/tmp/kicka_ettan_test.tar.gz"
+
+      - name: Restart application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Helper function for deploying
+            deploy_app() {
+              APP_NAME=$1
+              TAR_NAME=$2
+              SERVICE_NAME=$3
+              
+              echo "🚀 Deploying $APP_NAME..."
+              
+              # Stop service
+              sudo systemctl stop $SERVICE_NAME || true
+              
+              # Setup directory
+              mkdir -p /home/deploy/$APP_NAME
+              cd /home/deploy/$APP_NAME
+              
+              # Cleanup old files (preserve untracked/env files if needed, but standard deploy usually wipes)
+              # Standard practice: wipe bin, lib, releases. Keep uploads/env if inside? 
+              # Usually env is in /etc/ or external.
+              rm -rf lib bin releases erts-*
+              
+              # Extract
+              tar -xzf /tmp/$TAR_NAME
+              rm /tmp/$TAR_NAME
+              
+              # Start service
+              sudo systemctl start $SERVICE_NAME
+              sudo systemctl status $SERVICE_NAME
+            }
+            
+            deploy_app "kicka_ettan_test" "kicka_ettan_test.tar.gz" "kicka_ettan_test"

@@ -5,7 +5,8 @@ const getApiUrl = () => {
     if (import.meta.env.DEV) {
         // If accessing via local network IP, use that IP for the API too
         const hostname = window.location.hostname;
-        return `http://${hostname}:4000`;
+        const port = window.location.port === '4002' ? '4002' : '4000';
+        return `http://${hostname}:${port}`;
     }
     // Production - use same domain as frontend
     return `${window.location.protocol}//${window.location.host}`;
@@ -15,7 +16,8 @@ const getWebSocketUrl = () => {
     // In development, always use the dev server
     if (import.meta.env.DEV) {
         const hostname = window.location.hostname;
-        return `ws://${hostname}:4000/socket`;
+        const port = window.location.port === '4002' ? '4002' : '4000';
+        return `ws://${hostname}:${port}/socket`;
     }
     // Production - use wss with same domain
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

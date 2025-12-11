@@ -10,7 +10,7 @@ config :kicka_ettan, KickaEttan.Repo,
   password: "postgres",
   hostname: "localhost",
   database: "kicka_ettan_test#{System.get_env("MIX_TEST_PARTITION")}",
-  pool: Ecto.Adapters.SQL.Sandbox,
+  pool: if(System.get_env("E2E"), do: DBConnection.ConnectionPool, else: Ecto.Adapters.SQL.Sandbox),
   pool_size: System.schedulers_online() * 2
 
 # We don't run a server during test. If one is required,
@@ -20,7 +20,8 @@ config :kicka_ettan, KickaEttanWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "Gp9O4DY68mgZD/M0O3NSpke3cuT+FTi1TV1nTzIY1r7pP64Efx9y8gTZAAp4DirX",
   signing_salt: "test_signing_salt",
-  server: false
+  check_origin: false,
+  server: !!System.get_env("E2E")
 
 # Print only warnings and errors during test
 config :logger, level: :warning

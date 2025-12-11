@@ -1,6 +1,5 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Home, RotateCcw } from 'lucide-react';
+import { Trophy, Home } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface GameEndOverlayProps {

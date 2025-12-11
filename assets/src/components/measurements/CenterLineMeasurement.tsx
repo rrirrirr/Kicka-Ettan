@@ -1,5 +1,6 @@
 import React from 'react';
 import { STONE_RADIUS } from '../../utils/constants';
+import { MeasurementIcon } from './MeasurementIcon';
 
 interface CenterLineMeasurementProps {
     stone: { pos: { x: number; y: number }; color: string; index: number };
@@ -7,6 +8,7 @@ interface CenterLineMeasurementProps {
     displaySettings: any;
     opacity: string;
     formatDistance: (cm: number) => string;
+    getUnitIcon?: (cm: number) => 'stone' | 'broom' | null;
     isHighlighted: boolean;
     highlightedStone: any;
     shouldShowInToggle: boolean;
@@ -36,6 +38,7 @@ export const CenterLineMeasurement: React.FC<CenterLineMeasurementProps> = ({
     displaySettings,
     opacity,
     formatDistance,
+    getUnitIcon,
     isHighlighted,
     highlightedStone,
     shouldShowInToggle,
@@ -167,32 +170,71 @@ export const CenterLineMeasurement: React.FC<CenterLineMeasurementProps> = ({
             {/* Distance label for Center Line */}
             {displaySettings.centerLine.showDistance && (
                 <>
-                    <g
-                        transform={`translate(${(horizontalLineStartX + centerLinePixelX) / 2}, ${stonePixelY + horizontalLabelOffset})`}
-                        opacity={opacity}
-                    >
-                        {/* Text label */}
-                        <text
-                            x="0"
-                            y="0"
-                            fill={highVisibilityTextColor}
-                            fontSize={fontSize}
-                            fontWeight={fontWeight}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            style={{ transition: "all 0.2s ease" }}
-                        >
-                            {(() => {
-                                const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
-                                const displayValue = isCenterLineOverlapping
-                                    ? Math.abs(deltaX)
-                                    : displayDistanceToCenter;
-                                return isLeftOfCenter
-                                    ? `${formatDistance(displayValue)} →`
-                                    : `← ${formatDistance(displayValue)}`;
-                            })()}
-                        </text>
-                    </g>
+                    {(() => {
+                        const isCenterLineOverlapping = Math.abs(deltaX) < STONE_RADIUS;
+                        const displayValue = isCenterLineOverlapping
+                            ? Math.abs(deltaX)
+                            : displayDistanceToCenter;
+                        const iconType = getUnitIcon?.(displayValue);
+                        const distanceText = formatDistance(displayValue);
+                        const arrow = isLeftOfCenter ? "→" : "←";
+
+                        return (
+                            <g
+                                transform={`translate(${(horizontalLineStartX + centerLinePixelX) / 2}, ${stonePixelY + horizontalLabelOffset})`}
+                                opacity={opacity}
+                            >
+                                {!iconType ? (
+                                    // Simple case: arrow and text together
+                                    <text
+                                        x="0"
+                                        y="0"
+                                        fill={highVisibilityTextColor}
+                                        fontSize={fontSize}
+                                        fontWeight={fontWeight}
+                                        textAnchor="middle"
+                                        dominantBaseline="middle"
+                                        style={{ transition: "all 0.2s ease" }}
+                                    >
+                                        {isLeftOfCenter ? `${distanceText} ${arrow}` : `${arrow} ${distanceText}`}
+                                    </text>
+                                ) : (
+                                    // With icon: use foreignObject for natural HTML layout
+                                    <foreignObject x="-50" y="-10" width="100" height="20" style={{ overflow: "visible" }}>
+                                        <div style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            gap: "2px",
+                                            fontSize,
+                                            fontWeight,
+                                            color: highVisibilityTextColor,
+                                            transition: "all 0.2s ease",
+                                            whiteSpace: "nowrap"
+                                        }}>
+                                            {isLeftOfCenter ? (
+                                                <>
+                                                    <span>{distanceText}</span>
+                                                    <span style={{ display: "inline-flex", alignItems: "center" }}>
+                                                        <MeasurementIcon type={iconType} color={highVisibilityTextColor} opacity={opacity} standalone />
+                                                    </span>
+                                                    <span>{arrow}</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>{arrow}</span>
+                                                    <span>{distanceText}</span>
+                                                    <span style={{ display: "inline-flex", alignItems: "center" }}>
+                                                        <MeasurementIcon type={iconType} color={highVisibilityTextColor} opacity={opacity} standalone />
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </foreignObject>
+                                )}
+                            </g>
+                        );
+                    })()}
                 </>
             )}
 

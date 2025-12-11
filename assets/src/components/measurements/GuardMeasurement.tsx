@@ -1,5 +1,6 @@
 import React from 'react';
 import { SHEET_WIDTH, STONE_RADIUS } from '../../utils/constants';
+import { MeasurementIcon } from './MeasurementIcon';
 
 interface GuardMeasurementProps {
     stone: { pos: { x: number; y: number }; color: string; index: number };
@@ -7,6 +8,7 @@ interface GuardMeasurementProps {
     displaySettings: any;
     opacity: string;
     formatDistance: (cm: number) => string;
+    getUnitIcon?: (cm: number) => 'stone' | 'broom' | null;
     isHighlighted: boolean;
     highlightedStone: any;
     shouldShowInToggle: boolean;
@@ -59,6 +61,7 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
     displaySettings,
     opacity,
     formatDistance,
+    getUnitIcon,
     isHighlighted,
     highlightedStone,
     shouldShowInToggle,
@@ -152,40 +155,63 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                             />
 
                             {/* Distance Label (cm) */}
-                            {/* Black outline - only for house zone */}
-                            {!isInGuardZone && (
-                                <text
-                                    x={labelX}
-                                    y={labelY}
-                                    fill="black"
-                                    fillOpacity="0.3"
-                                    stroke="black"
-                                    strokeOpacity="0.3"
-                                    strokeWidth="3"
-                                    fontSize={useHighlightedStyle ? "12" : "10"}
-                                    fontWeight="600"
-                                    textAnchor="start"
-                                    dominantBaseline="middle"
-                                    opacity={opacity}
-                                    style={{ transition: "all 0.2s ease" }}
-                                >
-                                    {formatDistance(distanceCm)}
-                                </text>
-                            )}
-                            {/* Purple text on top */}
-                            <text
-                                x={labelX}
-                                y={labelY}
-                                fill="var(--color-lavender-500)"
-                                fontSize={useHighlightedStyle ? "12" : "10"}
-                                fontWeight="600"
-                                textAnchor="start"
-                                dominantBaseline="middle"
-                                opacity={opacity}
-                                style={{ transition: "all 0.2s ease" }}
-                            >
-                                {formatDistance(distanceCm)}
-                            </text>
+                            {(() => {
+                                const iconType = getUnitIcon?.(distanceCm);
+                                const distanceText = formatDistance(distanceCm);
+                                const textX = iconType ? labelX - 6 : labelX;
+                                const iconX = labelX + (distanceText.length * (useHighlightedStyle ? 6 : 5));
+
+                                return (
+                                    <>
+                                        {/* Black outline - only for house zone */}
+                                        {!isInGuardZone && (
+                                            <>
+                                                <text
+                                                    x={textX}
+                                                    y={labelY}
+                                                    fill="black"
+                                                    fillOpacity="0.3"
+                                                    stroke="black"
+                                                    strokeOpacity="0.3"
+                                                    strokeWidth="3"
+                                                    fontSize={useHighlightedStyle ? "12" : "10"}
+                                                    fontWeight="600"
+                                                    textAnchor="start"
+                                                    dominantBaseline="middle"
+                                                    opacity={opacity}
+                                                    style={{ transition: "all 0.2s ease" }}
+                                                >
+                                                    {distanceText}
+                                                </text>
+                                                {iconType && (
+                                                    <g transform={`translate(${iconX}, ${labelY - 5})`}>
+                                                        <MeasurementIcon type={iconType} color="black" opacity={String(0.3)} />
+                                                    </g>
+                                                )}
+                                            </>
+                                        )}
+                                        {/* Purple text on top */}
+                                        <text
+                                            x={textX}
+                                            y={labelY}
+                                            fill="var(--color-lavender-500)"
+                                            fontSize={useHighlightedStyle ? "12" : "10"}
+                                            fontWeight="600"
+                                            textAnchor="start"
+                                            dominantBaseline="middle"
+                                            opacity={opacity}
+                                            style={{ transition: "all 0.2s ease" }}
+                                        >
+                                            {distanceText}
+                                        </text>
+                                        {iconType && (
+                                            <g transform={`translate(${iconX}, ${labelY - 5})`}>
+                                                <MeasurementIcon type={iconType} color="var(--color-lavender-500)" opacity={opacity} />
+                                            </g>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </>
                     );
                 } else {
@@ -370,28 +396,35 @@ export const GuardMeasurement: React.FC<GuardMeasurementProps> = ({
                             )}
 
                             {/* Brace Label - Distance in cm */}
-                            {displaySettings.guard.showDistance && (
-                                <>
-                                    {/* Purple text (no outline for guard zone) */}
-                                    <text
-                                        x={labelX}
-                                        y={
-                                            midY +
-                                            verticalAdjustment +
-                                            (useHighlightedStyle ? 8 : 6)
-                                        }
-                                        fill="var(--color-lavender-500)" // Purple-500
-                                        fontSize={useHighlightedStyle ? "12" : "10"}
-                                        fontWeight="600"
-                                        textAnchor="middle"
-                                        dominantBaseline="middle"
-                                        opacity={opacity}
-                                        style={{ transition: "all 0.2s ease" }}
-                                    >
-                                        {formatDistance(braceDistanceCm)}
-                                    </text>
-                                </>
-                            )}
+                            {displaySettings.guard.showDistance && (() => {
+                                const iconType = getUnitIcon?.(braceDistanceCm);
+                                const distanceText = formatDistance(braceDistanceCm);
+                                const yPos = midY + verticalAdjustment + (useHighlightedStyle ? 8 : 6);
+
+                                return (
+                                    <>
+                                        {/* Purple text (no outline for guard zone) */}
+                                        <text
+                                            x={iconType ? labelX - 8 : labelX}
+                                            y={yPos}
+                                            fill="var(--color-lavender-500)"
+                                            fontSize={useHighlightedStyle ? "12" : "10"}
+                                            fontWeight="600"
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            opacity={opacity}
+                                            style={{ transition: "all 0.2s ease" }}
+                                        >
+                                            {distanceText}
+                                        </text>
+                                        {iconType && (
+                                            <g transform={`translate(${labelX + 8}, ${yPos - 5})`}>
+                                                <MeasurementIcon type={iconType} color="var(--color-lavender-500)" opacity={opacity} />
+                                            </g>
+                                        )}
+                                    </>
+                                );
+                            })()}
 
                             {/* Extension Line Label */}
                             {/* Purple text (no outline for guard zone) */}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { STONE_RADIUS } from '../../utils/constants';
+import { MeasurementIcon } from './MeasurementIcon';
 
 interface TLineMeasurementProps {
 
@@ -7,6 +8,7 @@ interface TLineMeasurementProps {
     displaySettings: any;
     opacity: string;
     formatDistance: (cm: number) => string;
+    getUnitIcon?: (cm: number) => 'stone' | 'broom' | null;
     isHighlighted: boolean;
     highlightedStone: any;
     shouldShowInToggle: boolean;
@@ -30,6 +32,7 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
     displaySettings,
     opacity,
     formatDistance,
+    getUnitIcon,
     isHighlighted,
     highlightedStone,
     shouldShowInToggle,
@@ -85,32 +88,59 @@ export const TLineMeasurement: React.FC<TLineMeasurementProps> = ({
                 );
             })()}
             {/* Distance label for Tee Line */}
-            {displaySettings.tLine.showDistance && (
-                <g
-                    transform={`translate(${stonePixelX + teeLineLabelHorizontalOffset}, ${(stonePixelY + teeLinePixelY) / 2})`}
-                    opacity={opacity}
-                >
-                    {/* Text label */}
-                    <text
-                        x="0"
-                        y="0"
-                        fill={highVisibilityTextColor}
-                        fontSize={fontSize}
-                        fontWeight={fontWeight}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        style={{ transition: "all 0.2s ease" }}
+            {displaySettings.tLine.showDistance && (() => {
+                const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
+                const displayValue = isTLineOverlapping
+                    ? Math.abs(deltaY)
+                    : displayDistanceToTee;
+                const iconType = getUnitIcon?.(displayValue);
+                const distanceText = formatDistance(displayValue);
+                const arrow = isAboveTee ? "↓" : "↑";
+
+                return (
+                    <g
+                        transform={`translate(${stonePixelX + teeLineLabelHorizontalOffset}, ${(stonePixelY + teeLinePixelY) / 2})`}
+                        opacity={opacity}
                     >
-                        {(() => {
-                            const isTLineOverlapping = Math.abs(deltaY) < STONE_RADIUS;
-                            const displayValue = isTLineOverlapping
-                                ? Math.abs(deltaY)
-                                : displayDistanceToTee;
-                            return `${formatDistance(displayValue)} ${isAboveTee ? "↓" : "↑"}`;
-                        })()}
-                    </text>
-                </g>
-            )}
+                        {!iconType ? (
+                            // Simple case: just text and arrow together
+                            <text
+                                x="0"
+                                y="0"
+                                fill={highVisibilityTextColor}
+                                fontSize={fontSize}
+                                fontWeight={fontWeight}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                style={{ transition: "all 0.2s ease" }}
+                            >
+                                {distanceText} {arrow}
+                            </text>
+                        ) : (
+                            // With icon: use foreignObject for natural HTML layout
+                            <foreignObject x="-50" y="-10" width="100" height="20" style={{ overflow: "visible" }}>
+                                <div style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "2px",
+                                    fontSize,
+                                    fontWeight,
+                                    color: highVisibilityTextColor,
+                                    transition: "all 0.2s ease",
+                                    whiteSpace: "nowrap"
+                                }}>
+                                    <span>{distanceText}</span>
+                                    <span style={{ display: "inline-flex", alignItems: "center" }}>
+                                        <MeasurementIcon type={iconType} color={highVisibilityTextColor} opacity={opacity} standalone />
+                                    </span>
+                                    <span>{arrow}</span>
+                                </div>
+                            </foreignObject>
+                        )}
+                    </g>
+                );
+            })()}
 
             {/* Progress Bar Overlay on Stone for T-Line (when overlapping) - Hover/Select Mode */}
             {(() => {

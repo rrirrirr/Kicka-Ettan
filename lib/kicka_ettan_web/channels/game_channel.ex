@@ -46,9 +46,11 @@ defmodule KickaEttanWeb.GameChannel do
       player_id = socket.assigns.player_id
 
       case GameServer.place_stone(game_id, player_id, index, position) do
-        {:ok, _state} -> {:reply, :ok, socket}
+        {:ok, _state} -> 
+          Logger.info("Channel: place_stone success")
+          {:reply, :ok, socket}
         {:error, reason} -> 
-          Logger.warning("place_stone failed", reason: reason)
+          Logger.error("Channel: place_stone failed: #{inspect(reason)}")
           {:reply, {:error, %{reason: reason}}, socket}
       end
     else

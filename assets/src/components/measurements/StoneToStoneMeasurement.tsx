@@ -1,5 +1,6 @@
 import React from 'react';
 import { STONE_RADIUS } from '../../utils/constants';
+import { MeasurementIcon } from './MeasurementIcon';
 
 interface StoneToStoneMeasurementProps {
     stone: { pos: { x: number; y: number }; color: string; index: number };
@@ -7,6 +8,7 @@ interface StoneToStoneMeasurementProps {
     displaySettings: any;
     opacity: string;
     formatDistance: (cm: number) => string;
+    getUnitIcon?: (cm: number) => 'stone' | 'broom' | null;
     isHighlighted: boolean;
     highlightedStone: any;
     allStones: Array<{ pos: { x: number; y: number }; color: string; index: number }>;
@@ -18,6 +20,7 @@ export const StoneToStoneMeasurement: React.FC<StoneToStoneMeasurementProps> = (
     displaySettings,
     opacity,
     formatDistance,
+    getUnitIcon,
     isHighlighted,
     highlightedStone,
     allStones
@@ -82,22 +85,33 @@ export const StoneToStoneMeasurement: React.FC<StoneToStoneMeasurementProps> = (
                             strokeDasharray="4,2"
                             opacity={opacity}
                         />
-                        {displaySettings.stoneToStone?.showDistance && (
-                            <g transform={`translate(${labelX}, ${labelY})`}>
-                                {/* Green text (no outline) */}
-                                <text
-                                    x="0"
-                                    y="4"
-                                    textAnchor="middle"
-                                    fontSize="10"
-                                    fontWeight="bold"
-                                    fill="var(--color-lime-600)"
-                                    opacity={opacity}
-                                >
-                                    {formatDistance(edgeDist)}
-                                </text>
-                            </g>
-                        )}
+                        {displaySettings.stoneToStone?.showDistance && (() => {
+                            const iconType = getUnitIcon?.(edgeDist);
+                            const distanceText = formatDistance(edgeDist);
+
+                            return (
+                                <g transform={`translate(${labelX}, ${labelY})`}>
+                                    {/* Distance text */}
+                                    <text
+                                        x={iconType ? "-6" : "0"}
+                                        y="4"
+                                        textAnchor="middle"
+                                        fontSize="10"
+                                        fontWeight="bold"
+                                        fill="var(--color-lime-600)"
+                                        opacity={opacity}
+                                    >
+                                        {distanceText}
+                                    </text>
+                                    {/* Icon */}
+                                    {iconType && (
+                                        <g transform="translate(6, 0)">
+                                            <MeasurementIcon type={iconType} color="var(--color-lime-600)" opacity={opacity} />
+                                        </g>
+                                    )}
+                                </g>
+                            );
+                        })()}
                     </React.Fragment>
                 );
             })}
