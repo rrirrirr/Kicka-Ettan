@@ -1,0 +1,19 @@
+[Unit]
+Description=Kicka Ettan Test - Curling Lead Setup (Test Env)
+After=network.target postgresql.service
+
+[Service]
+Type=forking
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/kicka_ettan_test
+# Load environment variables from file
+EnvironmentFile=/etc/kicka_ettan/kicka_ettan_test.env
+ExecStart=/home/deploy/kicka_ettan_test/bin/kicka_ettan start
+ExecStop=/home/deploy/kicka_ettan_test/bin/kicka_ettan stop
+Restart=on-failure
+RestartSec=5
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
