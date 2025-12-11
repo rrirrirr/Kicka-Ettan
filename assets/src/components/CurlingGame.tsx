@@ -2172,6 +2172,7 @@ const CurlingGameContent = ({
                       onClick={handleNextRound}
                       variant="primary"
                       className="flex-grow h-12 text-base"
+                      noHoverAnimation
                     >
                       start next round
                     </Button>
