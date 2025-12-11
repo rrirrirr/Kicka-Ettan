@@ -324,11 +324,28 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [sheetSettings, setSheetSettings] = useState<SheetSettings>(() => {
         return loadFromStorage(STORAGE_KEYS.SHEET_SETTINGS, defaultSheetSettings);
     });
+    const getBrowserPreferredUnitSystem = (): 'metric' | 'imperial' => {
+        // Check navigator.language (e.g., "en-US")
+        // Safe access in case we are in an environment where navigator is undefined (though unlikely in browser)
+        if (typeof navigator === 'undefined') return 'metric';
+
+        const locale = navigator.language || (navigator.languages && navigator.languages[0]) || 'en-GB';
+
+        // US, Liberia (LR), and Myanmar (MM) generally use imperial/customary
+        // Check if the locale starts with en-US or matches exactly
+        if (locale === 'en-US' || locale.startsWith('en-US') ||
+            locale === 'en-LR' || locale.startsWith('en-LR') ||
+            locale === 'my-MM' || locale.startsWith('my-MM')) {
+            return 'imperial';
+        }
+        return 'metric';
+    };
+
     const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
-        return loadFromStorage(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
+        return loadFromStorage(STORAGE_KEYS.UNIT_SYSTEM, getBrowserPreferredUnitSystem());
     });
     const [baseUnitSystem, setBaseUnitSystem] = useState<'metric' | 'imperial'>(() => {
-        const stored = loadFromStorage<UnitSystem>(STORAGE_KEYS.UNIT_SYSTEM, 'metric');
+        const stored = loadFromStorage<UnitSystem>(STORAGE_KEYS.UNIT_SYSTEM, getBrowserPreferredUnitSystem());
         return stored === 'smart' ? 'metric' : stored;
     });
     const [smartUnits, setSmartUnits] = useState<SmartUnitRule[]>(() => {
