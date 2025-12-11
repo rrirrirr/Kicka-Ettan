@@ -1012,8 +1012,8 @@ const BanMarker: React.FC<{ size: number; opacity?: number }> = ({
       width: size,
       height: size,
       borderRadius: "50%",
-      border: "4px dashed #C41E3A",
-      backgroundColor: "rgba(196, 30, 58, 0.25)",
+      border: "4px dashed #FB923C",
+      backgroundColor: "rgba(251, 146, 60, 0.25)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -1027,7 +1027,7 @@ const BanMarker: React.FC<{ size: number; opacity?: number }> = ({
       height={size * 0.5}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#C41E3A"
+      stroke="#FB923C"
       strokeWidth="3"
       strokeLinecap="round"
       strokeLinejoin="round"

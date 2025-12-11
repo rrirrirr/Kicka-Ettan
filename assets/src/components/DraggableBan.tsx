@@ -30,8 +30,8 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
                     width: size,
                     height: size,
                     borderRadius: '50%',
-                    border: '4px dashed #C41E3A',
-                    backgroundColor: 'rgba(196, 30, 58, 0.25)',
+                    border: '4px dashed #FB923C',
+                    backgroundColor: 'rgba(251, 146, 60, 0.25)',
                     position: isPlaced ? 'absolute' : 'relative',
                     left: isPlaced ? position?.x : undefined,
                     top: isPlaced ? position?.y : undefined,
@@ -44,7 +44,7 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
                     pointerEvents: 'none'
                 }}
             >
-                <X size={size * 0.5} color="#C41E3A" strokeWidth={3} />
+                <X size={size * 0.5} color="#FB923C" strokeWidth={3} />
             </div>
         );
     }
@@ -70,8 +70,8 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
                 width: size,
                 height: size,
                 borderRadius: '50%',
-                border: '4px dashed #C41E3A',
-                backgroundColor: 'rgba(196, 30, 58, 0.25)',
+                border: '4px dashed #FB923C',
+                backgroundColor: 'rgba(251, 146, 60, 0.25)',
                 position: isPlaced ? 'absolute' : 'relative',
                 left: isPlaced ? position?.x : undefined,
                 top: isPlaced ? position?.y : undefined,
@@ -85,7 +85,7 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
                 touchAction: 'none',
             }}
         >
-            <X size={size * 0.5} color="#C41E3A" strokeWidth={3} />
+            <X size={size * 0.5} color="#FB923C" strokeWidth={3} />
         </motion.div>
     );
 };

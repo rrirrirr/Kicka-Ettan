@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import CurlingSheet from "./CurlingSheet";
-import { Dialog } from "./ui/Dialog";
 import { BottomSheet } from "./ui/BottomSheet";
 import { Button } from "./ui/Button";
 import DraggableStone from "./DraggableStone";
@@ -1385,8 +1384,8 @@ const CurlingGameContent = ({
             style={{
               width: banSize,
               height: banSize,
-              borderColor: "#C41E3A",
-              backgroundColor: "rgba(196, 30, 58, 0.25)",
+              borderColor: "#FB923C",
+              backgroundColor: "rgba(251, 146, 60, 0.25)",
               left: ban.x * scale,
               top: ban.y * scale,
               marginLeft: -banSize / 2,
@@ -1397,7 +1396,7 @@ const CurlingGameContent = ({
               opacity: isDraggingThisBan ? 0.3 : 1,
             }}
           >
-            <X size={Math.min(40, (gameState.ban_radius || 50) * scale * 0.8)} color="#C41E3A" strokeWidth={3} />
+            <X size={Math.min(40, (gameState.ban_radius || 50) * scale * 0.8)} color="#FB923C" strokeWidth={3} />
           </div>
         );
       })}
@@ -1444,8 +1443,8 @@ const CurlingGameContent = ({
                   style={{
                     width: myBannedZone.radius * 2 * scale,
                     height: myBannedZone.radius * 2 * scale,
-                    backgroundColor: "rgba(220, 38, 38, 0.3)",
-                    border: "3px solid rgba(220, 38, 38, 0.6)",
+                    backgroundColor: "rgba(251, 146, 60, 0.3)",
+                    border: "3px solid rgba(251, 146, 60, 0.6)",
                     left: myBannedZone.x * scale,
                     top: myBannedZone.y * scale,
                     marginLeft: -myBannedZone.radius * scale,
@@ -1493,7 +1492,7 @@ const CurlingGameContent = ({
                       left: '50%',
                       top: '50%',
                       transform: 'translate(-50%, -50%)',
-                      boxShadow: '0 0 0 2px #8b5cf6cc',
+                      boxShadow: '0 0 0 2px #FB923Ccc',
                       pointerEvents: 'none',
                     }}
                   />
@@ -1921,13 +1920,13 @@ const CurlingGameContent = ({
             <div
               className="w-full h-full rounded-full border-4 border-dashed flex items-center justify-center"
               style={{
-                borderColor: "#C41E3A",
-                backgroundColor: "rgba(196, 30, 58, 0.35)",
+                borderColor: "#FB923C",
+                backgroundColor: "rgba(251, 146, 60, 0.35)",
                 transform: "scale(1.05)",
                 transition: "transform 0.1s ease-out",
               }}
             >
-              <X size={Math.min(40, (gameState.ban_radius || 50) * scale * 0.8)} color="#C41E3A" strokeWidth={3} />
+              <X size={Math.min(40, (gameState.ban_radius || 50) * scale * 0.8)} color="#FB923C" strokeWidth={3} />
             </div>
           </div>,
           document.body,
