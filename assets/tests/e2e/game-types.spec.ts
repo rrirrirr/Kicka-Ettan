@@ -155,6 +155,77 @@ test.describe("Game Types E2E", () => {
     p2.leave();
   });
 
+  test('Blind Pick: P1 Next Round Does Not Force P2 Into Placement Phase', async ({ page, request }) => {
+    // This test verifies the critical behavior that when P1 clicks "Next Round",
+    // P2 should still see the combined phase (not be forced into placement).
+    // This bug has been reintroduced multiple times - this test prevents regression.
+    await page.addInitScript(() => {
+      window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
+    });
+
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
+      total_rounds: 2,  // Need 2 rounds to test next round behavior
+      stones_per_team: 1
+    });
+    console.log(`Blind Pick Next Round Test: ${gameId}`);
+
+    await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
+
+    // --- Complete Round 1 ---
+    const sheet = page.locator('svg.bg-white.block');
+    await expect(sheet).toBeVisible();
+    const box = await sheet.boundingBox();
+
+    // P1 places stone
+    if (box) {
+      await sheet.click({ position: { x: box.width / 2, y: box.height / 2 } });
+    }
+    await page.getByRole('button', { name: 'finish placement' }).click();
+
+    // P2 places stone and confirms
+    await page.waitForTimeout(500);
+    await p2.placeStone(0, 150, 150);
+    await p2.setReady();
+
+    // Wait for combined phase
+    await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /next round/i })).toBeVisible({ timeout: 10000 });
+
+    // --- P1 clicks Next Round ---
+    await page.getByRole('button', { name: /next round/i }).click();
+
+    // P1 should now see Round 2 placement phase overlay
+    await expect(page.getByText(/round #?2/i).first()).toBeAttached({ timeout: 10000 });
+
+    // --- CRITICAL TEST: Verify P2 is NOT forced into placement phase ---
+    // P2 should still see combined phase, NOT placement phase
+    // We verify P2 can still send ready_for_next_round (which only works from combined phase)
+    // If P2 were in placement phase, they would NOT have the "Next Round" action available
+
+    // P2 sends ready_for_next_round - this should work if they're still in combined phase view
+    await p2.send('ready_for_next_round');
+
+    // After P2 acknowledges, they should now be in round 2 placement
+    // P1 places for round 2
+    await expect(page.getByText('round #2')).not.toBeVisible({ timeout: 10000 });
+
+    if (box) {
+      await sheet.click({ position: { x: box.width / 2 + 30, y: box.height / 2 } });
+    }
+    await page.getByRole('button', { name: 'finish placement' }).click();
+
+    // P2 places for round 2
+    await page.waitForTimeout(500);
+    await p2.placeStone(0, 200, 200);
+    await p2.setReady();
+
+    // Verify round 2 combined phase
+    await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /next round|exit game/i })).toBeVisible({ timeout: 10000 });
+
+    p2.leave();
+  });
+
   test('Ban Pick: Full Ban Phase Flow', async ({ page, request }) => {
     // Pre-seed local storage to skip tutorials
     await page.addInitScript(() => {

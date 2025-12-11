@@ -100,7 +100,11 @@ Used for real-time, bidirectional communication during gameplay:
 
 4. **Round Transition** (`ready_for_next_round` event)
    - Player indicates readiness for next round
-   - Server starts new round when all players are ready
+   - **IMPORTANT**: When the first player clicks "Next Round", the server immediately advances to the next round internally
+   - However, each player's `client_view` remains on the **combined phase** until they individually click "Next Round"
+   - This allows the second player to review the combined view before proceeding
+   - The `ready_for_next_round` map tracks which player has acknowledged the transition
+   - Do NOT change this logic to require both players before advancing - the async per-player view is intentional
 
 ## Elixir/Phoenix Backend Architecture
 

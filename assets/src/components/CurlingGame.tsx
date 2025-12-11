@@ -1972,8 +1972,6 @@ const CurlingGameContent = ({
               style={{
                 borderColor: "#FB923C",
                 backgroundColor: "rgba(251, 146, 60, 0.35)",
-                transform: "scale(1.05)",
-                transition: "transform 0.1s ease-out",
               }}
             >
               <X size={Math.min(40, (gameState.ban_radius || 50) * scale * 0.8)} color="#FB923C" strokeWidth={3} />
