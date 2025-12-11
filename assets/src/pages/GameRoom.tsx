@@ -135,7 +135,7 @@ const GameRoom = () => {
                                 <span className="mx-2 text-gray-300">•</span>
                             )}
                             {gameState.settings.stones_per_team !== undefined && (
-                                <span>{gameState.settings.stones_per_team} stones</span>
+                                <span>{gameState.settings.stones_per_team} {gameState.settings.stones_per_team === 1 ? 'stone' : 'stones'}</span>
                             )}
                         </div>
                     )}

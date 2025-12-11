@@ -74,10 +74,6 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Update service file
-            sudo cp /tmp/scripts/kicka_ettan_test.service /etc/systemd/system/kicka_ettan_test.service
-            sudo systemctl daemon-reload
-            
             # Helper function for deploying
             deploy_app() {
               APP_NAME=$1

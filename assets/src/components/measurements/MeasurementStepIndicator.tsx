@@ -115,24 +115,24 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
     // Color class mappings for measurement types
     const colorClassMap: Record<MeasurementType, { active: string; inactive: string }> = {
         'guard': {
-            active: "bg-lavender-500 hover:bg-lavender-600 text-white",
-            inactive: "bg-white hover:bg-lavender-100 text-icy-black"
+            active: "bg-lavender-500 hover:bg-lavender-600 text-white shadow-md hover:shadow-lg scale-100 hover:scale-105",
+            inactive: "bg-white hover:bg-lavender-200 text-icy-black shadow-sm hover:shadow active:scale-95"
         },
         't-line': {
-            active: "bg-amber-500 hover:bg-amber-400 text-white",
-            inactive: "bg-white hover:bg-amber-100 text-icy-black"
+            active: "bg-lavender-500 hover:bg-lavender-600 text-white shadow-md hover:shadow-lg scale-100 hover:scale-105",
+            inactive: "bg-white hover:bg-lavender-200 text-icy-black shadow-sm hover:shadow active:scale-95"
         },
         'center-line': {
-            active: "bg-amber-500 hover:bg-amber-400 text-white",
-            inactive: "bg-white hover:bg-amber-100 text-icy-black"
+            active: "bg-lavender-500 hover:bg-lavender-600 text-white shadow-md hover:shadow-lg scale-100 hover:scale-105",
+            inactive: "bg-white hover:bg-lavender-200 text-icy-black shadow-sm hover:shadow active:scale-95"
         },
         'closest-ring': {
-            active: "bg-cyan-500 hover:bg-cyan-600 text-white",
-            inactive: "bg-white hover:bg-cyan-100 text-icy-black"
+            active: "bg-lavender-500 hover:bg-lavender-600 text-white shadow-md hover:shadow-lg scale-100 hover:scale-105",
+            inactive: "bg-white hover:bg-lavender-200 text-icy-black shadow-sm hover:shadow active:scale-95"
         },
         'stone-to-stone': {
-            active: "bg-lime-600 hover:bg-lime-700 text-white",
-            inactive: "bg-white hover:bg-lime-100 text-icy-black"
+            active: "bg-lavender-500 hover:bg-lavender-600 text-white shadow-md hover:shadow-lg scale-100 hover:scale-105",
+            inactive: "bg-white hover:bg-lavender-200 text-icy-black shadow-sm hover:shadow active:scale-95"
         },
     };
 
@@ -165,7 +165,7 @@ export const MeasurementStepIndicator: React.FC<MeasurementStepIndicatorProps> =
                                     onToggleMeasurementType(type);
                                 }
                             }}
-                            className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-200 ${isActive ? colorClasses.active : colorClasses.inactive}`}
+                            className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${isActive ? colorClasses.active : colorClasses.inactive}`}
                             style={{ pointerEvents: 'auto' }}
                         >
                             {getButtonContent(type)}
