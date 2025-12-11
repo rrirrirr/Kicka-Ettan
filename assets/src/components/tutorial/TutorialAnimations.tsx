@@ -1189,32 +1189,38 @@ export const BanDragDemo: React.FC = () => {
 // Step 3: Collision handling - stones pushing each other
 export const CollisionHandlingDemo: React.FC = () => {
   // Animation state
-  // 0: Initial state (red dragging in)
-  // 1: Collision occurs (red overlaps yellow)
-  // 2: Resolution (both push away)
-  // 3: Pause
-  const [state, setState] = React.useState(0);
-  const [cycleKey, setCycleKey] = React.useState(0);
+  // 0: Initial state (overlapping)
+  // 1: Resolution (pushed apart)
+  const [isResolved, setIsResolved] = React.useState(false);
 
   React.useEffect(() => {
     const sequence = async () => {
-      // Reset to clean state
-      setState(0);
+      while (true) {
+        // Start overlapping
+        setIsResolved(false);
+        // Wait a bit showing overlap
+        await new Promise((r) => setTimeout(r, 1000));
 
-      // Wait for drag in
-      await new Promise(r => setTimeout(r, 1000));
-      setState(1); // Overlap momentarily
-
-      await new Promise(r => setTimeout(r, 200));
-      setState(2); // Resolve
-
-      await new Promise(r => setTimeout(r, 2000));
-      // Reset
-      setCycleKey(k => k + 1);
+        // Resolve (push apart)
+        setIsResolved(true);
+        // Wait showing resolved state
+        await new Promise((r) => setTimeout(r, 2000));
+      }
     };
 
     sequence();
-  }, [cycleKey]);
+  }, []);
+
+  // Center position
+  const centerX = 90;
+  const centerY = 80; // Moved down slightly
+  const stoneSize = 30;
+
+  // Overlap offset: small distance from center
+  const startOffset = 5; // 10px distance = 20px overlap (66%)
+
+  // Resolved offset: radius (touching)
+  const endOffset = 15; // 30px distance = 0px gap
 
   return (
     <AnimationContainer>
@@ -1223,10 +1229,9 @@ export const CollisionHandlingDemo: React.FC = () => {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-full text-center">
           <motion.div
             className="text-sm font-bold text-icy-black inline-block px-3 py-1 bg-white/90 rounded-full shadow-sm"
-            initial={{ opacity: 0, y: 5 }}
             animate={{
-              opacity: state >= 2 ? 1 : 0,
-              y: state >= 2 ? 0 : 5
+              opacity: isResolved ? 1 : 0.5,
+              y: isResolved ? 0 : 2,
             }}
           >
             Equal pushback
@@ -1238,66 +1243,59 @@ export const CollisionHandlingDemo: React.FC = () => {
           className="absolute inset-x-2 top-8 bottom-2 rounded-lg border border-gray-200 overflow-hidden"
           style={{ backgroundColor: HOUSE_COLORS.ice }}
         >
-          {/* Background rings hint */}
-          <div className="absolute -right-10 -bottom-10 opacity-30">
-            <svg width="100" height="100" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="none" stroke={HOUSE_COLORS.ring12} strokeWidth="2" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke={HOUSE_COLORS.ring8} strokeWidth="2" />
-            </svg>
-          </div>
-
-          {/* Yellow Stone (Static initially, then pushed) */}
+          {/* Yellow Stone (Left) */}
           <motion.div
             className="absolute"
             animate={{
-              left: state === 2 ? 30 : 50, // Pushed left
-              top: 60
+              left: centerX - (isResolved ? endOffset : startOffset) - stoneSize / 2,
+              top: centerY - stoneSize / 2,
             }}
             transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 20
+              duration: 0.8,
+              ease: "easeInOut", // Smooth push, no spring
             }}
           >
-            <PlacementStone color="#e5b800" size={30} />
+            <PlacementStone color="#e5b800" size={stoneSize} />
           </motion.div>
 
-          {/* Red Stone (Dragged in, overlaps, then pushed) */}
+          {/* Red Stone (Right) */}
           <motion.div
             className="absolute"
-            initial={{ left: 120, top: 20, opacity: 0 }}
             animate={{
-              left: state === 0 ? 120 : (state === 1 ? 50 : 70), // Start -> Overlap -> Pushed right
-              top: state === 0 ? 20 : 60,
-              opacity: 1
+              left: centerX + (isResolved ? endOffset : startOffset) - stoneSize / 2,
+              top: centerY - stoneSize / 2,
             }}
             transition={{
-              duration: state === 0 ? 0 : (state === 1 ? 0.8 : 0.3),
-              ease: state === 1 ? "easeOut" : "spring"
+              duration: 0.8,
+              ease: "easeInOut", // Smooth push, no spring
             }}
           >
-            <PlacementStone color="#cc0000" size={30} />
+            <PlacementStone color="#cc0000" size={stoneSize} />
           </motion.div>
 
-          {/* Collision Indicator (Flash) */}
-          {state === 1 && (
+          {/* Overlap Indicator (Flash) */}
+          {!isResolved && (
             <motion.div
-              className="absolute rounded-full bg-white"
-              style={{ left: 50, top: 60, width: 30, height: 30 }}
-              initial={{ scale: 1, opacity: 0.8 }}
-              animate={{ scale: 1.5, opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              className="absolute rounded-full border-2 border-red-500/50"
+              style={{
+                left: centerX - 10,
+                top: centerY - 10,
+                width: 20,
+                height: 20,
+              }}
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
             />
           )}
 
           {/* Push arrows */}
           <AnimatePresence>
-            {state === 2 && (
+            {isResolved && (
               <>
                 {/* Left arrow */}
                 <motion.div
-                  className="absolute text-cyan-600"
-                  style={{ left: 40, top: 75 }} // Adjusted down
+                  className="absolute text-cyan-600 font-bold"
+                  style={{ left: centerX - 25, top: centerY + 15 }}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0 }}
@@ -1306,8 +1304,8 @@ export const CollisionHandlingDemo: React.FC = () => {
                 </motion.div>
                 {/* Right arrow */}
                 <motion.div
-                  className="absolute text-cyan-600"
-                  style={{ left: 85, top: 75 }} // Adjusted down
+                  className="absolute text-cyan-600 font-bold"
+                  style={{ left: centerX + 15, top: centerY + 15 }}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0 }}
@@ -1317,19 +1315,6 @@ export const CollisionHandlingDemo: React.FC = () => {
               </>
             )}
           </AnimatePresence>
-
-          {/* Hand Cursor */}
-          <motion.div
-            className="absolute z-20 pointer-events-none"
-            animate={{
-              left: state === 0 ? 130 : (state === 1 ? 60 : 80),
-              top: state === 0 ? 30 : 70,
-              opacity: state >= 2 ? 0 : 1
-            }}
-            transition={{ duration: 0.8 }}
-          >
-            <GrabCursor size={28} />
-          </motion.div>
         </div>
       </div>
     </AnimationContainer>
