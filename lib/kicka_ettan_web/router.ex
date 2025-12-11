@@ -12,6 +12,9 @@ defmodule KickaEttanWeb.Router do
     resources "/games", GameController, only: [:create, :show]
     post "/games/:id/join", GameController, :join
     get "/health", HealthController, :index
+    
+    # Dev-only collision testing endpoint
+    post "/collisions/resolve", CollisionController, :resolve
   end
 
   import Phoenix.LiveDashboard.Router

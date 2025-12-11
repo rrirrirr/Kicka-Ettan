@@ -10,9 +10,12 @@ import NotFound from './pages/NotFound';
 const DevPage = React.lazy(() => import('./pages/DevPage'));
 const ButtonGuidePage = React.lazy(() => import('./pages/ButtonGuidePage'));
 const ColorGuidePage = React.lazy(() => import('./pages/ColorGuidePage'));
+const CollisionDemoPage = React.lazy(() => import('./pages/CollisionDemoPage'));
 import { SettingsProvider } from './contexts/SettingsContext';
 import { TutorialProvider } from './contexts/TutorialContext';
+import { PostHogProvider } from './contexts/PostHogContext';
 import { pageTransition } from './utils/animations';
+import { config } from './config';
 
 import { LoadingGame } from './components/ui/LoadingGame';
 
@@ -54,6 +57,11 @@ const AnimatedRoutes = () => {
                 <PageWrapper><ColorGuidePage /></PageWrapper>
               </Suspense>
             } />
+            <Route path="/dev/collisions" element={
+              <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <PageWrapper><CollisionDemoPage /></PageWrapper>
+              </Suspense>
+            } />
           </>
         )}
         <Route path="/loading-test" element={<PageWrapper><LoadingGame /></PageWrapper>} />
@@ -65,13 +73,15 @@ const AnimatedRoutes = () => {
 
 function App() {
   return (
-    <SettingsProvider>
-      <TutorialProvider>
-        <Router>
-          <AnimatedRoutes />
-        </Router>
-      </TutorialProvider>
-    </SettingsProvider>
+    <PostHogProvider apiKey={config.posthog.apiKey} apiHost={config.posthog.apiHost}>
+      <SettingsProvider>
+        <TutorialProvider>
+          <Router>
+            <AnimatedRoutes />
+          </Router>
+        </TutorialProvider>
+      </SettingsProvider>
+    </PostHogProvider>
   );
 }
 
