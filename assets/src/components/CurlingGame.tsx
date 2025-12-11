@@ -2143,7 +2143,7 @@ const CurlingGameContent = ({
                     onClick={() => setShowMeasurements(!showMeasurements)}
                     variant="ghost"
                     className={`w-12 h-12 rounded-2xl p-0 relative group ${showMeasurements
-                      ? "bg-icy-button-bg hover:bg-icy-button-hover text-white shadow-md"
+                      ? "bg-lavender-500 hover:bg-lavender-600 text-white hover:text-white shadow-md"
                       : "bg-gray-200 hover:bg-icy-button-bg/20 text-icy-button-bg shadow-none"}`}
                     aria-label="Toggle measurements"
                   >
