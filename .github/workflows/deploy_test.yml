@@ -64,7 +64,7 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "kicka_ettan_test.tar.gz"
+          source: "kicka_ettan_test.tar.gz,scripts/kicka_ettan_test.service"
           target: "/tmp/"
 
       - name: Restart application
@@ -74,6 +74,10 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Update service file
+            sudo cp /tmp/scripts/kicka_ettan_test.service /etc/systemd/system/kicka_ettan_test.service
+            sudo systemctl daemon-reload
+            
             # Helper function for deploying
             deploy_app() {
               APP_NAME=$1

@@ -8,6 +8,7 @@ import {
   MeasurementCycleDemo,
   StepIndicatorDemo,
   BanDragDemo,
+  CollisionHandlingDemo,
 } from "./TutorialAnimations";
 
 // ============================================
@@ -42,6 +43,12 @@ export const PHASE_TUTORIALS: Record<string, PhaseTutorialConfig> = {
         description:
           "When dragging, a magnifying loupe appears for precise placement. Near the edges, the loupe will squeeze to the side — you can still place stones at the edge, just keep moving your finger there.",
         animation: <LoupeEdgeDemo />,
+      },
+      {
+        id: 'collision-handling',
+        title: 'Collision Handling',
+        description: 'If you place a stone on top of another, they will push each other away equally to make space.',
+        animation: <CollisionHandlingDemo />,
       },
     ],
   },

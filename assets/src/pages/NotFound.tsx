@@ -24,7 +24,7 @@ const NotFound: React.FC = () => {
           </div>
 
           <Button
-            variant="destructive"
+            variant="primary"
             size="lg"
             onClick={() => navigate('/')}
             className="w-full py-4 text-lg rounded-2xl inline-flex items-center justify-center gap-2"
