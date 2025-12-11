@@ -446,6 +446,132 @@ test.describe("Game Types E2E", () => {
     p2.leave();
   });
 
+  test('Cancel Ban: Bans Stay In Position After Make Changes', async ({ page, request }) => {
+    // This test verifies that ban rings stay in position after clicking "make changes"
+    await page.addInitScript(() => {
+      window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
+    });
+
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'ban_pick', {
+      total_rounds: 1,
+      stones_per_team: 1
+    });
+    console.log(`Cancel Ban Position Test: ${gameId}`);
+
+    await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
+
+    // Should be in ban phase
+    await expect(page.getByText(/ban phase/i)).toBeAttached({ timeout: 5000 });
+
+    const sheet = page.locator('svg.bg-white.block');
+    await expect(sheet).toBeVisible();
+    const box = await sheet.boundingBox();
+
+    // P1 places ban
+    if (box) {
+      await sheet.click({ position: { x: box.width / 2, y: box.height / 2 } });
+    }
+
+    // The confirm ban button should appear
+    await expect(page.getByRole('button', { name: /confirm ban/i })).toBeVisible({ timeout: 5000 });
+
+    // P1 confirms ban
+    await page.getByRole('button', { name: /confirm ban/i }).click();
+
+    // P1 should see waiting
+    await expect(page.getByText('waiting for opponent')).toBeVisible({ timeout: 5000 });
+
+    // P1 clicks "Make Changes" button to go back
+    await page.getByRole('button', { name: /make changes/i }).click();
+
+    // Waiting screen should disappear
+    await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 5000 });
+
+    // CRITICAL: The confirm ban button should still be visible (ban still placed)
+    await page.waitForTimeout(500);
+    await expect(page.getByRole('button', { name: /confirm ban/i })).toBeVisible({ timeout: 5000 });
+
+    // Complete the flow
+    await page.getByRole('button', { name: /confirm ban/i }).click();
+    await p2.placeBan(200, 200);
+    await p2.confirmBan();
+
+    // Should transition to placement phase
+    await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 10000 });
+
+    p2.leave();
+  });
+
+  test('Cancel Placement: Stones Stay In Position After Make Changes', async ({ page, request }) => {
+    // This test verifies the critical behavior that when P1 clicks "make changes",
+    // the stones should remain in their placed positions, NOT be reset to the stone bar.
+    await page.addInitScript(() => {
+      window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
+    });
+
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
+      total_rounds: 1,
+      stones_per_team: 3  // Test with multiple stones
+    });
+    console.log(`Cancel Placement Position Test: ${gameId}`);
+
+    await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
+
+    const sheet = page.locator('svg.bg-white.block');
+    await expect(sheet).toBeVisible();
+    const box = await sheet.boundingBox();
+
+    // P1 places all 3 stones at different positions
+    if (box) {
+      await sheet.click({ position: { x: box.width / 4, y: box.height / 2 } });
+      await page.waitForTimeout(300);
+      await sheet.click({ position: { x: box.width / 2, y: box.height / 2 } });
+      await page.waitForTimeout(300);
+      await sheet.click({ position: { x: box.width * 3 / 4, y: box.height / 2 } });
+    }
+
+    // After placing all 3, the "finish placement" button should appear
+    await expect(page.getByRole('button', { name: 'finish placement' })).toBeVisible({ timeout: 5000 });
+
+    // Count stones on the sheet - should find exactly 3 stones placed
+    const placedStonesOnSheetBefore = await page.locator('.stone-hover-container').count();
+    expect(placedStonesOnSheetBefore).toBe(3);
+
+    // P1 clicks "Finish Placement"
+    await page.getByRole('button', { name: 'finish placement' }).click();
+
+    // P1 should see "waiting for opponent"
+    await expect(page.getByText('waiting for opponent')).toBeVisible({ timeout: 5000 });
+
+    // P1 clicks "Make Changes" button to go back
+    await page.getByRole('button', { name: /make changes/i }).click();
+
+    // Waiting screen should disappear
+    await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 5000 });
+
+    // CRITICAL: ALL 3 stones should STILL be on the sheet, NOT in the stone bar
+    await page.waitForTimeout(500);
+
+    // Count stones on sheet again - should STILL be 3
+    const placedStonesOnSheetAfter = await page.locator('.stone-hover-container').count();
+    expect(placedStonesOnSheetAfter).toBe(3);
+
+    // The "finish placement" button should still be visible (since all stones are placed)
+    await expect(page.getByRole('button', { name: 'finish placement' })).toBeVisible({ timeout: 5000 });
+
+    // Complete the flow
+    await page.getByRole('button', { name: 'finish placement' }).click();
+    await p2.placeStone(0, 100, 100);
+    await p2.placeStone(1, 150, 150);
+    await p2.placeStone(2, 200, 200);
+    await p2.setReady();
+
+    await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /next round|exit game/i })).toBeVisible({ timeout: 10000 });
+
+    p2.leave();
+  });
+
   test('Cancel Placement: P1 Can Reposition Stones After Cancel', async ({ page, request }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
