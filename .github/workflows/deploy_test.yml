@@ -50,6 +50,14 @@ jobs:
           cd _build/prod/rel/kicka_ettan
           tar -czf ${{ github.workspace }}/kicka_ettan_test.tar.gz .
 
+      - name: Cleanup Stale Artifacts
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: rm -rf /tmp/kicka_ettan_test.tar.gz
+
       - name: Deploy to Digital Ocean
         uses: appleboy/scp-action@v0.1.7
         with:
