@@ -82,7 +82,6 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
             dragMomentum={false}
             dragElastic={0}
             whileDrag={{ scale: 1.1, zIndex: 100 }}
-            whileHover={{ cursor: 'grab' }}
             onDragEnd={(_event, info) => {
                 const x = info.point.x;
                 const y = info.point.y;
@@ -94,7 +93,7 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
                 }
             }}
             onClick={onClick}
-            className="animate-glow"
+            className="animate-glow draggable-on-sheet"
             style={{
                 width: size,
                 height: size,
@@ -107,11 +106,11 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
                 top: isPlaced ? position?.y : undefined,
                 marginLeft: isPlaced ? -size / 2 : 0,
                 marginTop: isPlaced ? -size / 2 : 0,
-                cursor: 'grab',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                opacity: opacity
+                opacity: opacity,
+                touchAction: 'none'
             }}
         >
             {/* Small handle */}

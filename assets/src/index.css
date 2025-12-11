@@ -301,8 +301,18 @@ body {
 
   /* Hover ring for draggable elements on the sheet */
   .draggable-on-sheet {
-    cursor: grab;
     transition: box-shadow 0.15s ease-out;
+    touch-action: none;
+  }
+
+  @media (hover: hover) {
+    .draggable-on-sheet {
+      cursor: grab;
+    }
+
+    .draggable-on-sheet:hover {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8);
+    }
   }
 
   .draggable-on-sheet:hover {
@@ -317,12 +327,18 @@ body {
 
   /* Hover ring for draggable ban circles */
   .draggable-ban-on-sheet {
-    cursor: grab;
     transition: box-shadow 0.15s ease-out;
+    touch-action: none;
   }
 
-  .draggable-ban-on-sheet:hover {
-    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.6), 0 0 12px rgba(196, 30, 58, 0.3);
+  @media (hover: hover) {
+    .draggable-ban-on-sheet {
+      cursor: grab;
+    }
+
+    .draggable-ban-on-sheet:hover {
+      box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.6), 0 0 12px rgba(196, 30, 58, 0.3);
+    }
   }
 
   .glass-panel {

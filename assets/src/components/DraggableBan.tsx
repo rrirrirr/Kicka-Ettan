@@ -55,7 +55,7 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
             dragMomentum={false}
             dragElastic={0}
             whileDrag={{ scale: 1.1, zIndex: 100 }}
-            whileHover={{ cursor: 'grab' }}
+            whileDrag={{ scale: 1.1, zIndex: 100 }}
             onDragEnd={(_event, info) => {
                 const x = info.point.x;
                 const y = info.point.y;
@@ -66,6 +66,7 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
                     onDrag(index, { x: info.point.x, y: info.point.y });
                 }
             }}
+            className="draggable-ban-on-sheet"
             style={{
                 width: size,
                 height: size,
@@ -77,7 +78,6 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
                 top: isPlaced ? position?.y : undefined,
                 marginLeft: isPlaced ? -size / 2 : 0,
                 marginTop: isPlaced ? -size / 2 : 0,
-                cursor: 'grab',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
