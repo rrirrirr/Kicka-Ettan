@@ -242,7 +242,7 @@ const Home = () => {
                             .filter(([_, setting]) => setting.important)
                             .map(([key, setting]) => (
                                 <div key={key}>
-                                    <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight flex items-center gap-2">
+                                    <div className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight flex items-center gap-2">
                                         {setting.label.toLowerCase()}
                                         {key === 'ban_circle_radius' && (
                                             <Button
@@ -268,7 +268,7 @@ const Home = () => {
                                                 <Info size={14} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
                                             </Button>
                                         )}
-                                    </label>
+                                    </div>
                                     {setting.type === 'integer' && (
                                         <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
                                             <input
@@ -541,8 +541,8 @@ const Home = () => {
                                             }
                                         }}
                                         className={`w-full p-4 rounded-2xl transition-all cursor-pointer group duration-200 ${selectedGameType.id === gameType.id
-                                            ? 'shadow-sm border-2 border-active bg-active/5'
-                                            : 'shadow-sm border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300'
+                                            ? 'shadow-md border-2 border-active bg-active/5'
+                                            : 'shadow-md border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between gap-3">
