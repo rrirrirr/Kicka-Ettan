@@ -26,6 +26,12 @@ import {
   NEAR_HOUSE_THRESHOLD,
 } from "../utils/constants";
 import { resolveAllCollisions } from "../utils/physics";
+import {
+  saveStonePlacements,
+  saveBanPlacements,
+  loadPlacements,
+  clearPlacements,
+} from "../utils/placementStorage";
 import { useGameDimensions } from "../hooks/useGameDimensions";
 import { GameState, StonePosition, PlayerColor } from "../types/game-types";
 
@@ -261,6 +267,32 @@ const CurlingGameContent = ({
     }
   }, [gameState, playerId]);
 
+  // Load placements from localStorage on mount/game state change
+  useEffect(() => {
+    if (!gameState || !playerId) return;
+
+    const serverReady = gameState.player_ready?.[playerId] ?? false;
+    // Only restore if player is not already ready
+    if (serverReady) return;
+
+    // Try to load from localStorage
+    if (gameState.phase === "placement" || gameState.phase === "ban") {
+      const saved = loadPlacements(
+        gameState.game_id,
+        gameState.current_round,
+        gameState.phase
+      );
+
+      if (saved) {
+        if (saved.phase === "placement" && saved.stones) {
+          setMyStones(saved.stones);
+        } else if (saved.phase === "ban" && saved.bans) {
+          setMyBans(saved.bans);
+        }
+      }
+    }
+  }, [gameState?.game_id, gameState?.current_round, gameState?.phase, playerId]);
+
   // Detect round transition and show overlay for BOTH players
   useEffect(() => {
     if (gameState && gameState.current_round > prevRoundRef.current) {
@@ -269,6 +301,34 @@ const CurlingGameContent = ({
       prevRoundRef.current = gameState.current_round;
     }
   }, [gameState?.current_round]);
+
+  // Save stone placements to localStorage when they change
+  useEffect(() => {
+    if (!gameState || gameState.phase !== "placement") return;
+    // Only save if at least one stone is placed
+    const hasPlacedStones = myStones.some(s => s.placed);
+    if (hasPlacedStones) {
+      saveStonePlacements(
+        gameState.game_id,
+        gameState.current_round,
+        myStones
+      );
+    }
+  }, [myStones, gameState?.game_id, gameState?.current_round, gameState?.phase]);
+
+  // Save ban placements to localStorage when they change  
+  useEffect(() => {
+    if (!gameState || gameState.phase !== "ban") return;
+    // Only save if at least one ban is placed
+    const hasPlacedBans = myBans.some(b => b.placed);
+    if (hasPlacedBans) {
+      saveBanPlacements(
+        gameState.game_id,
+        gameState.current_round,
+        myBans
+      );
+    }
+  }, [myBans, gameState?.game_id, gameState?.current_round, gameState?.phase]);
 
   const updateStonePosition = useCallback(
     (index: number, x: number, y: number, placed: boolean) => {
@@ -1055,6 +1115,8 @@ const CurlingGameContent = ({
           .push("confirm_placement", {})
           .receive("ok", () => {
             setIsReady(true);
+            // Clear localStorage after successful confirmation
+            clearPlacements(gameState.game_id);
           })
           .receive("error", (reasons: any) => {
             console.error("Confirmation failed", reasons);
@@ -1112,6 +1174,8 @@ const CurlingGameContent = ({
           .push("confirm_ban", {})
           .receive("ok", () => {
             setIsBanReady(true);
+            // Clear localStorage after successful confirmation
+            clearPlacements(gameState.game_id);
           })
           .receive("error", (reasons: any) => {
             console.error("Failed to confirm ban", reasons);
@@ -1955,6 +2019,7 @@ const CurlingGameContent = ({
                         setShowMenu(false);
                       }}
                       className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
+                      noHoverAnimation
                     >
                       <Share2 size={22} className="text-gray-600" />
                       Share
@@ -1971,6 +2036,7 @@ const CurlingGameContent = ({
                       setShowMenu(false);
                     }}
                     className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
+                    noHoverAnimation
                   >
                     <HistoryIcon size={22} className="text-gray-600" />
                     History
@@ -1982,6 +2048,7 @@ const CurlingGameContent = ({
                       setShowMenu(false);
                     }}
                     className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
+                    noHoverAnimation
                   >
                     <Info size={22} className="text-gray-600" />
                     Help
@@ -1993,6 +2060,7 @@ const CurlingGameContent = ({
                       setShowMenu(false);
                     }}
                     className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl"
+                    noHoverAnimation
                   >
                     <Settings size={22} className="text-gray-600" />
                     Settings
@@ -2002,6 +2070,7 @@ const CurlingGameContent = ({
                     variant="ghost"
                     onClick={() => (window.location.href = "/")}
                     className="w-full justify-start text-base font-medium h-auto py-4 rounded-2xl text-red-600 hover:text-red-700 hover:bg-red-50"
+                    noHoverAnimation
                   >
                     <LogOut size={22} />
                     Exit Game
