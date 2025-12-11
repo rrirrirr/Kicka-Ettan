@@ -12,6 +12,14 @@
   <link rel="canonical" href="https://kicka-ettan.se/" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
+  <script>
+    if (window.location.hostname === 'krulle.kicka-ettan.se') {
+      const meta = document.createElement('meta');
+      meta.name = 'robots';
+      meta.content = 'noindex';
+      document.head.appendChild(meta);
+    }
+  </script>
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
