@@ -1,8 +1,8 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import { buttonTap, buttonHover } from '../../utils/animations';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends HTMLMotionProps<"button"> {
     variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'icon';
     size?: 'sm' | 'md' | 'lg' | 'xl' | 'icon';
     shape?: 'default' | 'pill' | 'circle' | 'square';
@@ -44,51 +44,24 @@ export const Button: React.FC<ButtonProps> = ({
     const shapes = {
         default: "rounded-xl",
         pill: "rounded-full",
-        circle: "rounded-full aspect-square p-0 flex items-center justify-center", // Good for icon-only buttons that are circular
+        circle: "rounded-full aspect-square p-0 flex items-center justify-center",
         square: "rounded-lg"
     };
 
-    // Override shape for 'icon' variant if it's implicitly circular/square-ish? 
-    // Actually, let's keep it explicit. 
-    // But 'icon' size usually implies a square or circle.
-    // If size is 'icon', and shape is default, we use 'rounded-lg' from the original code (which was hardcoded in variant).
-    // Let's rely on the shape prop being explicit or defaulting to 'default' (rounded-xl).
-    // Note: Original code had `rounded-lg` inside the `icon` variant string. I removed it from variant and rely on `shape`.
-    // Wait, I should potentially default shape based on size? 
-    // Let's just use the shape prop. The original code had `rounded-xl` in baseStyles and `rounded-lg` in `icon` variant.
-    // To match original behavior: if size='icon' and shape='default', maybe we want rounded-lg?
-    // Let's make `default` be `rounded-xl` and if user wants `rounded-lg` they can handle via className or we add a `square` shape.
-    // I added `square: "rounded-lg"` above.
-    // Checking original `icon` variant: `rounded-lg` was there.
-    // I will remove `rounded-lg` from `icon` variant in my new code, so if they want that look they should use `shape="square"` or I can make it the default for icon size? 
-    // No, let's stick to `default` = `rounded-xl` for consistency, unless `icon` variant overrides it? 
-    // Actually, `icon` variant in original had `rounded-lg`.
-    // Let's add that to `icon` variant to preserve compat if they don't pass shape.
-
-    // Actually, cleaner is to have `rounded-xl` in base or shape.
-    // The original `baseStyles` had `rounded-xl`.
-    // The `icon` variant had `rounded-lg`.
-    // Tailwind class prevalence: last wins? Usually yes if completely overriding.
-    // `rounded-xl` vs `rounded-lg`.
-
-    // To be safe and clean:
-    // I will NOT put rounded in baseStyles anymore.
-    // I will put it in `shapes`.
-
-    // But wait, existing usages don't pass `shape`. They expect `rounded-xl` by default.
-
-
-
-    // Construct the final class string carefully to ensure overrides work
     const combinedClassName = `${baseStyles} ${variants[variant]} ${sizes[size]} ${shapes[shape]} ${className}`;
+
+    // Determine default animations
+    const defaultWhileTap = noTapAnimation ? undefined : buttonTap;
+    const defaultWhileHover = !props.disabled && size !== 'lg' && size !== 'xl' && !noHoverAnimation ? buttonHover : undefined;
 
     return (
         <motion.button
             className={combinedClassName}
             disabled={isLoading || props.disabled}
-            whileTap={noTapAnimation ? undefined : buttonTap}
-            whileHover={!props.disabled && size !== 'lg' && size !== 'xl' && !noHoverAnimation ? buttonHover : undefined}
-            {...(props as any)}
+            // Use props if provided, otherwise use defaults
+            whileTap={props.whileTap !== undefined ? props.whileTap : defaultWhileTap}
+            whileHover={props.whileHover !== undefined ? props.whileHover : defaultWhileHover}
+            {...props}
         >
             {isLoading ? (
                 <>
@@ -102,4 +75,3 @@ export const Button: React.FC<ButtonProps> = ({
         </motion.button>
     );
 };
-
