@@ -7,6 +7,7 @@ Type=forking
 User=deploy
 Group=deploy
 WorkingDirectory=/home/deploy/kicka_ettan_test
+PIDFile=/home/deploy/kicka_ettan_test/tmp/pids/node.pid
 # Load environment variables from file
 EnvironmentFile=/etc/kicka_ettan/kicka_ettan_test.env
 ExecStart=/home/deploy/kicka_ettan_test/bin/kicka_ettan start

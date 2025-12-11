@@ -14,6 +14,7 @@ import {
 } from "../contexts/SettingsContext";
 import { SettingsDialog } from "./SettingsDialog";
 import { Channel } from "phoenix";
+import { buttonHover, buttonTap } from "../utils/animations";
 import {
   SHEET_WIDTH,
   STONE_RADIUS,
@@ -1931,7 +1932,9 @@ const CurlingGameContent = ({
                   setHighlightedStone(null);
                   setHoveredStone(null);
                 }}
-                className="w-12 h-12 shadow-md hover:scale-105 active:scale-95 transition-transform"
+                className="w-12 h-12 shadow-md"
+                whileHover={buttonHover}
+                whileTap={buttonTap}
                 aria-label="Menu"
               >
                 <Menu size={24} className="w-6 h-6 shrink-0" />
