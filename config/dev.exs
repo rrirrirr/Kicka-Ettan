@@ -62,3 +62,8 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Disable PostHog analytics in development (test_mode drops all events)
+config :posthog,
+  api_key: "phc_disabled_in_dev",
+  test_mode: true

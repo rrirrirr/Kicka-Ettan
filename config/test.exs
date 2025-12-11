@@ -28,3 +28,8 @@ config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Disable PostHog analytics in tests (test_mode drops all events)
+config :posthog,
+  api_key: "phc_disabled_in_test",
+  test_mode: true
