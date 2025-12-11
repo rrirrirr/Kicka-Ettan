@@ -11,6 +11,7 @@ import { SettingsDialog } from '../components/SettingsDialog';
 import { DialogBackButton } from '../components/ui/DialogBackButton';
 import { GAME_TYPES, GameType, getDefaultGameType } from '../data/gameTypes';
 import { saveGameToHistory, getGameHistory } from '../lib/gameHistory';
+import { StoneIcon, BanIcon } from '../components/icons/Icons';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -29,6 +30,7 @@ const Home = () => {
     const [showGameTypeInfo, setShowGameTypeInfo] = useState(false);
     const [showGameSettings, setShowGameSettings] = useState(false);
     const [showBanSizeInfo, setShowBanSizeInfo] = useState(false);
+    const [showStonesInfo, setShowStonesInfo] = useState(false);
     const [gameSettings, setGameSettings] = useState<Record<string, number | boolean | string>>(() => {
         const saved = localStorage.getItem('kicka_ettan_game_settings');
         if (saved) {
@@ -249,6 +251,18 @@ const Home = () => {
                                             <Info size={14} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
                                         </Button>
                                     )}
+                                    {key === 'stones_per_team' && (
+                                        <Button
+                                            variant="outline"
+                                            shape="circle"
+                                            size="sm"
+                                            onClick={() => setShowStonesInfo(true)}
+                                            className="!w-5 !h-5 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
+                                            aria-label="Info about stones per team"
+                                        >
+                                            <Info size={14} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
+                                        </Button>
+                                    )}
                                 </label>
                                 {setting.type === 'integer' && (
                                     <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
@@ -415,6 +429,7 @@ const Home = () => {
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 lowercase tracking-tight">
                             <History size={20} className="text-icy-button-bg" />
                             recent games
+                            <span className="text-xs text-gray-400 font-normal ml-1">click to reconnect</span>
                         </h3>
 
                         <Button
@@ -751,7 +766,7 @@ const Home = () => {
                 onClose={() => setShowBanSizeInfo(false)}
                 title="ban circle sizes"
                 variant="info"
-                headerIcon={<CircleSlash size={48} className="text-gray-400" />}
+                headerIcon={<BanIcon size={48} className="text-gray-400" />}
             >
                 <div className="space-y-5 px-2">
                     <p className="text-base text-gray-700 leading-relaxed">
@@ -790,6 +805,24 @@ const Home = () => {
 
                     <p className="text-sm text-gray-500 italic text-center">
                         Choose a size that fits your strategy — smaller for precision, larger for area control.
+                    </p>
+                </div>
+            </Dialog>
+
+            {/* Stones Per Team Info Dialog */}
+            <Dialog
+                isOpen={showStonesInfo}
+                onClose={() => setShowStonesInfo(false)}
+                title="stones per team"
+                variant="info"
+                headerIcon={<StoneIcon size={48} className="text-gray-400" />}
+            >
+                <div className="space-y-5 px-2">
+                    <p className="text-base text-gray-700 leading-relaxed">
+                        <strong className="text-gray-900">Stones per team</strong> means how many stones you will pre place in the game.
+                    </p>
+                    <p className="text-base text-gray-700 leading-relaxed">
+                        You are still using <strong className="text-gray-900">8</strong> (or more if you like) stones in total.
                     </p>
                 </div>
             </Dialog>
