@@ -27,4 +27,8 @@ const getWebSocketUrl = () => {
 export const config = {
     apiUrl: getApiUrl(),
     wsUrl: getWebSocketUrl(),
+    posthog: {
+        apiKey: import.meta.env.VITE_POSTHOG_API_KEY,
+        apiHost: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
+    },
 };

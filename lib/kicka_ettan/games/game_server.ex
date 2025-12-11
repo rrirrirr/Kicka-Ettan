@@ -5,6 +5,7 @@ defmodule KickaEttan.Games.GameServer do
   use GenServer
   require Logger
   alias KickaEttan.Games.GameState
+  alias KickaEttan.Analytics.PosthogClient
 
   @timeout 5000
 
@@ -107,10 +108,14 @@ defmodule KickaEttan.Games.GameServer do
   def init({game_id, options}) do
     Logger.metadata(game_id: game_id)
     Logger.info("Starting game server")
-    
+
     options = Map.put(options, :game_id, game_id)
     game_state = GameState.new(options)
-    
+
+    # Track game creation in PostHog
+    game_type = Map.get(options, :game_type, "standard")
+    PosthogClient.track_game_created(game_id, game_type)
+
     {:ok, game_state}
   end
 
@@ -131,7 +136,7 @@ defmodule KickaEttan.Games.GameServer do
         Logger.info("Player joined game", player_id: player_id, color: color)
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
-      
+
       {:error, reason} = error ->
         Logger.warning("Failed to join player", player_id: player_id, reason: reason)
         {:reply, error, game_state}
@@ -157,9 +162,13 @@ defmodule KickaEttan.Games.GameServer do
     case GameState.confirm_placement(game_state, player_id) do
       {:ok, new_state} ->
         Logger.info("Player confirmed placement", player_id: player_id)
+
+        # Track stone placement in PostHog
+        PosthogClient.track_stone_placed(game_state.game_id, player_id, game_state.current_round)
+
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
-      
+
       {:error, reason} = error ->
         Logger.warning("Failed to confirm placement", player_id: player_id, reason: reason)
         {:reply, error, game_state}
@@ -185,6 +194,18 @@ defmodule KickaEttan.Games.GameServer do
     case GameState.ready_for_next_round(game_state, player_id) do
       {:ok, new_state} ->
         Logger.info("Player ready for next round", player_id: player_id)
+
+        # Track round transition if round number changed
+        if new_state.current_round != game_state.current_round do
+          PosthogClient.track_round_completed(game_state.game_id, game_state.current_round)
+          PosthogClient.track_round_started(game_state.game_id, new_state.current_round)
+        end
+
+        # Track game completion if game is over
+        if new_state.phase == :game_over and game_state.phase != :game_over do
+          PosthogClient.track_game_completed(game_state.game_id, new_state.current_round)
+        end
+
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
 
@@ -213,6 +234,10 @@ defmodule KickaEttan.Games.GameServer do
     case GameState.confirm_ban(game_state, player_id) do
       {:ok, new_state} ->
         Logger.info("Player confirmed ban", player_id: player_id)
+
+        # Track ban placement in PostHog
+        PosthogClient.track_ban_placed(game_state.game_id, player_id, game_state.current_round)
+
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
 
@@ -252,9 +277,16 @@ defmodule KickaEttan.Games.GameServer do
   defp broadcast_update(game_state) do
     # Broadcast game state update to all clients in the game
     KickaEttanWeb.Endpoint.broadcast!(
-      "game:#{game_state.game_id}", 
-      "game_state_update", 
+      "game:#{game_state.game_id}",
+      "game_state_update",
       game_state
     )
+  end
+
+  defp get_player_color(game_state, player_id) do
+    case Enum.find(game_state.players, fn p -> p.id == player_id end) do
+      %{color: color} -> color
+      _ -> "unknown"
+    end
   end
 end

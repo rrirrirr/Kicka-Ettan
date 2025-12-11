@@ -137,6 +137,24 @@ const GameRoom = () => {
                             {gameState.settings.stones_per_team !== undefined && (
                                 <span>{gameState.settings.stones_per_team} {gameState.settings.stones_per_team === 1 ? 'stone' : 'stones'}</span>
                             )}
+                            {gameState.settings.ban_circle_radius !== undefined && (
+                                <>
+                                    <span className="mx-2 text-gray-300">•</span>
+                                    <span>
+                                        {(() => {
+                                            // Convert numeric value back to label using game type schema
+                                            const banSetting = gameType?.settingsSchema?.ban_circle_radius;
+                                            if (banSetting?.optionValues) {
+                                                const entry = Object.entries(banSetting.optionValues).find(
+                                                    ([, val]) => val === gameState.settings?.ban_circle_radius
+                                                );
+                                                if (entry) return `${entry[0]} ban ring`;
+                                            }
+                                            return `${gameState.settings.ban_circle_radius} ban ring`;
+                                        })()}
+                                    </span>
+                                </>
+                            )}
                         </div>
                     )}
 

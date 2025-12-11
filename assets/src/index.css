@@ -295,7 +295,7 @@ body {
 
   /* Standard Animations */
   .animate-glow {
-    @apply duration-200 ease-out hover:shadow-lg;
+    @apply duration-200 ease-out;
     transition-property: transform, box-shadow, background-color;
   }
 

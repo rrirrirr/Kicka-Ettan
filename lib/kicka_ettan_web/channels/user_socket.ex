@@ -40,7 +40,7 @@ defmodule KickaEttanWeb.UserSocket do
   # Returning `nil` makes this socket anonymous.
   @impl true
   def id(socket), do: "player_socket:#{socket.assigns.player_id}"
-  
+
   defp generate_player_id do
     :crypto.strong_rand_bytes(8) |> Base.url_encode64() |> binary_part(0, 8)
   end

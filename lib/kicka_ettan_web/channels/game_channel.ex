@@ -2,6 +2,7 @@ defmodule KickaEttanWeb.GameChannel do
   use Phoenix.Channel
   require Logger
   alias KickaEttan.Games.GameServer
+  alias KickaEttan.Analytics.PosthogClient
 
   @impl true
   def join("game:" <> game_id, params, socket) do
@@ -21,6 +22,11 @@ defmodule KickaEttanWeb.GameChannel do
         # Filter the game state for this specific player to hide opponent stones during placement
         client_view = KickaEttan.Games.GameState.client_view(game_state, player_id)
         Logger.info("Join successful", player_id: player_id)
+
+        # Track player join in PostHog (PostHog will automatically add country from IP)
+        actual_color = get_player_color(game_state, player_id)
+        PosthogClient.track_player_joined(game_id, player_id, actual_color)
+
         {:ok, %{game_state: client_view, player_id: player_id}, socket}
 
       {:error, :not_found} ->
@@ -215,5 +221,12 @@ defmodule KickaEttanWeb.GameChannel do
     # Log disconnection
     Logger.info("Player disconnected", reason: inspect(reason))
     :ok
+  end
+
+  defp get_player_color(game_state, player_id) do
+    case Enum.find(game_state.players, fn p -> p.id == player_id end) do
+      %{color: color} -> color
+      _ -> "unknown"
+    end
   end
 end

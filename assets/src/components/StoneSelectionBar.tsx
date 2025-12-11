@@ -1,7 +1,7 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { StonePosition } from '../types/game-types';
 import DraggableStone from './DraggableStone';
+import SelectionBar from './SelectionBar';
 
 interface StoneSelectionBarProps {
     stones: StonePosition[];
@@ -27,46 +27,27 @@ const StoneSelectionBar: React.FC<StoneSelectionBarProps> = ({
     // Filter for unplaced stones
     const unplacedStones = stones.filter(s => !s.placed);
 
-    return (
-        <motion.div
-            className="bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-white/50 flex gap-4 items-center mx-auto overflow-x-auto scrollbar-hide"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-            <div className="flex gap-2">
-                <AnimatePresence mode="popLayout">
-                    {unplacedStones.map((stone) => (
-                        <motion.div
-                            key={`${stone.index}-${stone.resetCount || 0}`}
-                            layout
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.5, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            className="relative"
-                        >
-                            <DraggableStone
-                                color={myColor}
-                                index={stone.index}
-                                onDragEnd={onDragEnd}
-                                onDrag={(_i, pos) => onDragStart?.(stone.index, pos)}
-                                size={44} // Fixed size for the bar
-                                interactive={!disabled}
-                                opacity={stone.index === draggedStoneIndex ? 0 : 1}
-                                customColor={teamColors ? teamColors[myColor] : undefined}
-                            />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
+    const items = unplacedStones.map((stone) => ({
+        key: `${stone.index}-${stone.resetCount || 0}`,
+        content: (
+            <DraggableStone
+                color={myColor}
+                index={stone.index}
+                onDragEnd={onDragEnd}
+                onDrag={(_i, pos) => onDragStart?.(stone.index, pos)}
+                size={44} // Fixed size for the bar
+                interactive={!disabled}
+                opacity={stone.index === draggedStoneIndex ? 0 : 1}
+                customColor={teamColors ? teamColors[myColor] : undefined}
+            />
+        ),
+    }));
 
-            {unplacedStones.length === 0 && (
-                <div
-                    className="text-sm font-bold text-gray-400 px-2"
-                >
-                    all stones placed
-                </div>
-            )}
-        </motion.div>
+    return (
+        <SelectionBar
+            items={items}
+            emptyMessage="all stones placed"
+        />
     );
 };
 

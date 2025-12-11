@@ -38,6 +38,12 @@ config :logger_json, :backend,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# PostHog Analytics
+# PostHog automatically enriches events with GeoIP data (country, city, etc.)
+config :posthog,
+  api_url: "https://us.i.posthog.com",
+  api_key: nil  # Set via POSTHOG_API_KEY environment variable in runtime.exs
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

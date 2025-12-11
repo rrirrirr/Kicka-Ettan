@@ -25,10 +25,10 @@ export const Button: React.FC<ButtonProps> = ({
     const baseStyles = "group font-bold flex items-center justify-center gap-2 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 ease-out";
 
     const variants = {
-        primary: "bg-icy-button-bg text-icy-button-text shadow-md hover:bg-icy-button-hover hover:shadow-lg",
+        primary: "bg-icy-button-bg text-icy-button-text hover:bg-icy-button-hover",
         secondary: "bg-icy-blue-light hover:bg-icy-blue-medium text-icy-blue-dark shadow-md hover:shadow-lg",
-        destructive: "bg-destructive text-white shadow-md hover:bg-destructive-hover hover:shadow-lg",
-        outline: "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm",
+        destructive: "bg-destructive text-white hover:bg-destructive-hover",
+        outline: "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-md",
         ghost: "hover:bg-gray-100/50 text-gray-600 hover:text-gray-900",
         icon: "hover:bg-gray-200/50 text-gray-600 hover:text-gray-900"
     };

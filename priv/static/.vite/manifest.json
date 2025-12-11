@@ -1,20 +1,21 @@
 {
   "index.html": {
-    "file": "assets/app-BGCE_uUm.js",
+    "file": "assets/app-C9yUa9rV.js",
     "name": "app",
     "src": "index.html",
     "isEntry": true,
     "dynamicImports": [
       "src/pages/DevPage.tsx",
       "src/pages/ButtonGuidePage.tsx",
-      "src/pages/ColorGuidePage.tsx"
+      "src/pages/ColorGuidePage.tsx",
+      "src/pages/CollisionDemoPage.tsx"
     ],
     "css": [
-      "assets/app-BkCoMHT8.css"
+      "assets/app-DIxNUUDX.css"
     ]
   },
   "src/pages/ButtonGuidePage.tsx": {
-    "file": "assets/ButtonGuidePage-B2GaCvPd.js",
+    "file": "assets/ButtonGuidePage-Dxez5nrF.js",
     "name": "ButtonGuidePage",
     "src": "src/pages/ButtonGuidePage.tsx",
     "isDynamicEntry": true,
@@ -22,8 +23,17 @@
       "index.html"
     ]
   },
+  "src/pages/CollisionDemoPage.tsx": {
+    "file": "assets/CollisionDemoPage-DA2sy9i9.js",
+    "name": "CollisionDemoPage",
+    "src": "src/pages/CollisionDemoPage.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ]
+  },
   "src/pages/ColorGuidePage.tsx": {
-    "file": "assets/ColorGuidePage-WwTKi4nk.js",
+    "file": "assets/ColorGuidePage-CZTmGhzJ.js",
     "name": "ColorGuidePage",
     "src": "src/pages/ColorGuidePage.tsx",
     "isDynamicEntry": true,
@@ -32,7 +42,7 @@
     ]
   },
   "src/pages/DevPage.tsx": {
-    "file": "assets/DevPage-C6oRKQ6r.js",
+    "file": "assets/DevPage-BG7uHUZn.js",
     "name": "DevPage",
     "src": "src/pages/DevPage.tsx",
     "isDynamicEntry": true,

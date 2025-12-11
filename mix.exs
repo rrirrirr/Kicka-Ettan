@@ -65,9 +65,12 @@ defmodule KickaEttan.MixProject do
       # Linting and static analysis
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      
+
       # Rate limiting
-      {:hammer, "~> 6.1"}
+      {:hammer, "~> 6.1"},
+
+      # Analytics
+      {:posthog, "~> 1.1.0"}
     ]
   end
 

@@ -95,6 +95,11 @@ if config_env() == :prod do
     config :sentry, dsn: sentry_dsn
   end
 
+  # Configure PostHog API key from environment variable
+  if posthog_api_key = System.get_env("POSTHOG_API_KEY") do
+    config :posthog, api_key: posthog_api_key
+  end
+
   # Configure CORS origins from environment variable
   # CORS_ORIGINS should be a comma-separated list of allowed origins
   # Example: CORS_ORIGINS="https://example.com,https://www.example.com"
