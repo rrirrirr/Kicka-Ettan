@@ -163,3 +163,23 @@ export const GuardIcon: React.FC<IconProps> = ({ size = 24, strokeWidth = 2, ...
         <path d="M12 22V5" />
     </svg>
 );
+
+export const BanIcon: React.FC<IconProps> = ({ size = 24, strokeWidth = 2, ...props }) => (
+    <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        {/* Dashed Circle */}
+        <circle cx="12" cy="12" r="10" strokeDasharray="4 4" />
+        {/* X in middle */}
+        <path d="M8 8l8 8" />
+        <path d="M16 8l-8 8" />
+    </svg>
+);

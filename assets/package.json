@@ -1,7 +1,7 @@
 {
   "name": "assets",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +22,7 @@
     "lucide-react": "^0.485.0",
     "phoenix": "^1.7.21",
     "phoenix-channels": "^1.0.0",
+    "posthog-js": "^1.205.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.4.1",
