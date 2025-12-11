@@ -315,16 +315,6 @@ body {
     cursor: grab;
   }
 
-  .stone-hover-container .hover-ring {
-    opacity: 0;
-    transition: opacity 0.15s ease-out;
-    pointer-events: none;
-  }
-
-  .stone-hover-container:hover .hover-ring {
-    opacity: 1;
-  }
-
   /* Hover ring for draggable ban circles */
   .draggable-ban-on-sheet {
     cursor: grab;

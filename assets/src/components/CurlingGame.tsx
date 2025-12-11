@@ -1240,7 +1240,7 @@ const CurlingGameContent = ({
           {/* Pulse ring animation for selected stone */}
 
           <div
-            className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${isHighlighted ? "scale-105 ring-2 ring-white/50" : ""
+            className={`absolute rounded-full shadow-md animate-glow transition-all duration-200 hover:brightness-110 ${isHighlighted ? "scale-105" : ""
               } ${gameState.phase === "combined" || isHistoryMode
                 ? "cursor-pointer"
                 : "cursor-default"
@@ -1482,21 +1482,6 @@ const CurlingGameContent = ({
                   zIndex: 10,
                 }}
               >
-                {/* Hover ring - visible on container hover */}
-                {!isReady && (
-                  <div
-                    className="hover-ring absolute rounded-full"
-                    style={{
-                      width: stonePixelSize,
-                      height: stonePixelSize,
-                      left: '50%',
-                      top: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      boxShadow: '0 0 0 2px #FB923Ccc',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
                 {/* Ghost Stone (stays in place while dragging) */}
                 {isDraggingThisStone && (
                   <div
