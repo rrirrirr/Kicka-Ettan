@@ -16,17 +16,18 @@ defmodule KickaEttan.Games.Phases.BanPhase do
   require Logger
 
   @impl true
-  def init(game_state) do
-    # Initialize player readiness and ban positions
+  @impl true
+  def init(game_state, _args) do
+    # Initialize player readiness tracking
     player_ready =
       game_state.players
       |> Enum.map(fn p -> {p.id, false} end)
       |> Map.new()
 
-    # Each player gets one ban zone (stored by player color)
-    ban_positions = %{red: nil, yellow: nil}
-
-    {:ok, %{player_ready: player_ready, ban_positions: ban_positions}}
+    {:ok, %{
+      ban_positions: %{red: nil, yellow: nil},
+      player_ready: player_ready
+    }}
   end
 
   @impl true

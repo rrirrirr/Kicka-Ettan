@@ -4,7 +4,9 @@ import CurlingSheet from "./CurlingSheet";
 import { BottomSheet } from "./ui/BottomSheet";
 import { Button } from "./ui/Button";
 import DraggableStone from "./DraggableStone";
-import StoneSelectionBar from "./StoneSelectionBar";
+
+import UnifiedSelectionBar from "./UnifiedSelectionBar";
+import FirstPlayerDecision from "./FirstPlayerDecision";
 import BanSelectionBar, { BanPosition } from "./BanSelectionBar";
 import { StoneMeasurements } from "./StoneMeasurements";
 import {
@@ -78,6 +80,7 @@ import {
   X,
   Settings,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 import { Loupe } from "./Loupe";
 import { StoneInspector } from "./StoneInspector";
@@ -157,6 +160,31 @@ const CurlingGameContent = ({
     y: 0,
     banIndex: null,
   });
+
+  // Persist dice results for 10 seconds after they're received
+  const [persistedDiceData, setPersistedDiceData] = useState<{
+    diceRolls: Record<string, number>;
+    firstPlayer: string;
+    players: { id: string; name: string; color: 'red' | 'yellow' }[];
+    teamColors: { red: string; yellow: string };
+  } | null>(null);
+
+  // When dice results arrive, capture them (no auto-close - user must dismiss)
+  useEffect(() => {
+    if (gameState.dice_rolls && Object.keys(gameState.dice_rolls).length > 0 && gameState.first_player) {
+      // Capture the dice data before phase changes
+      setPersistedDiceData({
+        diceRolls: gameState.dice_rolls,
+        firstPlayer: gameState.first_player,
+        players: gameState.players?.map(p => ({
+          id: p.id,
+          name: p.name || 'Player',
+          color: p.color as 'red' | 'yellow'
+        })) || [],
+        teamColors: gameState.team_colors || { red: '#cc0000', yellow: '#e6b800' },
+      });
+    }
+  }, [gameState.dice_rolls, gameState.first_player]);
 
   // Handle Escape key logic (Close menu / Deselect stone)
   useEffect(() => {
@@ -240,8 +268,8 @@ const CurlingGameContent = ({
             resetCount: 0,
           }));
           setMyStones(initialStones);
-          // Initialize bans (currently 1 ban per player, can be increased later)
-          const bansPerTeam = 1; // Could be a game setting in the future
+          // Initialize bans based on configuration or default to 1
+          const bansPerTeam = gameState.bans_count !== undefined ? gameState.bans_count : 1;
           const initialBans = Array.from({ length: bansPerTeam }).map((_, i) => ({
             index: i,
             x: 0,
@@ -263,6 +291,23 @@ const CurlingGameContent = ({
       // Sync ban ready state with server (for ban phase)
       if (gameState.phase === "ban") {
         setIsBanReady(serverReady);
+      }
+
+      // Re-initialize bans if bans_count changed (e.g., from turn_order to placement phase)
+      // This handles the case where bans were initialized with default (1) during turn_order phase
+      // and need to be updated when placement phase sends actual bans_count (e.g., 2)
+      const targetBansCount = gameState.bans_count !== undefined ? gameState.bans_count : 1;
+      if (myBans.length !== targetBansCount && !serverReady) {
+        const newBans = Array.from({ length: targetBansCount }).map((_, i) => ({
+          index: i,
+          x: 0,
+          y: 0,
+          placed: false,
+        }));
+        setMyBans(newBans);
+        setIsBanReady(false);
+        banGestureState.current = { type: "IDLE" };
+        setBanDragState({ isDragging: false, x: 0, y: 0, banIndex: null });
       }
     }
   }, [gameState, playerId]);
@@ -294,13 +339,28 @@ const CurlingGameContent = ({
   }, [gameState?.game_id, gameState?.current_round, gameState?.phase, playerId]);
 
   // Detect round transition and show overlay for BOTH players
+  // Skip for turn_order phase - show when entering placement instead
   useEffect(() => {
     if (gameState && gameState.current_round > prevRoundRef.current) {
-      // Round has increased - show the overlay
-      setShowRoundStartOverlay(true);
+      // Round has increased - show the overlay only if we're not in turn_order phase
+      if (gameState.phase !== "turn_order") {
+        setShowRoundStartOverlay(true);
+      }
       prevRoundRef.current = gameState.current_round;
     }
-  }, [gameState?.current_round]);
+  }, [gameState?.current_round, gameState?.phase]);
+
+  // Show round overlay when transitioning from turn_order to placement
+  const prevPhaseRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (gameState?.phase === "placement" && prevPhaseRef.current === "turn_order") {
+      // Just exited voting phase, show round start animation
+      setShowRoundStartOverlay(true);
+    }
+    if (gameState?.phase) {
+      prevPhaseRef.current = gameState.phase;
+    }
+  }, [gameState?.phase]);
 
   // Save stone placements to localStorage when they change
   useEffect(() => {
@@ -342,6 +402,18 @@ const CurlingGameContent = ({
   const handleStoneDragEnd = useCallback(
     (index: number, dropPoint: { x: number; y: number }) => {
       if (!sheetRef.current || isReady) return;
+      // Block placement if it's not our turn in turn-based mode
+      if (gameState.turn_based && gameState.current_turn_id !== playerId) return;
+
+      // Block if stone is locked (placed in a previous turn)
+      const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+      const stonePlacedTurn = myPlacedTurns.stones?.[index];
+      const currentTurn = gameState.turn_number || 1;
+      if (stonePlacedTurn != null && stonePlacedTurn < currentTurn) {
+        console.log("Stone is locked, ignoring drag");
+        setDragState((prev) => ({ ...prev, isDragging: false, stoneIndex: null }));
+        return;
+      }
 
       const sheetRect = sheetRef.current.getBoundingClientRect();
 
@@ -404,11 +476,24 @@ const CurlingGameContent = ({
 
         // Resolve all collisions iteratively (stone-to-stone, ban zone, boundaries)
         const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+
+        // Include opponent stones in collision detection
+        const opponentColor = myColor === "red" ? "yellow" : "red";
+        const opponentStones = (gameState.stones?.[opponentColor] || []).map((s, i) => ({
+          index: 100 + i, // Offset index
+          x: s.x,
+          y: s.y,
+          placed: true,
+          color: opponentColor as PlayerColor
+        }));
+
+        const allCollidableStones = [...myStones, ...opponentStones];
+
         const result = resolveAllCollisions(
           index,
           clampedX,
           clampedY,
-          myStones,
+          allCollidableStones,
           myBannedZone,
         );
 
@@ -421,9 +506,27 @@ const CurlingGameContent = ({
                 : s,
             ),
           );
+
+          // Notify server that stone was removed/reset (so placements_this_turn is decremented)
+          if (channel) {
+            channel.push("remove_stone", {
+              stone_index: index,
+            });
+          }
         } else {
           // Use resolved position
           updateStonePosition(index, result.x, result.y, true);
+
+          // If turn-based, send move immediately
+          // NOTE: We change this to ALWAYS send immediately if channel exists,
+          // except in simultaneous mode perhaps? But even then real-time updates are fine if hidden by client_view.
+          // The issue reported is that opponent doesn't see updates.
+          if (channel) {
+            channel.push("place_stone", {
+              stone_index: index,
+              position: { x: result.x, y: result.y }
+            });
+          }
         }
       } else {
         // Dropped outside - reset to bar
@@ -434,6 +537,13 @@ const CurlingGameContent = ({
               : s,
           ),
         );
+
+        // Notify server that stone was removed/reset
+        if (channel) {
+          channel.push("remove_stone", {
+            stone_index: index,
+          });
+        }
       }
       setDragState((prev) => ({
         ...prev,
@@ -441,7 +551,88 @@ const CurlingGameContent = ({
         stoneIndex: null,
       }));
     },
-    [isReady, scale, myStones, updateStonePosition],
+    [isReady, scale, myStones, updateStonePosition, gameState?.turn_based, gameState?.current_turn_id, channel],
+  );
+
+  const handleBanDragEnd = useCallback(
+    (index: number, dropPoint: { x: number; y: number }) => {
+      if (!sheetRef.current || isReady) return;
+      // Block placement if it's not our turn in turn-based mode
+      if (gameState.turn_based && gameState.current_turn_id !== playerId) return;
+
+      // Block if ban is locked (placed in a previous turn)
+      const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+      const banPlacedTurn = myPlacedTurns.bans?.[index];
+      const currentTurn = gameState.turn_number || 1;
+      if (banPlacedTurn != null && banPlacedTurn < currentTurn) {
+        console.log("Ban is locked, ignoring drag");
+        setBanDragState({ isDragging: false, x: 0, y: 0, banIndex: null });
+        return;
+      }
+
+      const sheetRect = sheetRef.current.getBoundingClientRect();
+
+      if (
+        dropPoint.x >= sheetRect.left &&
+        dropPoint.x <= sheetRect.right &&
+        dropPoint.y >= sheetRect.top &&
+        dropPoint.y <= sheetRect.bottom
+      ) {
+        const relativeX = dropPoint.x - sheetRect.left;
+        const relativeY = dropPoint.y - sheetRect.top;
+        const rawX = relativeX / scale;
+        const rawY = relativeY / scale;
+
+        // Clamp logic (simplified for ban)
+        // Ensure banRadius is a valid number
+        const banRadius = (typeof gameState.ban_radius === 'number' && gameState.ban_radius > 0)
+          ? gameState.ban_radius
+          : 50;
+
+        console.log("Ban Placement (Drag):", { dropPoint, sheetRect, rawX, rawY, banRadius, gameStateBanRadius: gameState.ban_radius });
+
+        // Usually bans have Y restrictions too? Default to full sheet or valid area?
+        // Use same restrictions as existing ban logic if possible
+        const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+        const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
+        const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
+
+        const minY = hogLineBottomEdge + banRadius;
+        const maxY = backLineY - banRadius;
+
+        const clampedX = Math.max(banRadius, Math.min(SHEET_WIDTH - banRadius, rawX));
+        const clampedY = Math.max(minY, Math.min(maxY, rawY));
+
+        setMyBans(prev => prev.map(b =>
+          b.index === index
+            ? { ...b, x: clampedX, y: clampedY, placed: true }
+            : b
+        ));
+
+        if (channel) {
+          channel.push("place_ban", {
+            ban_index: index,
+            position: { x: clampedX, y: clampedY }
+          });
+        }
+      } else {
+        // Reset to bar logic
+        setMyBans(prev => prev.map(b =>
+          b.index === index
+            ? { ...b, placed: false }
+            : b
+        ));
+
+        // Notify server that ban was removed/reset
+        if (channel) {
+          channel.push("remove_ban", {
+            ban_index: index,
+          });
+        }
+      }
+      setBanDragState({ isDragging: false, x: 0, y: 0, banIndex: null });
+    },
+    [isReady, scale, updateStonePosition, gameState?.turn_based, gameState?.current_turn_id, gameState.ban_radius, channel]
   );
 
   const handleStoneDrag = useCallback(
@@ -459,6 +650,11 @@ const CurlingGameContent = ({
   // Global pointer up handler to stop dragging
   useEffect(() => {
     const handleGlobalPointerUp = (e: PointerEvent) => {
+      // Block all placement interactions if it's not our turn in turn-based mode
+      if (gameState.turn_based && gameState.current_turn_id !== playerId) {
+        gestureState.current = { type: "IDLE" };
+        return;
+      }
       // Handle PENDING state (Click vs Drag decision)
       if (gestureState.current.type === "PENDING") {
         // Clear the long-press timer
@@ -516,11 +712,25 @@ const CurlingGameContent = ({
 
                   // Resolve all collisions iteratively
                   const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+
+                  // Include opponent stones in collision detection if they are visible/on the board
+                  const opponentColor = myColor === "red" ? "yellow" : "red";
+                  const opponentStones = (gameState.stones?.[opponentColor] || []).map((s, i) => ({
+                    index: 100 + i, // Offset index to avoid collision with own indices
+                    x: s.x,
+                    y: s.y,
+                    placed: true,
+                    color: opponentColor as PlayerColor
+                  }));
+
+                  // Combine my stones (excluding the one being placed) and opponent stones
+                  const allCollidableStones = [...myStones, ...opponentStones];
+
                   const result = resolveAllCollisions(
                     stoneToPlace.index,
                     clampedX,
                     clampedY,
-                    myStones,
+                    allCollidableStones,
                     myBannedZone,
                   );
 
@@ -532,6 +742,15 @@ const CurlingGameContent = ({
                       result.y,
                       true,
                     );
+
+                    // Send to server immediately if turn-based or if we want immediate updates
+                    // Note: We always want to send it so opponent sees it (if visible)
+                    if (channel) {
+                      channel.push("place_stone", {
+                        stone_index: stoneToPlace.index,
+                        position: { x: result.x, y: result.y },
+                      });
+                    }
                   }
                   // If resetToBar is true, we silently don't place (user tried to place fully in ban zone)
                 }
@@ -693,13 +912,18 @@ const CurlingGameContent = ({
       }
 
       // Handle ban circle dragging - check both state and ref for timing safety
-      if ((banDragState.isDragging || banGestureState.current.type === "DRAGGING") && gameState.phase === "ban") {
+      if ((banDragState.isDragging || banGestureState.current.type === "DRAGGING") && (gameState.phase === "ban" || gameState.phase === "placement")) {
         setBanDragState(prev => ({ ...prev, isDragging: true, x: e.clientX, y: e.clientY }));
       }
     };
 
     // Handle ban circle pointer up
     const handleBanPointerUp = (e: PointerEvent) => {
+      // Block all ban placement interactions if it's not our turn in turn-based mode
+      if (gameState.turn_based && gameState.current_turn_id !== playerId) {
+        banGestureState.current = { type: "IDLE" };
+        return;
+      }
       // Handle PENDING state (click vs drag decision)
       if (banGestureState.current.type === "PENDING") {
         clearTimeout(banGestureState.current.timerId);
@@ -721,7 +945,13 @@ const CurlingGameContent = ({
             const rawX = (e.clientX - sheetRect.left) / scale;
             const rawY = (e.clientY - sheetRect.top) / scale;
 
-            const banRadius = gameState.ban_radius || 50;
+            // Ensure banRadius is a valid number, falling back to 50
+            const banRadius = (typeof gameState.ban_radius === 'number' && gameState.ban_radius > 0)
+              ? gameState.ban_radius
+              : 50;
+
+            console.log("Ban Placement (Click):", { clientX: e.clientX, clientY: e.clientY, rawX, rawY, banRadius, gameStateBanRadius: gameState.ban_radius });
+
             const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
             const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
             const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
@@ -737,6 +967,13 @@ const CurlingGameContent = ({
                 ? { ...b, x: clampedX, y: clampedY, placed: true }
                 : b
             ));
+
+            if (channel) {
+              channel.push("place_ban", {
+                ban_index: banIndex,
+                position: { x: clampedX, y: clampedY }
+              });
+            }
           }
         }
         banGestureState.current = { type: "IDLE" };
@@ -744,7 +981,7 @@ const CurlingGameContent = ({
       }
 
       // Handle DRAGGING state - check both state and ref for timing safety
-      if ((banDragState.isDragging || banGestureState.current.type === "DRAGGING") && gameState.phase === "ban" && sheetRef.current) {
+      if ((banDragState.isDragging || banGestureState.current.type === "DRAGGING") && (gameState.phase === "ban" || gameState.phase === "placement") && sheetRef.current) {
         const banIndex = banDragState.banIndex ??
           (banGestureState.current.type === "DRAGGING" ? banGestureState.current.banIndex : null);
         const sheetRect = sheetRef.current.getBoundingClientRect();
@@ -776,6 +1013,27 @@ const CurlingGameContent = ({
               ? { ...b, x: clampedX, y: clampedY, placed: true }
               : b
           ));
+
+          if (gameState.turn_based && channel) {
+            channel.push("place_ban", {
+              ban_index: banIndex,
+              position: { x: clampedX, y: clampedY }
+            });
+          }
+        } else if (banIndex !== null) {
+          // Dropped OUTSIDE sheet - reset ban to selection bar (like stones)
+          setMyBans(prev => prev.map(b =>
+            b.index === banIndex
+              ? { ...b, placed: false }
+              : b
+          ));
+
+          // Notify server that ban was removed/reset
+          if (channel) {
+            channel.push("remove_ban", {
+              ban_index: banIndex,
+            });
+          }
         }
         setBanDragState({ isDragging: false, x: 0, y: 0, banIndex: null });
         banGestureState.current = { type: "IDLE" };
@@ -801,6 +1059,8 @@ const CurlingGameContent = ({
     gameState.ban_radius,
     isHistoryMode,
     banDragState.isDragging,
+    gameState.turn_based,
+    gameState.current_turn_id,
   ]);
 
   // Determine which stones to display (History vs Live)
@@ -818,6 +1078,9 @@ const CurlingGameContent = ({
   } else {
     displayRedStones = gameState.stones.red || [];
     displayYellowStones = gameState.stones.yellow || [];
+    if (gameState.phase === 'combined') {
+      console.log("Combined Phase Stones:", { red: displayRedStones, yellow: displayYellowStones, rawState: gameState.stones });
+    }
   }
 
   const handleSheetPointerDown = useCallback(
@@ -916,6 +1179,14 @@ const CurlingGameContent = ({
         // Check if clicking on existing placed ban circle for pickup
         for (const ban of myBans) {
           if (!ban.placed) continue;
+
+          // Check if ban is locked (placed in a previous turn) - if so, don't allow pickup
+          const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+          const banPlacedTurn = myPlacedTurns.bans?.[ban.index];
+          const currentTurn = gameState.turn_number || 1;
+          const isBanLocked = banPlacedTurn != null && banPlacedTurn < currentTurn;
+          if (isBanLocked) continue; // Skip locked bans
+
           const dx = rawX - ban.x;
           const dy = rawY - ban.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
@@ -970,6 +1241,53 @@ const CurlingGameContent = ({
       const rawX = clickX / scale;
       const rawY = clickY / scale;
 
+      // 0. Check for ban pickup (if enabled)
+      if ((!gameState.bans_locked) && (gameState.bans_count || 0) > 0) {
+        // Ensure banRadius is a valid number
+        const banRadius = (typeof gameState.ban_radius === 'number' && gameState.ban_radius > 0)
+          ? gameState.ban_radius
+          : 50;
+
+        for (const ban of myBans) {
+          if (!ban.placed) continue;
+
+          // Check if ban is locked (placed in a previous turn) - if so, don't allow pickup
+          const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+          const banPlacedTurn = myPlacedTurns.bans?.[ban.index];
+          const currentTurn = gameState.turn_number || 1;
+          const isBanLocked = banPlacedTurn != null && banPlacedTurn < currentTurn;
+          if (isBanLocked) continue; // Skip locked bans
+
+          const dx = rawX - ban.x;
+          const dy = rawY - ban.y;
+          if (Math.sqrt(dx * dx + dy * dy) < banRadius) {
+            // Start Ban Pending Gesture (Inline)
+            const timerId = window.setTimeout(() => {
+              if (banGestureState.current.type === "PENDING") {
+                const { startX, startY, banIndex: idx } = banGestureState.current;
+                banGestureState.current = { type: "DRAGGING", banIndex: idx };
+                setBanDragState({
+                  isDragging: true,
+                  x: startX,
+                  y: startY,
+                  banIndex: idx
+                });
+              }
+            }, 300);
+            banGestureState.current = {
+              type: "PENDING",
+              banIndex: ban.index,
+              startX: e.clientX,
+              startY: e.clientY,
+              timerId,
+              source: "pickup",
+              startTime: Date.now()
+            };
+            return;
+          }
+        }
+      }
+
       // 1. Check for stone pickup (Smart Targeting)
       // Find closest stone within threshold
       const PICKUP_THRESHOLD = 44 / scale; // 44px in logical units
@@ -978,10 +1296,20 @@ const CurlingGameContent = ({
 
       for (const stone of myStones) {
         if (!stone.placed) continue;
+
+        // Check if stone is locked (placed in a previous turn) - if so, don't allow pickup
+        const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+        const stonePlacedTurn = myPlacedTurns.stones?.[stone.index];
+        const currentTurn = gameState.turn_number || 1;
+        const isStoneLocked = stonePlacedTurn != null && stonePlacedTurn < currentTurn;
+        if (isStoneLocked) continue; // Skip locked stones
+
         const dx = rawX - stone.x;
         const dy = rawY - stone.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        // If we are just checking for pickup, use standard threshold. 
+        // But if we fail standard threshold, we might still want to avoid placing a NEW stone if we are close to an existing one.
         if (distance < PICKUP_THRESHOLD && distance < minDistance) {
           minDistance = distance;
           closestStone = stone;
@@ -1026,9 +1354,76 @@ const CurlingGameContent = ({
         return;
       }
 
-      // 2. If no stone found, try to place a new one (existing click logic)
-      // Find first unplaced stone
-      const stoneToPlace = myStones.find((s) => !s.placed);
+      // 2. If no stone found, try to place a new item (ban or stone)
+      // First, block placement if it's not our turn
+      if (gameState.turn_based && gameState.current_turn_id !== playerId) return;
+
+      // Block if we've already used all our placements for this turn
+      const placementsThisTurn = gameState.placements_this_turn || 0;
+      const placementsPerTurn = gameState.placements_per_turn || 999; // Default high if not set
+      if (gameState.turn_based && placementsThisTurn >= placementsPerTurn) {
+        console.log("Placements limit reached for this turn:", placementsThisTurn, "/", placementsPerTurn);
+        return;
+      }
+
+      // Helper for ban placement
+      const placeBanAtPosition = (banToPlace: typeof myBans[0], x: number, y: number) => {
+        const banRadius = gameState.ban_radius || 50;
+        const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
+        const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
+        const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
+        const minY = hogLineBottomEdge + banRadius;
+        const maxY = backLineY - banRadius;
+
+        const clampedX = Math.max(banRadius, Math.min(SHEET_WIDTH - banRadius, x));
+        const clampedY = Math.max(minY, Math.min(maxY, y));
+
+        setMyBans(prev => prev.map(b =>
+          b.index === banToPlace.index ? { ...b, x: clampedX, y: clampedY, placed: true } : b
+        ));
+
+        if (channel) {
+          channel.push("place_ban", {
+            ban_index: banToPlace.index,
+            position: { x: clampedX, y: clampedY }
+          });
+        }
+
+        // Start pending gesture for ban (allow immediate drag)
+        const timerId = window.setTimeout(() => {
+          if (banGestureState.current.type === "PENDING") {
+            const { startX, startY, banIndex: idx } = banGestureState.current;
+            banGestureState.current = { type: "DRAGGING", banIndex: idx };
+            setBanDragState({ isDragging: true, x: startX, y: startY, banIndex: idx });
+          }
+        }, 300);
+        banGestureState.current = {
+          type: "PENDING",
+          banIndex: banToPlace.index,
+          startX: e.clientX,
+          startY: e.clientY,
+          timerId,
+          source: "placement",
+          startTime: Date.now()
+        };
+      };
+
+      // Check if we should place ban or stone (bans first in bar, then stones)
+      // Find first unplaced ban
+      const banToPlace = !gameState.bans_locked && myBans.length > 0
+        ? [...myBans].sort((a, b) => a.index - b.index).find((b) => !b.placed)
+        : null;
+
+      if (banToPlace) {
+        // Place ban at click position
+        placeBanAtPosition(banToPlace, rawX, rawY);
+        return;
+      }
+
+      // Find first unplaced stone (sort by index to ensure leftmost is picked first)
+      const stoneToPlace = !gameState.stones_locked
+        ? [...myStones].sort((a, b) => a.index - b.index).find((s) => !s.placed)
+        : null;
       if (!stoneToPlace) return;
 
       // Clamp to sheet boundaries
@@ -1044,13 +1439,26 @@ const CurlingGameContent = ({
       );
       const clampedY = Math.max(minY, Math.min(maxY, rawY));
 
-      // Resolve all collisions iteratively (stone-to-stone, ban zone, boundaries)
+      // Resolve collisions with other stones and ban zones
       const myBannedZone = gameState.banned_zones?.[myColor ?? "red"];
+
+      // Include opponent stones in collision detection
+      const opponentColor = myColor === "red" ? "yellow" : "red";
+      const opponentStones = (gameState.stones?.[opponentColor] || []).map((s, i) => ({
+        index: 100 + i, // Offset index
+        x: s.x,
+        y: s.y,
+        placed: true,
+        color: opponentColor as PlayerColor
+      }));
+
+      const allCollidableStones = [...myStones, ...opponentStones];
+
       const result = resolveAllCollisions(
         stoneToPlace.index,
         clampedX,
         clampedY,
-        myStones,
+        allCollidableStones,
         myBannedZone,
       );
 
@@ -1061,6 +1469,14 @@ const CurlingGameContent = ({
 
       // Place the stone with resolved position
       updateStonePosition(stoneToPlace.index, result.x, result.y, true);
+
+      // Send update to server immediately
+      if (channel) {
+        channel.push("place_stone", {
+          stone_index: stoneToPlace.index,
+          position: { x: result.x, y: result.y },
+        });
+      }
 
       // Enter PENDING state to allow immediate dragging
       startPendingGesture(stoneToPlace.index, "placement");
@@ -1093,9 +1509,18 @@ const CurlingGameContent = ({
       setWaitingMinTimeElapsed(true);
     }, 500);
 
-    // Send all stone placements
+    // Send only unlocked stone placements (locked ones were already synced in previous turns)
+    const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+    const currentTurn = gameState.turn_number || 1;
+
     const placementPromises = myStones
-      .filter((s) => s.placed)
+      .filter((s) => {
+        if (!s.placed) return false;
+        // Skip locked stones (placed in previous turns)
+        const stonePlacedTurn = myPlacedTurns.stones?.[s.index];
+        const isLocked = stonePlacedTurn != null && stonePlacedTurn < currentTurn;
+        return !isLocked;
+      })
       .map((stone) => {
         return new Promise((resolve, reject) => {
           channel
@@ -1124,8 +1549,9 @@ const CurlingGameContent = ({
           });
       })
       .catch((err) => {
-        console.error("Failed to place stones", err);
-        alert("Failed to save stone positions: " + JSON.stringify(err));
+        // Silently log errors that are expected (e.g., item_locked from race conditions)
+        // Don't interrupt the user with alerts for these
+        console.warn("Stone placement error (handled gracefully):", err);
       });
   };
 
@@ -1152,6 +1578,16 @@ const CurlingGameContent = ({
       })
       .receive("error", (reasons: any) => {
         console.error("Failed to cancel placement", reasons);
+      });
+  };
+
+  // First player decision voting
+  const handleVoteFirstPlayer = (voteForId: string) => {
+    if (!channel) return;
+
+    channel.push("vote_first_player", { vote_for: voteForId })
+      .receive("error", (err: any) => {
+        console.error("Vote failed:", err);
       });
   };
 
@@ -1199,59 +1635,7 @@ const CurlingGameContent = ({
       });
   };
 
-  // Ban drag handlers - similar to stone drag handlers
-  const handleBanDragEnd = useCallback(
-    (index: number, dropPoint: { x: number; y: number }) => {
-      if (!sheetRef.current || isBanReady) return;
 
-      const sheetRect = sheetRef.current.getBoundingClientRect();
-
-      // Check if dropped within the sheet
-      if (
-        dropPoint.x >= sheetRect.left &&
-        dropPoint.x <= sheetRect.right &&
-        dropPoint.y >= sheetRect.top &&
-        dropPoint.y <= sheetRect.bottom
-      ) {
-        const relativeX = dropPoint.x - sheetRect.left;
-        const relativeY = dropPoint.y - sheetRect.top;
-
-        const rawX = relativeX / scale;
-        const rawY = relativeY / scale;
-
-        const banRadius = gameState.ban_radius || 50;
-        const hogLineY = VIEW_TOP_OFFSET - HOG_LINE_OFFSET;
-        const hogLineBottomEdge = hogLineY + HOG_LINE_WIDTH / 2;
-        const backLineY = VIEW_TOP_OFFSET + BACK_LINE_OFFSET;
-
-        const minY = hogLineBottomEdge + banRadius;
-        const maxY = backLineY - banRadius;
-
-        const clampedX = Math.max(banRadius, Math.min(SHEET_WIDTH - banRadius, rawX));
-        const clampedY = Math.max(minY, Math.min(maxY, rawY));
-
-        setMyBans(prev => prev.map(b =>
-          b.index === index
-            ? { ...b, x: clampedX, y: clampedY, placed: true }
-            : b
-        ));
-      } else {
-        // Dropped outside - reset to bar
-        setMyBans(prev => prev.map(b =>
-          b.index === index
-            ? { ...b, placed: false }
-            : b
-        ));
-      }
-      setBanDragState({
-        isDragging: false,
-        x: 0,
-        y: 0,
-        banIndex: null,
-      });
-    },
-    [isBanReady, scale, gameState.ban_radius],
-  );
 
   const handleBanDrag = useCallback(
     (index: number, position: { x: number; y: number }) => {
@@ -1270,6 +1654,16 @@ const CurlingGameContent = ({
   }
 
   const allStonesPlaced = myStones.every((s) => s.placed);
+  const allBansPlaced = myBans.every((b) => b.placed);
+  const allItemsPlaced = allStonesPlaced && allBansPlaced;
+
+  // For turn-based mode: show confirm when placements_this_turn >= placements_per_turn
+  // OR when all items are placed
+  const isMyTurn = !gameState.turn_based || gameState.current_turn_id === playerId;
+  const turnPlacementsDone = gameState.turn_based &&
+    (gameState.placements_this_turn || 0) >= (gameState.placements_per_turn || 1);
+
+  const readyToConfirm = isMyTurn && (turnPlacementsDone || allItemsPlaced);
 
   // Calculate pixel size for stones
   const stonePixelSize = STONE_RADIUS * 2 * scale;
@@ -1424,6 +1818,7 @@ const CurlingGameContent = ({
         ref={forLoupe ? undefined : sheetRef}
         className="absolute inset-0 touch-none" // touch-none to prevent browser zooming/scrolling while dragging
         onPointerDown={forLoupe ? undefined : handleSheetPointerDown}
+        data-testid={forLoupe ? undefined : "curling-sheet"}
       >
         <CurlingSheet
           width="100%"
@@ -1466,60 +1861,118 @@ const CurlingGameContent = ({
         );
       })}
 
-      {/* Render opponent's banned zone during placement phase */}
+      {/* Render ban zones during placement phase */}
       {gameState.phase === "placement" && (
         <>
-          {/* Render my placed ban as green ring relative to my view */}
+          {/* Render MY ban rings - stored under opponent's color key */}
+          {/* If locked (placed in previous turn), show as green with lock icon */}
+          {/* If editable (placed this turn or not placed), show as orange dashed */}
           {myColor && gameState.banned_zones && (() => {
-            // My ban is stored in the opposite color's banned_zone (because they're swapped)
-            // If I'm red, my ban is in banned_zones.yellow (it restricts yellow)
-            // If I'm yellow, my ban is in banned_zones.red (it restricts red)
             const opponentColor = myColor === "red" ? "yellow" : "red";
-            const myBanPosition = gameState.banned_zones[opponentColor];
-            if (!myBanPosition) return null;
+            const myBanData = gameState.banned_zones[opponentColor];
+            if (!myBanData) return null;
 
-            const banSize = myBanPosition.radius * 2 * scale;
-            return (
-              <div
-                key={`my-placed-ban`}
-                className="absolute rounded-full pointer-events-none"
-                style={{
-                  width: banSize,
-                  height: banSize,
-                  border: "4px solid rgba(74, 222, 128, 0.6)", // green-400 with opacity
-                  left: myBanPosition.x * scale,
-                  top: myBanPosition.y * scale,
-                  marginLeft: -banSize / 2,
-                  marginTop: -banSize / 2,
-                  zIndex: 0,
-                }}
-              />
-            );
+            // Normalize to array - backend sends single object for 1 ban, array for multiple
+            const myBans = Array.isArray(myBanData) ? myBanData : [myBanData];
+
+            const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+            const currentTurn = gameState.turn_number || 1;
+
+            return myBans.map((banPosition, banIndex) => {
+              const banSize = banPosition.radius * 2 * scale;
+
+              // Check if this specific ban is locked
+              const banPlacedTurn = myPlacedTurns.bans?.[banIndex];
+              const isBanLocked = banPlacedTurn != null && banPlacedTurn < currentTurn;
+
+              // Ban ring is editable ONLY if:
+              // 1. It's MY turn (in turn-based mode)
+              // 2. AND I'm not ready yet
+              // 3. AND the ban is NOT locked (not placed in a previous turn)
+              const canEditBan = isMyTurn && !isReady && !isBanLocked;
+
+              if (!canEditBan) {
+                // Show as confirmed green ring with optional lock icon
+                return (
+                  <div
+                    key={`my-placed-ban-${banIndex}`}
+                    className="absolute rounded-full pointer-events-none flex items-center justify-center"
+                    style={{
+                      width: banSize,
+                      height: banSize,
+                      border: "4px solid rgba(74, 222, 128, 0.6)", // green-400 with opacity
+                      left: banPosition.x * scale,
+                      top: banPosition.y * scale,
+                      marginLeft: -banSize / 2,
+                      marginTop: -banSize / 2,
+                      zIndex: 0,
+                    }}
+                  >
+                    {/* Show lock icon if locked from previous turn */}
+                    {isBanLocked && (
+                      <div className="bg-white/80 rounded-full p-1">
+                        <Lock size={Math.min(20, banSize / 4)} className="text-green-600" />
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                // Show as editable orange dashed ring (my turn and not ready and not locked)
+                const isDraggingThisBan = banDragState.isDragging && banDragState.banIndex === banIndex;
+                return (
+                  <div
+                    key={`my-placing-ban-${banIndex}`}
+                    className="absolute rounded-full border-4 border-dashed flex items-center justify-center draggable-ban-on-sheet"
+                    onPointerDown={handleSheetPointerDown}
+                    data-ban-index={banIndex}
+                    style={{
+                      width: banSize,
+                      height: banSize,
+                      borderColor: "#FB923C",
+                      backgroundColor: "rgba(251, 146, 60, 0.25)",
+                      left: banPosition.x * scale,
+                      top: banPosition.y * scale,
+                      marginLeft: -banSize / 2,
+                      marginTop: -banSize / 2,
+                      zIndex: 3,
+                      cursor: "grab",
+                      opacity: isDraggingThisBan ? 0.3 : 1,
+                    }}
+                  >
+                    <X size={Math.min(40, banPosition.radius * scale * 0.8)} color="#FB923C" strokeWidth={3} />
+                  </div>
+                );
+              }
+            });
           })()}
 
-          {myColor && gameState.banned_zones && (
-            (() => {
-              const myBannedZone = gameState.banned_zones[myColor];
-              if (!myBannedZone) return null;
+          {/* Render OPPONENT's ban(s) that restricts ME - stored under my color key */}
+          {/* Always show as orange (restriction indicator) */}
+          {myColor && gameState.banned_zones && (() => {
+            const opponentBanData = gameState.banned_zones[myColor];
+            if (!opponentBanData) return null;
 
-              return (
-                <div
-                  className="absolute rounded-full pointer-events-none"
-                  style={{
-                    width: myBannedZone.radius * 2 * scale,
-                    height: myBannedZone.radius * 2 * scale,
-                    backgroundColor: "rgba(251, 146, 60, 0.3)",
-                    border: "3px solid rgba(251, 146, 60, 0.6)",
-                    left: myBannedZone.x * scale,
-                    top: myBannedZone.y * scale,
-                    marginLeft: -myBannedZone.radius * scale,
-                    marginTop: -myBannedZone.radius * scale,
-                    zIndex: 1,
-                  }}
-                />
-              );
-            })()
-          )}
+            // Normalize to array - backend sends single object for 1 ban, array for multiple
+            const opponentBans = Array.isArray(opponentBanData) ? opponentBanData : [opponentBanData];
+
+            return opponentBans.map((banZone, banIndex) => (
+              <div
+                key={`opponent-ban-${banIndex}`}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  width: banZone.radius * 2 * scale,
+                  height: banZone.radius * 2 * scale,
+                  backgroundColor: "rgba(251, 146, 60, 0.3)",
+                  border: "3px solid rgba(251, 146, 60, 0.6)",
+                  left: banZone.x * scale,
+                  top: banZone.y * scale,
+                  marginLeft: -banZone.radius * scale,
+                  marginTop: -banZone.radius * scale,
+                  zIndex: 1,
+                }}
+              />
+            ));
+          })()}
         </>
       )}
 
@@ -1531,12 +1984,20 @@ const CurlingGameContent = ({
           const isDraggingThisStone =
             dragState.isDragging && dragState.stoneIndex === stone.index;
 
+          // Check if stone is locked (placed in a previous turn)
+          const myPlacedTurns = gameState.my_placed_turns || { stones: [], bans: [] };
+          const stonePlacedTurn = myPlacedTurns.stones?.[stone.index];
+          const currentTurn = gameState.turn_number || 1;
+          const isStoneLocked = stonePlacedTurn != null && stonePlacedTurn < currentTurn;
+          // Stone is editable if it's my turn, I'm not ready, and it's not locked
+          const canEditStone = isMyTurn && !isReady && !isStoneLocked;
+
           return (
             stone.placed && (
               <div
                 key={`stone-wrapper-${stone.index}`}
-                className={!isReady ? 'stone-hover-container absolute' : 'absolute'}
-                onPointerDown={handleSheetPointerDown}
+                className={canEditStone ? 'stone-hover-container absolute' : 'absolute'}
+                onPointerDown={canEditStone ? handleSheetPointerDown : undefined}
                 style={{
                   left: stone.x * scale,
                   top: stone.y * scale,
@@ -1544,7 +2005,7 @@ const CurlingGameContent = ({
                   height: stonePixelSize,
                   marginLeft: -stonePixelSize / 2,
                   marginTop: -stonePixelSize / 2,
-                  zIndex: 10,
+                  zIndex: isStoneLocked ? 5 : 10,
                 }}
               >
                 {/* Ghost Stone (stays in place while dragging) */}
@@ -1587,7 +2048,7 @@ const CurlingGameContent = ({
                   color={myColor}
                   index={stone.index}
                   position={{ x: 0, y: 0 }}
-                  onDragEnd={forLoupe ? () => { } : handleStoneDragEnd}
+                  onDragEnd={forLoupe ? () => { } : (canEditStone ? handleStoneDragEnd : () => { })}
                   isPlaced={false}
                   size={stonePixelSize}
                   customColor={
@@ -1596,9 +2057,20 @@ const CurlingGameContent = ({
                       : undefined
                   }
                   onClick={(e) => e.stopPropagation()}
-                  opacity={isDraggingThisStone ? 0 : 1}
-                  interactive={false}
+                  opacity={isDraggingThisStone ? 0 : (isStoneLocked ? 0.85 : 1)}
+                  interactive={canEditStone && !forLoupe}
                 />
+
+                {/* Show lock icon on locked stones */}
+                {isStoneLocked && !isDraggingThisStone && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
+                    <div className="bg-white/80 rounded-full p-0.5">
+                      <Lock size={Math.min(14, stonePixelSize / 2)} className="text-green-600" />
+                    </div>
+                  </div>
+                )}
               </div>
             )
           );
@@ -1718,6 +2190,7 @@ const CurlingGameContent = ({
       )}
     </div>
   );
+
 
   return (
     <motion.div className="fixed inset-0 h-[100dvh] md:relative md:inset-auto md:h-auto flex flex-col items-center w-full max-w-md mx-auto md:aspect-[9/16] md:min-h-[1000px] md:rounded-2xl md:shadow-2xl bg-icy-white backdrop-blur-md transition-all duration-300 overflow-hidden select-none">
@@ -1956,7 +2429,7 @@ const CurlingGameContent = ({
 
       {/* Ban Circle Drag Preview (Fixed Position - Always on Top) */}
       {banDragState.isDragging &&
-        gameState.phase === "ban" &&
+        (gameState.phase === "ban" || gameState.phase === "placement") &&
         createPortal(
           <div
             className="fixed pointer-events-none z-[9999] flex items-center justify-center"
@@ -2109,15 +2582,24 @@ const CurlingGameContent = ({
                 !isReady &&
                 !isHistoryMode && (
                   <div className="w-full flex items-center gap-2">
-                    {!allStonesPlaced ? (
+                    {/* Show bar when: not ready to confirm OR currently dragging (to allow returning to bar) */}
+                    {(!readyToConfirm || dragState.isDragging || banDragState.isDragging) ? (
                       <div className="flex-grow min-w-0">
                         {myColor && (
-                          <StoneSelectionBar
+                          <UnifiedSelectionBar
                             stones={myStones}
+                            bans={myBans}
                             myColor={myColor}
-                            onDragEnd={handleStoneDragEnd}
-                            onDragStart={handleStoneDrag}
-                            disabled={false}
+                            onStoneDragEnd={handleStoneDragEnd}
+                            onStoneDragStart={handleStoneDrag}
+                            onBanDragEnd={handleBanDragEnd}
+                            onBanDragStart={handleBanDrag}
+
+                            disabled={gameState.turn_based && gameState.current_turn_id !== playerId}
+                            waitingMessage={gameState.turn_based && gameState.current_turn_id !== playerId ? "Waiting for opponent..." : undefined}
+                            stonesLocked={gameState.stones_locked}
+                            bansLocked={gameState.bans_locked}
+
                             draggedStoneIndex={
                               dragState.isDragging ? dragState.stoneIndex : null
                             }
@@ -2264,6 +2746,25 @@ const CurlingGameContent = ({
       />
 
       <SettingsDialog />
+
+      {/* First Player Decision Overlay - Shows during turn_order phase OR when showing dice results */}
+      {(gameState.phase === "turn_order" || persistedDiceData) && (
+        <FirstPlayerDecision
+          players={persistedDiceData?.players || gameState.players?.map(p => ({
+            id: p.id,
+            name: p.name || 'Player',
+            color: p.color as 'red' | 'yellow'
+          })) || []}
+          teamColors={persistedDiceData?.teamColors || gameState.team_colors || { red: '#cc0000', yellow: '#e6b800' }}
+          myPlayerId={playerId}
+          myVote={gameState.my_vote || null}
+          opponentHasVoted={gameState.opponent_has_voted || false}
+          onVote={handleVoteFirstPlayer}
+          diceRolls={persistedDiceData?.diceRolls || gameState.dice_rolls}
+          firstPlayer={persistedDiceData?.firstPlayer || gameState.first_player}
+          onDiceClose={() => setPersistedDiceData(null)}
+        />
+      )}
 
       {/* Waiting for Opponent Overlay - Centered on screen */}
       <AnimatePresence>

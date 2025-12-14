@@ -9,7 +9,7 @@ import { config } from '../config';
 import { useSettings } from '../contexts/SettingsContext';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { DialogBackButton } from '../components/ui/DialogBackButton';
-import { GAME_TYPES, GameType, getDefaultGameType } from '../data/gameTypes';
+import { GAME_TYPES, GameType, getDefaultGameType, getSelectableGameTypes, fetchGameTypes } from '../data/gameTypes';
 import { saveGameToHistory, getGameHistory } from '../lib/gameHistory';
 import { StoneIcon, BanIcon } from '../components/icons/Icons';
 
@@ -83,6 +83,11 @@ const Home = () => {
                 console.error('Failed to parse history', e);
             }
         }
+    }, []);
+
+    // Fetch game types from API (updates GAME_TYPES when response arrives)
+    useEffect(() => {
+        fetchGameTypes();
     }, []);
 
     const createGame = async () => {
@@ -204,217 +209,229 @@ const Home = () => {
                         </div>
                     )}
 
-                    <div className="mb-8 space-y-6 text-left relative z-10">
-
-                        {/* Game Type Selector - styled like team color buttons */}
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
-                                game type
-                            </label>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowGameTypePicker(true)}
-                                    className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
-                                >
-                                    <Repeat size={20} className="text-icy-accent" />
-                                    <span className="font-bold text-gray-700 lowercase text-base">{selectedGameType.name}</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowGameSettings(true)}
-                                    className="bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center animate-glow border-0"
-                                >
-                                    <Settings size={20} className="text-gray-500" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowGameTypeInfo(true)}
-                                    className="bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center animate-glow border-0"
-                                >
-                                    <Info size={20} className="text-gray-500" />
-                                </Button>
-                            </div>
+                    <div className="bg-gradient-to-br from-lavender-200 to-red-200 p-6 rounded-3xl border border-white/50 shadow-inner mb-4 relative z-10">
+                        {/* Top Right Controls */}
+                        <div className="absolute top-4 right-4 flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowGameTypePicker(true)}
+                                className="bg-white/80 hover:bg-white !p-2 h-10 w-10 !rounded-xl flex items-center justify-center animate-glow border border-white/50 shadow-sm"
+                                title="Change Game Type"
+                            >
+                                <Repeat size={18} className="text-icy-accent" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowGameSettings(true)}
+                                className="bg-white/80 hover:bg-white !p-2 h-10 w-10 !rounded-xl flex items-center justify-center animate-glow border border-white/50 shadow-sm"
+                                title="Game Settings"
+                            >
+                                <Settings size={18} className="text-gray-500" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowGameTypeInfo(true)}
+                                className="bg-white/80 hover:bg-white !p-2 h-10 w-10 !rounded-xl flex items-center justify-center animate-glow border border-white/50 shadow-sm"
+                                title="Game Info"
+                            >
+                                <Info size={18} className="text-gray-500" />
+                            </Button>
                         </div>
 
-                        {/* Important Settings - Always shown */}
-                        {Object.entries(selectedGameType.settingsSchema)
-                            .filter(([_, setting]) => setting.important)
-                            .map(([key, setting]) => (
-                                <div key={key}>
-                                    <div className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight flex items-center gap-2">
-                                        {setting.label.toLowerCase()}
-                                        {key === 'ban_circle_radius' && (
-                                            <Button
-                                                variant="outline"
-                                                shape="circle"
-                                                size="sm"
-                                                onClick={() => setShowBanSizeInfo(true)}
-                                                className="!w-5 !h-5 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
-                                                aria-label="Info about ban circle sizes"
-                                            >
-                                                <Info size={14} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
-                                            </Button>
+                        <div className="space-y-6 text-left mb-6">
+
+                            {/* Game Type Title */}
+                            <div className="pr-32"> {/* Right padding to avoid overlap with buttons */}
+                                <label className="block text-sm font-bold text-gray-500 mb-1 ml-1 lowercase tracking-tight">
+                                    game type
+                                </label>
+                                <h2 className="text-3xl font-black text-gray-900 lowercase tracking-tighter leading-tight">
+                                    {selectedGameType.name}
+                                </h2>
+                                <p className="text-sm text-gray-600 mt-2">
+                                    {selectedGameType.shortDescription}
+                                </p>
+                            </div>
+
+                            {/* Important Settings - Always shown */}
+                            {Object.entries(selectedGameType.settingsSchema)
+                                .filter(([_, setting]) => setting.important)
+                                .map(([key, setting]) => (
+                                    <div key={key}>
+                                        <div className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight flex items-center gap-2">
+                                            {setting.label.toLowerCase()}
+                                            {key === 'ban_circle_radius' && (
+                                                <Button
+                                                    variant="outline"
+                                                    shape="circle"
+                                                    size="sm"
+                                                    onClick={() => setShowBanSizeInfo(true)}
+                                                    className="!w-5 !h-5 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
+                                                    aria-label="Info about ban circle sizes"
+                                                >
+                                                    <Info size={14} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
+                                                </Button>
+                                            )}
+                                            {key === 'stones_per_team' && (
+                                                <Button
+                                                    variant="outline"
+                                                    shape="circle"
+                                                    size="sm"
+                                                    onClick={() => setShowStonesInfo(true)}
+                                                    className="!w-5 !h-5 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
+                                                    aria-label="Info about stones per team"
+                                                >
+                                                    <Info size={14} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        {setting.type === 'integer' && (
+                                            <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
+                                                <input
+                                                    type="range"
+                                                    min={setting.min ?? 1}
+                                                    max={setting.max || 10}
+                                                    value={gameSettings[key] as number}
+                                                    onChange={(e) => setGameSettings(prev => ({
+                                                        ...prev,
+                                                        [key]: parseInt(e.target.value)
+                                                    }))}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-icy-button-bg"
+                                                />
+                                                <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
+                                                    <AnimatePresence mode="popLayout" initial={false}>
+                                                        <motion.span
+                                                            key={gameSettings[key] as number}
+                                                            initial={{ opacity: 0, scale: 0, y: 10 }}
+                                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                            exit={{ opacity: 0, scale: 0.5, y: -10 }}
+                                                            transition={{
+                                                                type: "spring",
+                                                                stiffness: 500,
+                                                                damping: 15,
+                                                                mass: 0.5
+                                                            }}
+                                                            className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
+                                                        >
+                                                            {setting.valueLabels && setting.valueLabels[gameSettings[key] as number]
+                                                                ? setting.valueLabels[gameSettings[key] as number]
+                                                                : gameSettings[key] as number}
+                                                        </motion.span>
+                                                    </AnimatePresence>
+                                                </div>
+                                            </div>
                                         )}
-                                        {key === 'stones_per_team' && (
-                                            <Button
-                                                variant="outline"
-                                                shape="circle"
-                                                size="sm"
-                                                onClick={() => setShowStonesInfo(true)}
-                                                className="!w-5 !h-5 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
-                                                aria-label="Info about stones per team"
-                                            >
-                                                <Info size={14} className="text-gray-700 group-hover:text-icy-blue-medium transition-colors" />
-                                            </Button>
+                                        {setting.type === 'select' && setting.options && (
+                                            <div className="flex gap-2">
+                                                {setting.options.map((option) => {
+                                                    const isActive = gameSettings[key] === option;
+                                                    return (
+                                                        <Button
+                                                            key={option}
+                                                            variant="outline"
+                                                            onClick={() => setGameSettings(prev => ({
+                                                                ...prev,
+                                                                [key]: option
+                                                            }))}
+                                                            className={`flex-1 h-12 ${isActive
+                                                                ? '!bg-active text-white hover:!bg-lavender-600 !border-active'
+                                                                : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                                                                } transition-colors`}
+                                                        >
+                                                            {option}
+                                                        </Button>
+                                                    );
+                                                })}
+                                            </div>
                                         )}
                                     </div>
-                                    {setting.type === 'integer' && (
-                                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
-                                            <input
-                                                type="range"
-                                                min={setting.min ?? 1}
-                                                max={setting.max || 10}
-                                                value={gameSettings[key] as number}
-                                                onChange={(e) => setGameSettings(prev => ({
-                                                    ...prev,
-                                                    [key]: parseInt(e.target.value)
-                                                }))}
-                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-icy-button-bg"
-                                            />
-                                            <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
-                                                <AnimatePresence mode="popLayout" initial={false}>
-                                                    <motion.span
-                                                        key={gameSettings[key] as number}
-                                                        initial={{ opacity: 0, scale: 0, y: 10 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.5, y: -10 }}
-                                                        transition={{
-                                                            type: "spring",
-                                                            stiffness: 500,
-                                                            damping: 15,
-                                                            mass: 0.5
-                                                        }}
-                                                        className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
-                                                    >
-                                                        {setting.valueLabels && setting.valueLabels[gameSettings[key] as number]
-                                                            ? setting.valueLabels[gameSettings[key] as number]
-                                                            : gameSettings[key] as number}
-                                                    </motion.span>
-                                                </AnimatePresence>
+                                ))}
+
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
+                                    team colors
+                                </label>
+                                <div className="flex gap-4">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowColorPicker('team1')}
+                                        className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
+                                    >
+                                        <div
+                                            className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
+                                            style={{ backgroundColor: team1Color }}
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
+                                        </div>
+                                        <span className="font-bold text-gray-700 lowercase text-base">team 1</span>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowColorPicker('team2')}
+                                        className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
+                                    >
+                                        <div
+                                            className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
+                                            style={{ backgroundColor: team2Color }}
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
+                                        </div>
+                                        <span className="font-bold text-gray-700 lowercase text-base">team 2</span>
+                                    </Button>
+                                </div>
+
+                                {/* Color Picker Dialog */}
+                                {showColorPicker && (
+                                    <Dialog
+                                        isOpen={true}
+                                        onClose={() => setShowColorPicker(null)}
+                                        title="select color"
+                                    >
+                                        <div className="p-4">
+                                            <div className="grid grid-cols-4 gap-4 place-items-center w-fit mx-auto">
+                                                {PRESET_COLORS.map(color => {
+                                                    const otherTeamColor = showColorPicker === 'team1' ? team2Color : team1Color;
+                                                    const isTaken = color.toUpperCase() === otherTeamColor.toUpperCase();
+
+                                                    return (
+                                                        <Button
+                                                            key={color}
+                                                            shape="circle"
+                                                            onClick={() => {
+                                                                if (isTaken) return;
+                                                                if (showColorPicker === 'team1') setTeam1Color(color);
+                                                                else setTeam2Color(color);
+                                                                setShowColorPicker(null);
+                                                            }}
+                                                            className={`w-12 h-12 shadow-md ring-2 animate-glow transition-transform p-0 ${isTaken
+                                                                ? 'ring-red-400 opacity-40 cursor-not-allowed'
+                                                                : 'ring-transparent hover:ring-gray-400 hover:scale-110'
+                                                                }`}
+                                                            style={{ backgroundColor: color }}
+                                                            disabled={isTaken}
+                                                            title={isTaken ? 'Already taken by other team' : ''}
+                                                        />
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-                                    )}
-                                    {setting.type === 'select' && setting.options && (
-                                        <div className="flex gap-2">
-                                            {setting.options.map((option) => {
-                                                const isActive = gameSettings[key] === option;
-                                                return (
-                                                    <Button
-                                                        key={option}
-                                                        variant="outline"
-                                                        onClick={() => setGameSettings(prev => ({
-                                                            ...prev,
-                                                            [key]: option
-                                                        }))}
-                                                        className={`flex-1 h-12 ${isActive
-                                                            ? '!bg-active text-white hover:!bg-lavender-600 !border-active'
-                                                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
-                                                            } transition-colors`}
-                                                    >
-                                                        {option}
-                                                    </Button>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
-                                team colors
-                            </label>
-                            <div className="flex gap-4">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowColorPicker('team1')}
-                                    className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
-                                >
-                                    <div
-                                        className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
-                                        style={{ backgroundColor: team1Color }}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
-                                    </div>
-                                    <span className="font-bold text-gray-700 lowercase text-base">team 1</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowColorPicker('team2')}
-                                    className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
-                                >
-                                    <div
-                                        className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
-                                        style={{ backgroundColor: team2Color }}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
-                                    </div>
-                                    <span className="font-bold text-gray-700 lowercase text-base">team 2</span>
-                                </Button>
+                                    </Dialog>
+                                )}
                             </div>
-
-                            {/* Color Picker Dialog */}
-                            {showColorPicker && (
-                                <Dialog
-                                    isOpen={true}
-                                    onClose={() => setShowColorPicker(null)}
-                                    title="select color"
-                                >
-                                    <div className="p-4">
-                                        <div className="grid grid-cols-4 gap-4 place-items-center w-fit mx-auto">
-                                            {PRESET_COLORS.map(color => {
-                                                const otherTeamColor = showColorPicker === 'team1' ? team2Color : team1Color;
-                                                const isTaken = color.toUpperCase() === otherTeamColor.toUpperCase();
-
-                                                return (
-                                                    <Button
-                                                        key={color}
-                                                        shape="circle"
-                                                        onClick={() => {
-                                                            if (isTaken) return;
-                                                            if (showColorPicker === 'team1') setTeam1Color(color);
-                                                            else setTeam2Color(color);
-                                                            setShowColorPicker(null);
-                                                        }}
-                                                        className={`w-12 h-12 shadow-md ring-2 animate-glow transition-transform p-0 ${isTaken
-                                                            ? 'ring-red-400 opacity-40 cursor-not-allowed'
-                                                            : 'ring-transparent hover:ring-gray-400 hover:scale-110'
-                                                            }`}
-                                                        style={{ backgroundColor: color }}
-                                                        disabled={isTaken}
-                                                        title={isTaken ? 'Already taken by other team' : ''}
-                                                    />
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </Dialog>
-                            )}
                         </div>
-                    </div>
 
-                    <Button
-                        onClick={createGame}
-                        isLoading={isLoading}
-                        shape="pill"
-                        size="xl"
-                        className="w-full bg-icy-accent hover:bg-icy-accent-hover text-white shadow-none animate-glow relative z-10 mb-4 text-lg py-4"
-                    >
-                        <Play size={20} fill="currentColor" />
-                        create game
-                    </Button>
+                        <Button
+                            onClick={createGame}
+                            isLoading={isLoading}
+                            shape="pill"
+                            size="xl"
+                            className="w-full bg-icy-accent hover:bg-icy-accent-hover text-white shadow-none animate-glow relative z-10 text-lg py-4"
+                        >
+                            <Play size={20} fill="currentColor" />
+                            create game
+                        </Button>
+                    </div>
 
                     <Button
                         onClick={openSettings}
@@ -520,65 +537,81 @@ const Home = () => {
                     <div className="flex-grow overflow-y-auto px-6 pt-2 pb-6 sm:p-6">
                         {pickerView === 'list' ? (
                             <div className="space-y-4">
-                                {GAME_TYPES.map(gameType => (
-                                    <div
-                                        key={gameType.id}
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => {
-                                            setSelectedGameType(gameType);
-                                            setGameSettings(gameType.defaultSettings);
-                                            setShowGameTypePicker(false);
-                                            setPickerView('list');
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                e.preventDefault();
+                                {getSelectableGameTypes().map(gameType => {
+                                    const isComingSoon = gameType.visibility === 'coming_soon';
+                                    const isPlayable = gameType.visibility === 'playable';
+
+                                    return (
+                                        <div
+                                            key={gameType.id}
+                                            role="button"
+                                            tabIndex={isPlayable ? 0 : -1}
+                                            onClick={() => {
+                                                if (!isPlayable) return;
                                                 setSelectedGameType(gameType);
                                                 setGameSettings(gameType.defaultSettings);
                                                 setShowGameTypePicker(false);
                                                 setPickerView('list');
-                                            }
-                                        }}
-                                        className={`w-full p-4 rounded-2xl transition-all cursor-pointer group duration-200 ${selectedGameType.id === gameType.id
-                                            ? 'shadow-md border-2 border-active bg-active/5'
-                                            : 'shadow-md border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300'
-                                            }`}
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 text-left">
-                                                <h3 className="font-bold text-gray-800 group-hover:text-gray-900 transition-colors">{gameType.name}</h3>
-                                                <p className="text-sm text-gray-500 mt-1">{gameType.shortDescription}</p>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setPickerGameType(gameType);
-                                                        setPickerView('settings');
-                                                    }}
-                                                    className="bg-gray-50 hover:bg-gray-100 !p-2 h-auto !rounded-xl flex items-center justify-center border-0"
-                                                >
-                                                    <Settings size={18} className="text-gray-500" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setPickerGameType(gameType);
-                                                        setPickerView('info');
-                                                    }}
-                                                    className="bg-gray-50 hover:bg-gray-100 !p-2 h-auto !rounded-xl flex items-center justify-center border-0"
-                                                >
-                                                    <Info size={18} className="text-gray-500" />
-                                                </Button>
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (!isPlayable) return;
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    setSelectedGameType(gameType);
+                                                    setGameSettings(gameType.defaultSettings);
+                                                    setShowGameTypePicker(false);
+                                                    setPickerView('list');
+                                                }
+                                            }}
+                                            className={`w-full p-4 rounded-2xl transition-all group duration-200 ${isComingSoon
+                                                ? 'opacity-60 cursor-not-allowed shadow-md border border-gray-200 bg-gray-50'
+                                                : selectedGameType.id === gameType.id
+                                                    ? 'shadow-md border-2 border-active bg-active/5 cursor-pointer'
+                                                    : 'shadow-md border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 cursor-pointer'
+                                                }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex-1 text-left">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-bold text-gray-800 group-hover:text-gray-900 transition-colors">{gameType.name}</h3>
+                                                        {isComingSoon && (
+                                                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">Coming Soon</span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-gray-500 mt-1">{gameType.shortDescription}</p>
+                                                </div>
+                                                {isPlayable && (
+                                                    <div className="flex gap-1">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setPickerGameType(gameType);
+                                                                setPickerView('settings');
+                                                            }}
+                                                            className="bg-gray-50 hover:bg-gray-100 !p-2 h-auto !rounded-xl flex items-center justify-center border-0"
+                                                        >
+                                                            <Settings size={18} className="text-gray-500" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setPickerGameType(gameType);
+                                                                setPickerView('info');
+                                                            }}
+                                                            className="bg-gray-50 hover:bg-gray-100 !p-2 h-auto !rounded-xl flex items-center justify-center border-0"
+                                                        >
+                                                            <Info size={18} className="text-gray-500" />
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : pickerView === 'settings' ? (
                             <div>

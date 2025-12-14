@@ -15,7 +15,7 @@ defmodule KickaEttan.Games.Collision do
   
   ## Parameters
   - stones: Map with :red and :yellow keys, each containing a list of stone positions (maps with "x" and "y")
-  - banned_zones: Map with :red and :yellow keys, each defining a ban zone (map with x, y, radius)
+  - banned_zones: Map with :red and :yellow keys, each defining a ban zone (map with x, y, radius) OR list of zones
   
   ## Returns
   - A map with :red and :yellow keys containing resolved stone positions
@@ -37,22 +37,9 @@ defmodule KickaEttan.Games.Collision do
 
     all_stones = red_stones ++ yellow_stones
     resolved = do_resolve_collisions(all_stones, banned_zones)
-
-    # Split back into red and yellow, but preserve order or format?
-    # CombinedPhase didn't seem to care about original order much, but we generally want to return list of positions.
-    # The original implementation returned `resolved_stones` which is just `%{red: [...], yellow: [...]}`
     
     {red, yellow} =
       Enum.reduce(resolved, {[], []}, fn stone, {red_acc, yellow_acc} ->
-        # Just return x,y like the input usually expects, plus maybe reset flag?
-        # The input usually has just x,y. The logic adds index/color.
-        # We should return what matches the input structure but updated.
-        # However, `validate_and_reset_stuck_stones` might add `:reset_to_bar`.
-        # We should keep extra keys.
-        
-        # We need to ensure we return them in the correct list (red/yellow).
-        # And probably sorted by index if we want stability, though the list order might be index based.
-        
         stone_data = Map.delete(stone, :index) |> Map.delete(:color)
         
         case stone.color do
@@ -61,14 +48,6 @@ defmodule KickaEttan.Games.Collision do
         end
       end)
       
-    # Sort by index to maintain original order?
-    # The reduce simply pushes to end. If `resolved` is mixed, the order in red/yellow lists depends on `resolved` order.
-    # `resolved` order comes from `all_stones` which was `red ++ yellow`.
-    # `resolve_with_oscillation_detection` calls `resolve_one_iteration` -> `resolve_all_pairwise`.
-    # `resolve_all_pairwise` preserves list order.
-    # So Red should be first, then Yellow.
-    # So splitting should work fine.
-    
     %{red: red, yellow: yellow}
   end
 
@@ -209,7 +188,7 @@ defmodule KickaEttan.Games.Collision do
   # Must be: in bounds, not overlapping ban zone, not overlapping other stones
   defp is_position_valid_for_stone?(x, y, stone, other_stones, banned_zones) do
     color = stone.color
-    ban_zone = Map.get(banned_zones || %{}, color)
+    zones = get_applicable_zones(banned_zones, color)
     
     # Check bounds
     in_bounds = x >= @stone_radius and 
@@ -217,16 +196,17 @@ defmodule KickaEttan.Games.Collision do
                 y >= @stone_radius and
                 y <= @hog_line_offset + @back_line_offset + @stone_radius
     
-    # Check ban zone
-    not_in_ban = case ban_zone do
-      nil -> true
-      %{x: ban_x, y: ban_y, radius: ban_radius} ->
-        dx = x - ban_x
-        dy = y - ban_y
-        distance = :math.sqrt(dx * dx + dy * dy)
-        distance >= @stone_radius + ban_radius
-      _ -> true
-    end
+    # Check ban zone (list compatible)
+    not_in_ban = not Enum.any?(zones, fn zone ->
+      case zone do
+        %{x: ban_x, y: ban_y, radius: ban_radius} ->
+          dx = x - ban_x
+          dy = y - ban_y
+          distance = :math.sqrt(dx * dx + dy * dy)
+          distance < @stone_radius + ban_radius
+        _ -> false
+      end
+    end)
     
     # Check overlaps with other ALREADY PLACED/VALIDATED stones
     not_overlapping = not Enum.any?(other_stones, fn other ->
@@ -251,7 +231,7 @@ defmodule KickaEttan.Games.Collision do
     x = get_coord(stone, "x")
     y = get_coord(stone, "y")
     color = stone.color
-    ban_zone = Map.get(banned_zones || %{}, color)
+    zones = get_applicable_zones(banned_zones, color)
 
     # Check bounds
     in_bounds = x >= @stone_radius and 
@@ -259,16 +239,17 @@ defmodule KickaEttan.Games.Collision do
                 y >= @stone_radius and
                 y <= @hog_line_offset + @back_line_offset + @stone_radius
 
-    # Check ban zone
-    not_in_ban = case ban_zone do
-      nil -> true
-      %{x: ban_x, y: ban_y, radius: ban_radius} ->
-        dx = x - ban_x
-        dy = y - ban_y
-        distance = :math.sqrt(dx * dx + dy * dy)
-        distance >= @stone_radius + ban_radius
-      _ -> true
-    end
+    # Check ban zone (list compatible)
+    not_in_ban = not Enum.any?(zones, fn zone ->
+      case zone do
+        %{x: ban_x, y: ban_y, radius: ban_radius} ->
+          dx = x - ban_x
+          dy = y - ban_y
+          distance = :math.sqrt(dx * dx + dy * dy)
+          distance < @stone_radius + ban_radius
+        _ -> false
+      end
+    end)
 
     in_bounds and not_in_ban
   end
@@ -334,30 +315,31 @@ defmodule KickaEttan.Games.Collision do
   # Red stones are affected by red's banned zone, yellow by yellow's
   defp push_out_of_ban_zone(stone, banned_zones) do
     color = stone.color
-    ban_zone = Map.get(banned_zones || %{}, color)
+    zones = get_applicable_zones(banned_zones, color)
     
-    case ban_zone do
-      nil -> stone
-      %{x: ban_x, y: ban_y, radius: ban_radius} ->
-        x = get_coord(stone, "x")
-        y = get_coord(stone, "y")
-        dx = x - ban_x
-        dy = y - ban_y
-        distance = :math.sqrt(dx * dx + dy * dy)
-        min_distance = @stone_radius + ban_radius
-        
-        if distance < min_distance and distance > 0 do
-          # Push stone out to just touch the ban zone edge
-          nx = dx / distance
-          ny = dy / distance
-          new_x = ban_x + nx * min_distance
-          new_y = ban_y + ny * min_distance
-          Map.merge(stone, %{"x" => new_x, "y" => new_y})
-        else
-          stone
-        end
-      _ -> stone
-    end
+    Enum.reduce(zones, stone, fn zone, current_stone ->
+      case zone do
+        %{x: ban_x, y: ban_y, radius: ban_radius} ->
+          x = get_coord(current_stone, "x")
+          y = get_coord(current_stone, "y")
+          dx = x - ban_x
+          dy = y - ban_y
+          distance = :math.sqrt(dx * dx + dy * dy)
+          min_distance = @stone_radius + ban_radius
+          
+          if distance < min_distance and distance > 0 do
+            # Push stone out to just touch the ban zone edge
+            nx = dx / distance
+            ny = dy / distance
+            new_x = ban_x + nx * min_distance
+            new_y = ban_y + ny * min_distance
+            Map.merge(current_stone, %{"x" => new_x, "y" => new_y})
+          else
+            current_stone
+          end
+        _ -> current_stone
+      end
+    end)
   end
 
   defp clamp_to_boundaries(stone) do
@@ -382,5 +364,14 @@ defmodule KickaEttan.Games.Collision do
 
   defp get_coord(stone, key) when is_binary(key) do
     stone[key] || stone[String.to_atom(key)] || 0
+  end
+
+  defp get_applicable_zones(banned_zones, color) do
+    case Map.get(banned_zones || %{}, color) do
+      nil -> []
+      map when is_map(map) -> [map]
+      list when is_list(list) -> list
+      _ -> []
+    end
   end
 end

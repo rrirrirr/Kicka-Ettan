@@ -19,17 +19,29 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
   @max_collision_iterations 20
 
   @impl true
-  def init(game_state) do
+  def init(game_state, _args \\ []) do
+    Logger.debug("CombinedPhase init: Resolving collisions for stones: #{inspect(game_state.stones)}")
     # Resolve collisions when entering combined phase (including ban zones)
     resolved_stones = resolve_stone_collisions(game_state.stones, game_state.banned_zones)
-
+    Logger.debug("CombinedPhase init: Resolved stones: #{inspect(resolved_stones)}")
+    
     # Track who is ready for next round
     player_ready =
       game_state.players
       |> Enum.map(fn p -> {p.id, false} end)
       |> Map.new()
 
-    {:ok, %{player_ready: player_ready, resolved_stones: resolved_stones}}
+    {:ok, %{
+      resolved_stones: resolved_stones,
+      collisions: [], # Placeholder if we don't track explicit collisions list yet
+      banned_zones: game_state.banned_zones,
+      player_ready: player_ready
+    }}
+  end
+
+  def init(game_state, _args) do
+    # Fallback for when args are provided but ignored
+    init(game_state)
   end
 
   @impl true
@@ -65,8 +77,10 @@ defmodule KickaEttan.Games.Phases.CombinedPhase do
   end
 
   @impl true
-  def client_view(phase_state, game_state, _player_id) do
+  def client_view(phase_state, game_state, player_id) do
     base_view = Map.from_struct(game_state)
+    
+    Logger.debug("CombinedPhase view for #{player_id}: Sending resolved stones: #{inspect(phase_state.resolved_stones)}")
 
     # Show all stones (resolved positions)
     Map.merge(base_view, %{

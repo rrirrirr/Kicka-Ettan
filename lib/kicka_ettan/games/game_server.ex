@@ -49,6 +49,33 @@ defmodule KickaEttan.Games.GameServer do
   end
 
   @doc """
+  Vote for who should start first in turn-based placement.
+  """
+  def vote_first_player(game_id, player_id, vote_for_id) do
+    with {:ok, game_server} <- lookup_game(game_id) do
+      GenServer.call(game_server, {:vote_first_player, player_id, vote_for_id}, @timeout)
+    end
+  end
+
+  @doc """
+  Remove a stone from the sheet (return to bar).
+  """
+  def remove_stone(game_id, player_id, stone_index) do
+    with {:ok, game_server} <- lookup_game(game_id) do
+      GenServer.call(game_server, {:remove_stone, player_id, stone_index}, @timeout)
+    end
+  end
+
+  @doc """
+  Remove a ban zone from the sheet (return to bar).
+  """
+  def remove_ban(game_id, player_id, ban_index) do
+    with {:ok, game_server} <- lookup_game(game_id) do
+      GenServer.call(game_server, {:remove_ban, player_id, ban_index}, @timeout)
+    end
+  end
+
+  @doc """
   Confirm stone placement.
   """
   def confirm_placement(game_id, player_id) do
@@ -78,9 +105,9 @@ defmodule KickaEttan.Games.GameServer do
   @doc """
   Place a ban zone at the specified position (ban phase).
   """
-  def place_ban(game_id, player_id, position) do
+  def place_ban(game_id, player_id, ban_index, position) do
     with {:ok, game_server} <- lookup_game(game_id) do
-      GenServer.call(game_server, {:place_ban, player_id, position}, @timeout)
+      GenServer.call(game_server, {:place_ban, player_id, ban_index, position}, @timeout)
     end
   end
 
@@ -158,6 +185,49 @@ defmodule KickaEttan.Games.GameServer do
   end
 
   @impl true
+  def handle_call({:vote_first_player, player_id, vote_for_id}, _from, game_state) do
+    case GameState.vote_first_player(game_state, player_id, vote_for_id) do
+      {:ok, new_state} ->
+        Logger.info("Player voted for first player", player_id: player_id, vote_for: vote_for_id)
+        broadcast_update(new_state)
+        {:reply, {:ok, new_state}, new_state}
+      
+      {:error, reason} = error ->
+        Logger.warning("Failed to vote for first player", player_id: player_id, reason: reason)
+        {:reply, error, game_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:remove_stone, player_id, stone_index}, _from, game_state) do
+    case GameState.remove_stone(game_state, player_id, stone_index) do
+      {:ok, new_state} ->
+        Logger.info("Player removed stone", player_id: player_id, stone_index: stone_index)
+        broadcast_update(new_state)
+        {:reply, {:ok, new_state}, new_state}
+
+      {:error, reason} = error ->
+        Logger.warning("Failed to remove stone", player_id: player_id, reason: reason)
+        {:reply, error, game_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:remove_ban, player_id, ban_index}, _from, game_state) do
+    case GameState.remove_ban(game_state, player_id, ban_index) do
+      {:ok, new_state} ->
+        Logger.info("Player removed ban", player_id: player_id, ban_index: ban_index)
+        broadcast_update(new_state)
+        {:reply, {:ok, new_state}, new_state}
+
+      {:error, reason} = error ->
+        Logger.warning("Failed to remove ban", player_id: player_id, reason: reason)
+        {:reply, error, game_state}
+    end
+  end
+
+
+  @impl true
   def handle_call({:confirm_placement, player_id}, _from, game_state) do
     case GameState.confirm_placement(game_state, player_id) do
       {:ok, new_state} ->
@@ -216,8 +286,8 @@ defmodule KickaEttan.Games.GameServer do
   end
 
   @impl true
-  def handle_call({:place_ban, player_id, position}, _from, game_state) do
-    case GameState.place_ban(game_state, player_id, position) do
+  def handle_call({:place_ban, player_id, ban_index, position}, _from, game_state) do
+    case GameState.place_ban(game_state, player_id, ban_index, position) do
       {:ok, new_state} ->
         Logger.info("Player placed ban", player_id: player_id, position: position)
         broadcast_update(new_state)

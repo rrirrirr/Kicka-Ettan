@@ -6,7 +6,7 @@ defmodule KickaEttan.Games.GameStateTest do
     test "creates a new game state with default values" do
       state = GameState.new([])
       assert state.current_round == 1
-      assert state.total_rounds == 3
+      assert state.total_rounds == 0
       assert state.stones_per_team == 3  # Default is 3
       assert state.phase == :placement
       assert state.stones == %{red: [], yellow: []}

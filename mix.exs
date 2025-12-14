@@ -70,7 +70,10 @@ defmodule KickaEttan.MixProject do
       {:hammer, "~> 6.1"},
 
       # Analytics
-      {:posthog, "~> 1.1.0"}
+      {:posthog, "~> 1.1.0"},
+
+      # HTTP Client
+      {:req, "~> 0.5.0"}
     ]
   end
 

@@ -16,6 +16,7 @@ defmodule KickaEttan.Games.Types.BlindPick do
     %{
       id: :blind_pick,
       name: "Blind Pick",
+      visibility: :playable,
       short_description: "Place stones without seeing your opponent's moves",
       long_description: """
       In Blind Pick mode, both players place their stones simultaneously 

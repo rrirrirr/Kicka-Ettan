@@ -175,11 +175,18 @@ export const resolveAllCollisions = (
     currentX: number,
     currentY: number,
     allStones: StonePosition[],
-    banZone: BannedZone | null | undefined
+    banZones: BannedZone | BannedZone[] | null | undefined
 ): CollisionResolutionResult => {
     const MAX_ITERATIONS = 10;
     let x = currentX;
     let y = currentY;
+
+    // Normalize banZones to array for consistent handling
+    const banZoneArray: BannedZone[] = !banZones
+        ? []
+        : Array.isArray(banZones)
+            ? banZones
+            : [banZones];
 
     // Track visited positions to detect oscillation
     const visitedPositions = new Set<string>();
@@ -194,16 +201,20 @@ export const resolveAllCollisions = (
         x = stoneResult.x;
         y = stoneResult.y;
 
-        // 2. Check if fully inside ban zone (should reset to bar)
-        if (isStoneFullyInsideBanZone(x, y, banZone)) {
-            return { x, y, resetToBar: true };
+        // 2. Check if fully inside ANY ban zone (should reset to bar)
+        for (const zone of banZoneArray) {
+            if (isStoneFullyInsideBanZone(x, y, zone)) {
+                return { x, y, resetToBar: true };
+            }
         }
 
-        // 3. Push out of ban zone if overlapping
-        if (isStoneOverlappingBanZone(x, y, banZone)) {
-            const pushed = pushStoneOutOfBanZone(x, y, banZone);
-            x = pushed.x;
-            y = pushed.y;
+        // 3. Push out of any overlapping ban zones
+        for (const zone of banZoneArray) {
+            if (isStoneOverlappingBanZone(x, y, zone)) {
+                const pushed = pushStoneOutOfBanZone(x, y, zone);
+                x = pushed.x;
+                y = pushed.y;
+            }
         }
 
         // 4. Clamp to boundaries
@@ -232,9 +243,11 @@ export const resolveAllCollisions = (
         return { x, y, resetToBar: true };
     }
 
-    // Check if still overlapping ban zone after all iterations
-    if (isStoneOverlappingBanZone(x, y, banZone)) {
-        return { x, y, resetToBar: true };
+    // Check if still overlapping any ban zone after all iterations
+    for (const zone of banZoneArray) {
+        if (isStoneOverlappingBanZone(x, y, zone)) {
+            return { x, y, resetToBar: true };
+        }
     }
 
     return { x, y, resetToBar: false };

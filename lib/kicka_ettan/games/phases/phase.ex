@@ -16,7 +16,7 @@ defmodule KickaEttan.Games.Phase do
   Initialize the phase state when entering this phase.
   Called when transitioning into this phase.
   """
-  @callback init(game_state()) :: {:ok, phase_state()}
+  @callback init(game_state(), args :: term()) :: {:ok, phase_state()}
 
   @doc """
   Handle an action from a player during this phase.

@@ -10,7 +10,7 @@ test.describe("Game Types E2E", () => {
     });
 
     // 1. Start a "standard" game with 2 rounds, 1 stone per team (for speed)
-    const { gameId, p2 } = await GameFactory.startGame(page, request, 'standard', {
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
       total_rounds: 2,
       stones_per_team: 1
     });
@@ -22,6 +22,11 @@ test.describe("Game Types E2E", () => {
     await expect(page.getByText('Connecting...')).not.toBeVisible({ timeout: 5000 });
     await expect(page.getByText('Error')).not.toBeVisible({ timeout: 1000 });
 
+    // Wait for lobby to transition to game (when P2 joins)
+    // The "waiting for opponent" text is in the lobby
+    await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 15000 });
+
+    // Now the game should be active with both players
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
     // Tutorial should be skipped automatically via localStorage
@@ -39,16 +44,22 @@ test.describe("Game Types E2E", () => {
     await expect(page.getByText('round #1')).not.toBeVisible({ timeout: 10000 });
 
     // P1 places stone
-    // Click on the stone (halo) to place it
-    // The sheet is an SVG
-    const sheet = page.locator('svg.bg-white.block');
+    // Wait for selection bar to be visible (ensures stones are initialized)
+    const selectionBar = page.getByTestId('selection-bar');
+    await expect(selectionBar).toBeVisible({ timeout: 10000 });
+
+    // Click on the sheet container to place it
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible({ timeout: 10000 });
+
     const box = await sheet.boundingBox();
     if (box) {
-      // Place stone at center (ish)
-      await sheet.click({ position: { x: box.width / 2, y: box.height / 2 } });
+      // Place stone in the playable area (between hog line and house)
+      // The sheet coordinates: hog line is near top, house is in lower portion
+      await sheet.click({ position: { x: box.width / 2, y: box.height * 0.6 } });
 
-      // Click "Finish Placement"
+      // Wait for stone to be placed and button to appear
+      await expect(page.getByRole('button', { name: 'finish placement' })).toBeVisible({ timeout: 10000 });
       await page.getByRole('button', { name: 'finish placement' }).click();
     }
 
@@ -127,7 +138,7 @@ test.describe("Game Types E2E", () => {
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
     // P1 places 1 stone
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -172,7 +183,7 @@ test.describe("Game Types E2E", () => {
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
     // --- Complete Round 1 ---
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -246,7 +257,7 @@ test.describe("Game Types E2E", () => {
     await expect(page.getByText(/ban phase/i)).toBeAttached({ timeout: 5000 });
 
     // P1 places ban (click on sheet)
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -331,7 +342,7 @@ test.describe("Game Types E2E", () => {
     await p2.placeStone(0, 200, 200);
 
     // P1 places stone
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
     if (box) {
@@ -396,7 +407,7 @@ test.describe("Game Types E2E", () => {
     // --- Ban Phase ---
     await expect(page.getByText(/ban phase/i)).toBeAttached({ timeout: 5000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -463,7 +474,7 @@ test.describe("Game Types E2E", () => {
     // Should be in ban phase
     await expect(page.getByText(/ban phase/i)).toBeAttached({ timeout: 5000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -517,7 +528,7 @@ test.describe("Game Types E2E", () => {
 
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -585,7 +596,7 @@ test.describe("Game Types E2E", () => {
 
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -642,7 +653,7 @@ test.describe("Game Types E2E", () => {
 
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -692,7 +703,7 @@ test.describe("Game Types E2E", () => {
       window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
     });
 
-    const { gameId, p2 } = await GameFactory.startGame(page, request, 'standard', {
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
       total_rounds: 1,
       stones_per_team: 3
     });
@@ -700,7 +711,7 @@ test.describe("Game Types E2E", () => {
 
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -732,7 +743,7 @@ test.describe("Game Types E2E", () => {
       window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
     });
 
-    const { gameId, p2 } = await GameFactory.startGame(page, request, 'standard', {
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
       total_rounds: 1,
       stones_per_team: 1
     });
@@ -740,7 +751,7 @@ test.describe("Game Types E2E", () => {
 
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -773,7 +784,7 @@ test.describe("Game Types E2E", () => {
       window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
     });
 
-    const { gameId, p2 } = await GameFactory.startGame(page, request, 'standard', {
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
       total_rounds: 0,  // Infinite rounds
       stones_per_team: 1
     });
@@ -781,7 +792,7 @@ test.describe("Game Types E2E", () => {
 
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     await expect(sheet).toBeVisible();
     const box = await sheet.boundingBox();
 
@@ -833,7 +844,7 @@ test.describe("Game Types E2E", () => {
       window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
     });
 
-    const { gameId, p2 } = await GameFactory.startGame(page, request, 'standard', {
+    const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
       total_rounds: 2,
       stones_per_team: 1
     });
@@ -841,7 +852,7 @@ test.describe("Game Types E2E", () => {
 
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
 
-    const sheet = page.locator('svg.bg-white.block');
+    const sheet = page.getByTestId('curling-sheet');
     const box = await sheet.boundingBox();
 
     // Complete Round 1

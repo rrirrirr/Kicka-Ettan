@@ -43,6 +43,10 @@ export class GameFactory {
         // 2. Navigate browser (P1) to the game
         await page.goto(`/game/${gameId}`);
 
+        // 2b. Wait for P1 to be connected (lobby is visible with "waiting for opponent")
+        // This ensures P1's socket is subscribed to the channel before P2 joins
+        await page.waitForSelector('text=waiting for opponent', { timeout: 10000 });
+
         // 3. Setup P2 (Backend Player)
         // We need a unique ID for P2.
         const p2Id = `p2-${Date.now()}`;

@@ -35,7 +35,7 @@ export default defineConfig({
         // },
     ],
     webServer: {
-        command: 'cd .. && MIX_ENV=test E2E=true mix phx.server',
+        command: 'cd .. && MIX_ENV=test mix phx.server',
         url: 'http://127.0.0.1:4002',
         timeout: 120 * 1000,
         reuseExistingServer: !process.env.CI,

@@ -9,6 +9,7 @@ defmodule KickaEttanWeb.Router do
   scope "/api", KickaEttanWeb.API do
     pipe_through :api
 
+    get "/game_types", GameTypeController, :index
     resources "/games", GameController, only: [:create, :show]
     post "/games/:id/join", GameController, :join
     get "/health", HealthController, :index
@@ -18,6 +19,7 @@ defmodule KickaEttanWeb.Router do
   end
 
   import Phoenix.LiveDashboard.Router
+  import Phoenix.LiveView.Router
 
   pipeline :dashboard_auth do
     plug :require_dashboard_auth
@@ -26,6 +28,7 @@ defmodule KickaEttanWeb.Router do
   scope "/" do
     pipe_through [:fetch_session, :protect_from_forgery, :dashboard_auth]
     live_dashboard "/dashboard", metrics: KickaEttanWeb.Telemetry
+    live "/admin/deploy", Admin.DeployLive
   end
 
   defp require_dashboard_auth(conn, _opts) do

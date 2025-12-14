@@ -23,6 +23,7 @@ defmodule KickaEttan.Games.GameState do
 
     # Phase engine state
     current_phase_module: nil,
+    current_phase_args: [],
     current_phase_index: 0,
     phase_state: %{},
 
@@ -53,10 +54,20 @@ defmodule KickaEttan.Games.GameState do
     # Determine game type
     game_type_module =
       case options[:game_type] do
-        nil -> BlindPick
-        type_id when is_atom(type_id) -> GameType.get_type(type_id) || BlindPick
-        type_id when is_binary(type_id) -> GameType.get_type(type_id) || BlindPick
-        module when is_atom(module) -> module
+        nil ->
+          BlindPick
+
+        type_id when is_atom(type_id) ->
+          case GameType.get_type(type_id) do
+            nil ->
+              if Code.ensure_loaded?(type_id), do: type_id, else: BlindPick
+
+            type ->
+              type
+          end
+
+        type_id when is_binary(type_id) ->
+          GameType.get_type(type_id) || BlindPick
       end
 
     # Get definition and apply settings
@@ -79,7 +90,7 @@ defmodule KickaEttan.Games.GameState do
 
     # Get first phase
     [first_phase | _] = definition.phases
-    first_phase_module = normalize_phase(first_phase)
+    {first_phase_module, first_phase_args} = normalize_phase(first_phase)
 
     game_state = %__MODULE__{
       game_id: options[:game_id] || generate_game_id(),
@@ -89,12 +100,13 @@ defmodule KickaEttan.Games.GameState do
       stones_per_team: settings[:stones_per_team] || 3,
       team_colors: team_colors,
       current_phase_module: first_phase_module,
+      current_phase_args: first_phase_args,
       current_phase_index: 0,
       created_at: DateTime.utc_now()
     }
 
     # Initialize first phase
-    {:ok, phase_state} = first_phase_module.init(game_state)
+    {:ok, phase_state} = first_phase_module.init(game_state, first_phase_args)
 
     %{game_state | phase_state: phase_state, phase: phase_to_legacy_atom(first_phase_module)}
   end
@@ -124,7 +136,9 @@ defmodule KickaEttan.Games.GameState do
         ready_for_next_round = Map.put(game_state.ready_for_next_round, player_id, false)
 
         # Re-initialize phase state with new player
-        {:ok, phase_state} = game_state.current_phase_module.init(%{game_state | players: players})
+        require Logger
+        Logger.debug("join_game: Re-initializing phase with args: #{inspect(game_state.current_phase_args)}")
+        {:ok, phase_state} = game_state.current_phase_module.init(%{game_state | players: players}, game_state.current_phase_args)
 
         {:ok,
          %{
@@ -151,6 +165,47 @@ defmodule KickaEttan.Games.GameState do
   end
 
   @doc """
+  Vote for who should start first in turn-based placement.
+  Delegates to current phase.
+  """
+  def vote_first_player(game_state, player_id, vote_for_id) do
+    result = handle_phase_action(game_state, :vote_first_player, %{
+      player_id: player_id,
+      vote_for: vote_for_id
+    })
+    
+    case result do
+      {:ok, new_state} ->
+        # Check for phase transition (when both players agree)
+        maybe_transition_phase(new_state)
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Remove a stone from the sheet (return to bar).
+  Delegates to current phase.
+  """
+  def remove_stone(game_state, player_id, stone_index) do
+    handle_phase_action(game_state, :remove_stone, %{
+      player_id: player_id,
+      stone_index: stone_index
+    })
+  end
+
+  @doc """
+  Remove a ban zone from the sheet (return to bar).
+  Delegates to current phase.
+  """
+  def remove_ban(game_state, player_id, ban_index) do
+    handle_phase_action(game_state, :remove_ban, %{
+      player_id: player_id,
+      ban_index: ban_index
+    })
+  end
+
+  @doc """
   Confirm stone placement.
   Delegates to current phase.
   """
@@ -160,7 +215,15 @@ defmodule KickaEttan.Games.GameState do
     case result do
       {:ok, new_state} ->
         # Update legacy player_ready for backwards compatibility
-        new_player_ready = Map.put(new_state.player_ready, player_id, true)
+        should_set_ready = should_mark_ready?(new_state, player_id)
+
+        new_player_ready =
+          if should_set_ready do
+            Map.put(new_state.player_ready, player_id, true)
+          else
+            new_state.player_ready
+          end
+
         new_state = %{new_state | player_ready: new_player_ready}
 
         # Check for phase transition
@@ -256,15 +319,19 @@ defmodule KickaEttan.Games.GameState do
   Place a ban zone at the specified position.
   Delegates to the current phase if it handles :place_ban.
   """
-  def place_ban(game_state, player_id, position) do
+  def place_ban(game_state, player_id, ban_index, position) do
     result = handle_phase_action(game_state, :place_ban, %{
       player_id: player_id,
+      ban_index: ban_index,
       position: position
     })
-
+    
     case result do
-      {:ok, new_state} -> {:ok, new_state}
-      error -> error
+      {:ok, new_state} ->
+        maybe_transition_phase(new_state)
+        
+      error ->
+        error
     end
   end
 
@@ -347,6 +414,23 @@ defmodule KickaEttan.Games.GameState do
 
   # Private functions
 
+  defp should_mark_ready?(game_state, player_id) do
+    phase_state = game_state.phase_state
+
+    # Check if phase state has turn_based flag and placements_remaining map
+    # This is specific to PlacementPhase logic but handled as generically as possible
+    is_turn_based = Map.get(phase_state, :turn_based, false)
+    placements_remaining = Map.get(phase_state, :placements_remaining)
+
+    if is_turn_based && is_map(placements_remaining) do
+      remaining = Map.get(placements_remaining, player_id, 0)
+      remaining <= 0
+    else
+      # Not turn based or doesn't support tracking - assume ready on confirm
+      true
+    end
+  end
+
   defp handle_phase_action(game_state, action, args) do
     phase_module = game_state.current_phase_module
 
@@ -388,8 +472,13 @@ defmodule KickaEttan.Games.GameState do
       handle_round_completion(game_state, definition)
     else
       next_phase = Enum.at(phases, next_index)
-      next_phase_module = normalize_phase(next_phase)
-      {:ok, phase_state} = next_phase_module.init(game_state)
+      {next_phase_module, next_phase_args} = normalize_phase(next_phase)
+      
+      # Merge phase result into next phase args (e.g., first_player from TurnOrderPhase)
+      # Only merge if result is a map - some phases return atoms like :all_ready
+      merged_args = if is_map(result), do: Map.merge(next_phase_args, result), else: next_phase_args
+      
+      {:ok, phase_state} = next_phase_module.init(game_state, merged_args)
 
       Logger.info("Transitioning to phase: #{inspect(next_phase_module)}")
 
@@ -397,6 +486,7 @@ defmodule KickaEttan.Games.GameState do
        %{
          game_state
          | current_phase_module: next_phase_module,
+           current_phase_args: merged_args,
            current_phase_index: next_index,
            phase_state: phase_state,
            phase: phase_to_legacy_atom(next_phase_module)
@@ -445,20 +535,21 @@ defmodule KickaEttan.Games.GameState do
 
     definition = game_state.game_type_module.definition()
     [first_phase | _] = definition.phases
-    first_phase_module = normalize_phase(first_phase)
+    {first_phase_module, first_phase_args} = normalize_phase(first_phase)
 
     new_game_state = %{
       game_state
       | current_round: game_state.current_round + 1,
         current_phase_index: 0,
         current_phase_module: first_phase_module,
+        current_phase_args: first_phase_args,
         player_ready: player_ready,
         stones: %{red: [], yellow: []},
         banned_zones: %{red: nil, yellow: nil},
         history: history
     }
 
-    {:ok, phase_state} = first_phase_module.init(new_game_state)
+    {:ok, phase_state} = first_phase_module.init(new_game_state, first_phase_args)
 
     Logger.info("Starting round #{new_game_state.current_round}")
 
@@ -474,13 +565,15 @@ defmodule KickaEttan.Games.GameState do
     Enum.find(game_state.players, fn p -> p.id == player_id end)
   end
 
-  defp normalize_phase({module, _args}), do: module
-  defp normalize_phase(module) when is_atom(module), do: module
+  defp normalize_phase({module, args}) when is_map(args), do: {module, args}
+  defp normalize_phase({module, args}) when is_list(args), do: {module, Map.new(args)}
+  defp normalize_phase(module) when is_atom(module), do: {module, %{}}
 
   defp phase_to_legacy_atom(module) do
     case module do
       KickaEttan.Games.Phases.BanPhase -> :ban
       KickaEttan.Games.Phases.BlindPickPhase -> :placement
+      KickaEttan.Games.Phases.PlacementPhase -> :placement
       KickaEttan.Games.Phases.CombinedPhase -> :combined
       _ -> :unknown
     end

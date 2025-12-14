@@ -90,4 +90,14 @@ export class BackendPlayer {
     on(event: string, callback: (payload: any) => void) {
         this.channel.on(event, callback);
     }
+
+    // Vote for who should start first in turn-based games
+    async voteFirstPlayer(voteForPlayerId: string) {
+        return this.send("vote_first_player", { vote_for: voteForPlayerId });
+    }
+
+    // Get player ID
+    getPlayerId() {
+        return this.playerId;
+    }
 }

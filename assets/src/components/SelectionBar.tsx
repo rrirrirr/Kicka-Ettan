@@ -43,6 +43,7 @@ const SelectionBar: React.FC<SelectionBarProps> = ({
 }) => {
     return (
         <motion.div
+            data-testid="selection-bar"
             className={`bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-white/50 flex gap-4 items-center mx-auto overflow-x-auto scrollbar-hide ${className}`}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >

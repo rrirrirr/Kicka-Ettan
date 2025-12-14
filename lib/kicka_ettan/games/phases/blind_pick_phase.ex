@@ -12,7 +12,7 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
   require Logger
 
   @impl true
-  def init(game_state) do
+  def init(game_state, _args) do
     # Initialize player readiness tracking
     player_ready =
       game_state.players
@@ -119,10 +119,12 @@ defmodule KickaEttan.Games.Phases.BlindPickPhase do
 
     # Add phase-specific data
     # Include banned_zones so frontend can render them
+    # Set bans_count to 0 since BlindPick doesn't use ban phase
     Map.merge(view, %{
       phase: :placement,
       player_ready: phase_state.player_ready,
-      banned_zones: game_state.banned_zones
+      banned_zones: game_state.banned_zones,
+      bans_count: 0
     })
   end
 

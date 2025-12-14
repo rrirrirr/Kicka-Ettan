@@ -1,5 +1,10 @@
 // Game type definitions that mirror the backend
-// These will be loaded from the server in the future
+// The frontend can fetch these from /api/game_types, but we keep
+// local definitions as fallbacks for offline/initial load
+
+import { config } from '../config';
+
+export type GameTypeVisibility = 'playable' | 'coming_soon' | 'hidden';
 
 export interface GameTypeSetting {
     type: 'integer' | 'boolean' | 'select';
@@ -17,16 +22,19 @@ export interface GameTypeSetting {
 export interface GameType {
     id: string;
     name: string;
+    visibility: GameTypeVisibility;
     shortDescription: string;
     longDescription: string;
     settingsSchema: Record<string, GameTypeSetting>;
     defaultSettings: Record<string, number | boolean | string>;
 }
 
-export const GAME_TYPES: GameType[] = [
+// Fallback game types used for initial render before API response
+export const FALLBACK_GAME_TYPES: GameType[] = [
     {
         id: 'blind_pick',
         name: 'Blind Pick',
+        visibility: 'playable',
         shortDescription: 'Place stones without seeing your opponent',
         longDescription: `Both players place their stones simultaneously without seeing where their opponent places theirs.
 
@@ -64,6 +72,7 @@ Simple, fast, and all about reading your opponent's mind!`,
     {
         id: 'ban_pick',
         name: 'Ban Pick',
+        visibility: 'playable',
         shortDescription: 'Ban a zone, then place stones blind',
         longDescription: `Ban Pick adds a strategic ban phase before stone placement.
 
@@ -114,15 +123,82 @@ The ban zones add a layer of strategic depth!`,
             total_rounds: 0,
             ban_circle_radius: 'medium'
         }
+    },
+    {
+        id: 'turn_double_ban_open_pick',
+        name: 'Turn Double Ban Open Pick',
+        visibility: 'playable',
+        shortDescription: '2 bans + increasing stones (Turn Based)',
+        longDescription: `A strategic game mode with double ban zones and escalating stone counts!
+
+Players alternate turns placing either a ban zone or a stone.
+Visibility is OPEN - you see what your opponent places.
+
+Stones increase each round:
+- Round 1: 3 stones
+- Round 2: 4 stones
+- Round 3: 5 stones
+
+Single unified bar controls everything!`,
+        settingsSchema: {},
+        defaultSettings: {
+            stones_per_team: 3,
+            total_rounds: 3,
+            ban_circle_radius: 60,
+            bans_per_team: 2
+        }
     }
     // Future game types:
     // - turn_based: Take turns placing stones with visibility
 ];
+
+// Current game types - starts with fallback, can be updated via fetchGameTypes
+export let GAME_TYPES: GameType[] = [...FALLBACK_GAME_TYPES];
+
+/**
+ * Fetch game types from the API and update the GAME_TYPES list.
+ * Returns the fetched game types, or fallback if fetch fails.
+ */
+export const fetchGameTypes = async (): Promise<GameType[]> => {
+    try {
+        const response = await fetch(`${config.apiUrl}/api/game_types`);
+        if (!response.ok) {
+            console.warn('Failed to fetch game types, using fallback');
+            return FALLBACK_GAME_TYPES;
+        }
+        const data = await response.json();
+        if (data.game_types && Array.isArray(data.game_types)) {
+            GAME_TYPES = data.game_types;
+            return GAME_TYPES;
+        }
+        return FALLBACK_GAME_TYPES;
+    } catch (error) {
+        console.warn('Error fetching game types:', error);
+        return FALLBACK_GAME_TYPES;
+    }
+};
 
 export const getGameType = (id: string): GameType | undefined => {
     return GAME_TYPES.find(gt => gt.id === id);
 };
 
 export const getDefaultGameType = (): GameType => {
-    return GAME_TYPES[0];
+    // Return the first playable game type
+    const playable = GAME_TYPES.find(gt => gt.visibility === 'playable');
+    return playable || GAME_TYPES[0];
 };
+
+/**
+ * Get game types that should be shown in the selector (playable + coming_soon).
+ */
+export const getSelectableGameTypes = (): GameType[] => {
+    return GAME_TYPES.filter(gt => gt.visibility !== 'hidden');
+};
+
+/**
+ * Get only playable game types.
+ */
+export const getPlayableGameTypes = (): GameType[] => {
+    return GAME_TYPES.filter(gt => gt.visibility === 'playable');
+};
+

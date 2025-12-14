@@ -58,6 +58,15 @@ defmodule KickaEttanWeb do
     end
   end
 
+  def live_view do
+    quote do
+      use Phoenix.LiveView,
+        layout: {KickaEttanWeb.Layouts, :app}
+
+      unquote(verified_routes())
+    end
+  end
+
   @doc """
   When used, dispatch to the appropriate controller/live_view/etc.
   """

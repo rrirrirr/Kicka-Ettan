@@ -100,6 +100,13 @@ if config_env() == :prod do
     config :posthog, api_key: posthog_api_key
   end
 
+  github_deploy_token = System.get_env("GITHUB_DEPLOY_TOKEN")
+
+  # Setup GitHub configuration for deployment dashboard
+  config :kicka_ettan, :github,
+    token: github_deploy_token,
+    repo: "rrirrirr/Kicka-Ettan"
+
   # Configure CORS origins from environment variable
   # CORS_ORIGINS should be a comma-separated list of allowed origins
   # Example: CORS_ORIGINS="https://example.com,https://www.example.com"

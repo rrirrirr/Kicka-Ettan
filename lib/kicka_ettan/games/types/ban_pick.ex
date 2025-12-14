@@ -17,6 +17,7 @@ defmodule KickaEttan.Games.Types.BanPick do
     %{
       id: :ban_pick,
       name: "Ban Pick",
+      visibility: :playable,
       short_description: "Ban a zone, then place stones blind",
       long_description: """
       In Ban Pick mode, each round starts with a strategic ban phase.

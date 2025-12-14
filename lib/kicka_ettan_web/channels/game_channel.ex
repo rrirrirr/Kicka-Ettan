@@ -19,6 +19,14 @@ defmodule KickaEttanWeb.GameChannel do
 
     case GameServer.join_game(game_id, player_id, color) do
       {:ok, game_state} ->
+        # Broadcast the updated state to all players in the game
+        # This ensures existing players are notified when a new player joins
+        KickaEttanWeb.Endpoint.broadcast!(
+          "game:#{game_id}",
+          "game_state_update",
+          game_state
+        )
+
         # Filter the game state for this specific player to hide opponent stones during placement
         client_view = KickaEttan.Games.GameState.client_view(game_state, player_id)
         Logger.info("Join successful", player_id: player_id)
@@ -69,6 +77,67 @@ defmodule KickaEttanWeb.GameChannel do
     end
   end
 
+  @impl true
+  def handle_in("vote_first_player", payload, socket) do
+    Logger.debug("Received vote_first_player", payload: payload)
+    with %{"vote_for" => vote_for_id} <- payload do
+      game_id = socket.assigns.game_id
+      player_id = socket.assigns.player_id
+
+      case GameServer.vote_first_player(game_id, player_id, vote_for_id) do
+        {:ok, _state} -> 
+          Logger.info("Channel: vote_first_player success")
+          {:reply, :ok, socket}
+        {:error, reason} -> 
+          Logger.error("Channel: vote_first_player failed: #{inspect(reason)}")
+          {:reply, {:error, %{reason: reason}}, socket}
+      end
+    else
+      _ -> 
+        Logger.warning("vote_first_player invalid payload", payload: payload)
+        {:reply, {:error, %{reason: "Invalid payload"}}, socket}
+    end
+  end
+
+  @impl true
+  def handle_in("remove_stone", payload, socket) do
+    Logger.debug("Received remove_stone", payload: payload)
+    with :ok <- check_rate_limit(socket),
+         %{"stone_index" => index} <- payload do
+      game_id = socket.assigns.game_id
+      player_id = socket.assigns.player_id
+
+      case GameServer.remove_stone(game_id, player_id, index) do
+        {:ok, _state} -> {:reply, :ok, socket}
+        {:error, reason} -> 
+          Logger.warning("remove_stone failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
+      end
+    else
+      {:error, :rate_limit_exceeded} -> {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+      _ -> {:reply, {:error, %{reason: "Invalid payload"}}, socket}
+    end
+  end
+
+  @impl true
+  def handle_in("remove_ban", payload, socket) do
+    Logger.debug("Received remove_ban", payload: payload)
+    with :ok <- check_rate_limit(socket),
+         %{"ban_index" => index} <- payload do
+      game_id = socket.assigns.game_id
+      player_id = socket.assigns.player_id
+
+      case GameServer.remove_ban(game_id, player_id, index) do
+        {:ok, _state} -> {:reply, :ok, socket}
+        {:error, reason} -> 
+          Logger.warning("remove_ban failed", reason: reason)
+          {:reply, {:error, %{reason: reason}}, socket}
+      end
+    else
+      {:error, :rate_limit_exceeded} -> {:reply, {:error, %{reason: "Rate limit exceeded"}}, socket}
+      _ -> {:reply, {:error, %{reason: "Invalid payload"}}, socket}
+    end
+  end
   @impl true
   def handle_in("confirm_placement", _params, socket) do
     Logger.debug("Received confirm_placement")
@@ -134,10 +203,12 @@ defmodule KickaEttanWeb.GameChannel do
     Logger.debug("Received place_ban", payload: payload)
     with :ok <- check_rate_limit(socket),
          %{"position" => position} <- payload do
+      
+      ban_index = Map.get(payload, "ban_index", 0)
       game_id = socket.assigns.game_id
       player_id = socket.assigns.player_id
 
-      case GameServer.place_ban(game_id, player_id, position) do
+      case GameServer.place_ban(game_id, player_id, ban_index, position) do
         {:ok, _state} -> {:reply, :ok, socket}
         {:error, reason} ->
           Logger.warning("place_ban failed", reason: reason)
