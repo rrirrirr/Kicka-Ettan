@@ -49,7 +49,8 @@ defmodule KickaEttan.Games.GameType do
     [
       KickaEttan.Games.Types.BlindPick,
       KickaEttan.Games.Types.BanPick,
-      KickaEttan.Games.Types.TurnDoubleBanOpenPick
+      KickaEttan.Games.Types.TurnDoubleBanOpenPick,
+      KickaEttan.Games.Types.TurnBasedTest
     ]
   end
 

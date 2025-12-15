@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DiceResultOverlayProps {
@@ -111,7 +112,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
         }
     }, [isVisible]);
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isVisible && (
                 <motion.div
@@ -119,14 +120,16 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    data-testid="dice-roll-overlay"
                 >
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
                         className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-2xl p-8 max-w-sm mx-4 text-center"
+                        data-testid="dice-roll-dialog"
                     >
-                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Rolling dice...</h2>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6" data-testid="dice-roll-title">Rolling dice...</h2>
 
                         {/* Dice display */}
                         <div className="flex items-center justify-center gap-8 mb-6">
@@ -178,7 +181,8 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
                     </motion.div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

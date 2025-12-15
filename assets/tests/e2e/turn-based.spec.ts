@@ -201,4 +201,98 @@ test.describe("Turn Based Game Type E2E", () => {
 
         p2.leave();
     });
+
+    test('Turn Based: Make Changes Button NOT Visible When Waiting', async ({ page, request }) => {
+        // In turn-based games, once you confirm your turn, the turn switches to opponent
+        // The "make changes" button should NOT be shown because you can't take back a completed turn
+        await page.addInitScript(() => {
+            window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
+        });
+
+        // Use turn_based_test - a simpler game type with NO voting phase (P1 always starts)
+        const { gameId, p2 } = await GameFactory.startGame(page, request, 'turn_based_test', {});
+        console.log(`Make Changes Not Visible (Turn Based) Test: ${gameId}`);
+
+        await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
+
+        // No voting phase - should go directly to placement
+        const sheet = page.locator('svg.bg-white.block');
+        await expect(sheet).toBeVisible({ timeout: 10000 });
+        const box = await sheet.boundingBox();
+        if (!box) throw new Error('Sheet not found');
+
+        // P1 places ban (first item in round 1)
+        await sheet.click({ position: { x: box.width / 2, y: box.height / 2 } });
+        await page.waitForTimeout(300);
+
+        // P1 confirms placement (finishes their turn)
+        const finishBtn = page.getByRole('button', { name: /finish placement|confirm/i });
+        if (await finishBtn.isVisible({ timeout: 2000 })) {
+            await finishBtn.click();
+        }
+
+        // Now waiting for opponent - verify "waiting" text IS visible
+        await expect(page.getByText('waiting for opponent')).toBeVisible({ timeout: 5000 });
+
+        // CRITICAL: The "make changes" button should NOT be visible in turn-based mode
+        await expect(page.getByRole('button', { name: /make changes/i })).not.toBeVisible();
+
+        console.log('Verified: Make Changes button is NOT visible in turn-based game');
+
+        // Test passed - clean up
+        p2.leave();
+    });
+});
+
+test.describe("Make Changes Button Visibility", () => {
+    test('Blind Pick: Make Changes Button IS Visible When Waiting', async ({ page, request }) => {
+        // In blind/simultaneous games, player CAN go back and make changes while waiting
+        // The "make changes" button should be visible
+        await page.addInitScript(() => {
+            window.localStorage.setItem('curling_tutorial_seen', JSON.stringify(['placement-tutorial', 'measurements-tutorial', 'ban-tutorial']));
+        });
+
+        const { gameId, p2 } = await GameFactory.startGame(page, request, 'blind_pick', {
+            total_rounds: 1,
+            stones_per_team: 1
+        });
+        console.log(`Make Changes Visible (Blind Pick) Test: ${gameId}`);
+
+        await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible({ timeout: 10000 });
+
+        const sheet = page.getByTestId('curling-sheet');
+        await expect(sheet).toBeVisible();
+        const box = await sheet.boundingBox();
+        if (!box) throw new Error('Sheet not found');
+
+        // P1 places stone
+        await sheet.click({ position: { x: box.width / 2, y: box.height / 2 } });
+
+        // P1 finishes placement
+        await page.getByRole('button', { name: 'finish placement' }).click();
+
+        // Now waiting for opponent - verify "waiting" text IS visible
+        await expect(page.getByText('waiting for opponent')).toBeVisible({ timeout: 5000 });
+
+        // CRITICAL: The "make changes" button SHOULD be visible in blind pick mode
+        await expect(page.getByRole('button', { name: /make changes/i })).toBeVisible();
+
+        console.log('Verified: Make Changes button IS visible in blind pick game');
+
+        // Can also verify button is functional by clicking it
+        await page.getByRole('button', { name: /make changes/i }).click();
+
+        // Waiting overlay should disappear
+        await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 5000 });
+
+        // Complete the game
+        await page.getByRole('button', { name: 'finish placement' }).click();
+        await p2.placeStone(0, 100, 100);
+        await p2.setReady();
+
+        await expect(page.getByText('waiting for opponent')).not.toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('button', { name: /next round|exit game/i })).toBeVisible({ timeout: 10000 });
+
+        p2.leave();
+    });
 });

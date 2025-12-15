@@ -4,16 +4,23 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
   
   Both players vote for who should start. When both agree, the phase completes
   and passes the agreed first_player to the next phase.
+  
+  When dice are rolled, we delay phase completion to allow the animation to display.
   """
   @behaviour KickaEttan.Games.Phase
   require Logger
+
+  # Delay (in ms) before phase completes after dice roll - gives time for animation
+  # Need at least a few seconds for frontend to capture dice data before phase transition
+  @dice_animation_delay_ms 3_000
 
   @derive Jason.Encoder
   defstruct [
     name: "turn_order",
     votes: %{},        # %{player_id => voted_for_player_id or "randomize"}
     first_player: nil, # Set when both agree
-    dice_rolls: %{}    # %{player_id => roll} when randomize is used
+    dice_rolls: %{},   # %{player_id => roll} when randomize is used
+    dice_completed_at: nil  # Timestamp when dice roll completed
   ]
 
   @impl true
@@ -23,7 +30,8 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
     state = %__MODULE__{
       name: opts[:name] || "turn_order",
       votes: %{},
-      first_player: nil
+      first_player: nil,
+      dice_completed_at: nil
     }
     
     {:ok, state}
@@ -33,6 +41,7 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
   def handle_action(action, params, phase_state, game_state) do
     case action do
       :vote_first_player -> vote_first_player(params, phase_state, game_state)
+      :acknowledge_dice -> acknowledge_dice(params, phase_state, game_state)
       _ -> {:error, :unknown_action}
     end
   end
@@ -61,14 +70,15 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
           new_state = %{state | 
             votes: %{},
             first_player: agreed_player,
-            dice_rolls: %{}
+            dice_rolls: %{},
+            dice_completed_at: nil  # No dice roll, no delay needed
           }
           {:ok, new_state, game_state}
         
         # Disagreement - reset votes
         true ->
           Logger.debug("TurnOrderPhase: Players disagree on first player. Resetting votes.")
-          new_state = %{state | votes: %{}, dice_rolls: %{}}
+          new_state = %{state | votes: %{}, dice_rolls: %{}, dice_completed_at: nil}
           {:ok, new_state, game_state}
       end
     else
@@ -92,13 +102,23 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
       p1_roll < p2_roll ->
         # P1 wins (lower roll starts)
         Logger.info("TurnOrderPhase: #{p1_id} wins with lower roll!")
-        new_state = %{state | votes: %{}, first_player: p1_id, dice_rolls: rolls}
+        new_state = %{state | 
+          votes: %{}, 
+          first_player: p1_id, 
+          dice_rolls: rolls,
+          dice_completed_at: System.monotonic_time(:millisecond)
+        }
         {:ok, new_state, game_state}
       
       p2_roll < p1_roll ->
         # P2 wins
         Logger.info("TurnOrderPhase: #{p2_id} wins with lower roll!")
-        new_state = %{state | votes: %{}, first_player: p2_id, dice_rolls: rolls}
+        new_state = %{state | 
+          votes: %{}, 
+          first_player: p2_id, 
+          dice_rolls: rolls,
+          dice_completed_at: System.monotonic_time(:millisecond)
+        }
         {:ok, new_state, game_state}
       
       true ->
@@ -108,12 +128,33 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
     end
   end
 
+  # Optional: allow clients to explicitly acknowledge the dice animation is done
+  defp acknowledge_dice(%{player_id: _player_id}, state, game_state) do
+    # For now, just return the state unchanged - we rely on timer
+    {:ok, state, game_state}
+  end
+
   @impl true
   def check_completion(state, _game_state) do
-    if state.first_player do
-      {:complete, %{first_player: state.first_player}}
-    else
-      :continue
+    cond do
+      # No first player decided yet
+      state.first_player == nil ->
+        :continue
+      
+      # Dice were rolled - wait for animation delay
+      state.dice_completed_at != nil ->
+        elapsed = System.monotonic_time(:millisecond) - state.dice_completed_at
+        if elapsed >= @dice_animation_delay_ms do
+          Logger.info("TurnOrderPhase: Dice animation delay elapsed, completing phase.")
+          {:complete, %{first_player: state.first_player}}
+        else
+          Logger.debug("TurnOrderPhase: Waiting for dice animation (#{elapsed}ms / #{@dice_animation_delay_ms}ms)")
+          :continue
+        end
+      
+      # No dice roll (direct agreement) - complete immediately
+      true ->
+        {:complete, %{first_player: state.first_player}}
     end
   end
 
@@ -137,5 +178,5 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
   end
 
   @impl true
-  def handles_actions, do: [:vote_first_player]
+  def handles_actions, do: [:vote_first_player, :acknowledge_dice]
 end

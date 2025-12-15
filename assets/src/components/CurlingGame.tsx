@@ -2803,17 +2803,20 @@ const CurlingGameContent = ({
                   waiting for opponent...
                 </h2>
 
-                <Button
-                  onClick={gameState.phase === "ban" ? handleCancelBan : handleCancelPlacement}
-                  variant="outline"
-                  shape="pill"
-                  className="h-12 px-6 bg-white/90 hover:bg-white text-gray-800 border border-gray-200/50 shadow-md backdrop-blur-md animate-glow"
-                  noHoverAnimation
-                  noTapAnimation
-                >
-                  <RotateCcw size={20} />
-                  make changes
-                </Button>
+                {/* Hide "make changes" button in turn-based games - once you confirm, your turn is over */}
+                {!gameState.turn_based && (
+                  <Button
+                    onClick={gameState.phase === "ban" ? handleCancelBan : handleCancelPlacement}
+                    variant="outline"
+                    shape="pill"
+                    className="h-12 px-6 bg-white/90 hover:bg-white text-gray-800 border border-gray-200/50 shadow-md backdrop-blur-md animate-glow"
+                    noHoverAnimation
+                    noTapAnimation
+                  >
+                    <RotateCcw size={20} />
+                    make changes
+                  </Button>
+                )}
               </motion.div>
             </motion.div>
           )}

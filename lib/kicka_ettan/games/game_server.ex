@@ -189,12 +189,38 @@ defmodule KickaEttan.Games.GameServer do
     case GameState.vote_first_player(game_state, player_id, vote_for_id) do
       {:ok, new_state} ->
         Logger.info("Player voted for first player", player_id: player_id, vote_for: vote_for_id)
+        
+        # If dice were rolled, schedule a delayed phase transition check
+        # The dice animation delay is 15 seconds
+        if new_state.phase_state && Map.get(new_state.phase_state, :dice_completed_at) do
+          Logger.info("Dice rolled, scheduling delayed phase transition check in 15 seconds")
+          Process.send_after(self(), :check_dice_animation_complete, 15_000)
+        end
+        
         broadcast_update(new_state)
         {:reply, {:ok, new_state}, new_state}
       
       {:error, reason} = error ->
         Logger.warning("Failed to vote for first player", player_id: player_id, reason: reason)
         {:reply, error, game_state}
+    end
+  end
+
+  @impl true
+  def handle_info(:check_dice_animation_complete, game_state) do
+    # Re-check phase completion after dice animation delay
+    Logger.info("Checking phase completion after dice animation delay")
+    
+    case GameState.maybe_transition_phase_public(game_state) do
+      {:ok, new_state} ->
+        if new_state.phase != game_state.phase do
+          Logger.info("Phase transitioned after dice animation: #{game_state.phase} -> #{new_state.phase}")
+        end
+        broadcast_update(new_state)
+        {:noreply, new_state}
+      
+      {:error, _reason} ->
+        {:noreply, game_state}
     end
   end
 

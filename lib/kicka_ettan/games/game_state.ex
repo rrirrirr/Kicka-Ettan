@@ -447,6 +447,14 @@ defmodule KickaEttan.Games.GameState do
     end
   end
 
+  @doc """
+  Public wrapper to trigger phase transition check.
+  Used by GameServer for delayed phase transitions (e.g., after dice animation).
+  """
+  def maybe_transition_phase_public(game_state) do
+    maybe_transition_phase(game_state)
+  end
+
   defp maybe_transition_phase(game_state) do
     phase_module = game_state.current_phase_module
 

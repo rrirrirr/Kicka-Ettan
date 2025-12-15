@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { AnimatePresence, motion } from 'framer-motion';
 import Home from './pages/Home';
 import GameRoom from './pages/GameRoom';
+import GameTypeSelection from './pages/GameTypeSelection';
 import Demo from './pages/Demo';
 import NotFound from './pages/NotFound';
 
@@ -38,6 +39,7 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+        <Route path="/play" element={<PageWrapper><GameTypeSelection /></PageWrapper>} />
         <Route path="/game/:gameId" element={<PageWrapper><GameRoom /></PageWrapper>} />
         <Route path="/demo" element={<PageWrapper><Demo /></PageWrapper>} />
         {import.meta.env.DEV && (
