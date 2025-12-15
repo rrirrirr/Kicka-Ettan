@@ -68,6 +68,12 @@ export interface GameState {
     bans: (number | null)[];     // Turn number when each ban was placed
   };
 
+  // Current player's placements from server (for reconnect state restoration)
+  my_placements?: {
+    stones: Array<{ x: number; y: number }>;
+    bans: Array<{ x: number; y: number }>;
+  };
+
   ban_positions?: {
     red: BannedZone[];
     yellow: BannedZone[];

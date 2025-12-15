@@ -260,24 +260,54 @@ const CurlingGameContent = ({
         if (gameState.current_round > lastInitializedRound) {
           // Use stones_count from phase state if available, fallback to stones_per_team
           const stonesPerTeam = gameState.stones_count ?? gameState.stones_per_team;
+
+          // Restore placement state from server's my_placements if available (for reconnect)
+          const serverStones = gameState.my_placements?.stones || [];
           const initialStones = Array.from({
             length: stonesPerTeam,
-          }).map((_, i) => ({
-            index: i,
-            x: 0,
-            y: 0,
-            placed: false,
-            resetCount: 0,
-          }));
+          }).map((_, i) => {
+            // Check if this stone index has a placement on the server
+            const serverPlacement = serverStones[i];
+            if (serverPlacement && typeof serverPlacement.x === 'number' && typeof serverPlacement.y === 'number') {
+              return {
+                index: i,
+                x: serverPlacement.x,
+                y: serverPlacement.y,
+                placed: true,
+                resetCount: 0,
+              };
+            }
+            return {
+              index: i,
+              x: 0,
+              y: 0,
+              placed: false,
+              resetCount: 0,
+            };
+          });
           setMyStones(initialStones);
+
           // Initialize bans based on configuration or default to 1
           const bansPerTeam = gameState.bans_count !== undefined ? gameState.bans_count : 1;
-          const initialBans = Array.from({ length: bansPerTeam }).map((_, i) => ({
-            index: i,
-            x: 0,
-            y: 0,
-            placed: false,
-          }));
+          // Restore ban placement state from server's my_placements if available
+          const serverBans = gameState.my_placements?.bans || [];
+          const initialBans = Array.from({ length: bansPerTeam }).map((_, i) => {
+            const serverBan = serverBans[i];
+            if (serverBan && typeof serverBan.x === 'number' && typeof serverBan.y === 'number') {
+              return {
+                index: i,
+                x: serverBan.x,
+                y: serverBan.y,
+                placed: true,
+              };
+            }
+            return {
+              index: i,
+              x: 0,
+              y: 0,
+              placed: false,
+            };
+          });
           setMyBans(initialBans);
           setIsBanReady(false);
           banGestureState.current = { type: "IDLE" };
@@ -300,12 +330,25 @@ const CurlingGameContent = ({
       // and need to be updated when placement phase sends actual bans_count (e.g., 2)
       const targetBansCount = gameState.bans_count !== undefined ? gameState.bans_count : 1;
       if (myBans.length !== targetBansCount && !serverReady) {
-        const newBans = Array.from({ length: targetBansCount }).map((_, i) => ({
-          index: i,
-          x: 0,
-          y: 0,
-          placed: false,
-        }));
+        // Restore from server's my_placements if available
+        const serverBans = gameState.my_placements?.bans || [];
+        const newBans = Array.from({ length: targetBansCount }).map((_, i) => {
+          const serverBan = serverBans[i];
+          if (serverBan && typeof serverBan.x === 'number' && typeof serverBan.y === 'number') {
+            return {
+              index: i,
+              x: serverBan.x,
+              y: serverBan.y,
+              placed: true,
+            };
+          }
+          return {
+            index: i,
+            x: 0,
+            y: 0,
+            placed: false,
+          };
+        });
         setMyBans(newBans);
         setIsBanReady(false);
         banGestureState.current = { type: "IDLE" };
@@ -315,13 +358,27 @@ const CurlingGameContent = ({
       // Re-initialize stones if stones_count changed (e.g., per-turn allocation with stones: [3, 4, 5])
       const targetStonesCount = gameState.stones_count ?? gameState.stones_per_team;
       if (myStones.length !== targetStonesCount && !serverReady) {
-        const newStones = Array.from({ length: targetStonesCount }).map((_, i) => ({
-          index: i,
-          x: 0,
-          y: 0,
-          placed: false,
-          resetCount: 0,
-        }));
+        // Restore from server's my_placements if available
+        const serverStones = gameState.my_placements?.stones || [];
+        const newStones = Array.from({ length: targetStonesCount }).map((_, i) => {
+          const serverPlacement = serverStones[i];
+          if (serverPlacement && typeof serverPlacement.x === 'number' && typeof serverPlacement.y === 'number') {
+            return {
+              index: i,
+              x: serverPlacement.x,
+              y: serverPlacement.y,
+              placed: true,
+              resetCount: 0,
+            };
+          }
+          return {
+            index: i,
+            x: 0,
+            y: 0,
+            placed: false,
+            resetCount: 0,
+          };
+        });
         setMyStones(newStones);
         setIsReady(false);
         gestureState.current = { type: "IDLE" };
