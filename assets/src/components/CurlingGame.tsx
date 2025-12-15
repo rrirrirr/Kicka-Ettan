@@ -258,8 +258,10 @@ const CurlingGameContent = ({
 
         // Reinitialize stones and ban position when round changes
         if (gameState.current_round > lastInitializedRound) {
+          // Use stones_count from phase state if available, fallback to stones_per_team
+          const stonesPerTeam = gameState.stones_count ?? gameState.stones_per_team;
           const initialStones = Array.from({
-            length: gameState.stones_per_team,
+            length: stonesPerTeam,
           }).map((_, i) => ({
             index: i,
             x: 0,
@@ -308,6 +310,22 @@ const CurlingGameContent = ({
         setIsBanReady(false);
         banGestureState.current = { type: "IDLE" };
         setBanDragState({ isDragging: false, x: 0, y: 0, banIndex: null });
+      }
+
+      // Re-initialize stones if stones_count changed (e.g., per-turn allocation with stones: [3, 4, 5])
+      const targetStonesCount = gameState.stones_count ?? gameState.stones_per_team;
+      if (myStones.length !== targetStonesCount && !serverReady) {
+        const newStones = Array.from({ length: targetStonesCount }).map((_, i) => ({
+          index: i,
+          x: 0,
+          y: 0,
+          placed: false,
+          resetCount: 0,
+        }));
+        setMyStones(newStones);
+        setIsReady(false);
+        gestureState.current = { type: "IDLE" };
+        setDragState({ isDragging: false, x: 0, y: 0, stoneIndex: null });
       }
     }
   }, [gameState, playerId]);

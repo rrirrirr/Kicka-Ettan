@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/app-B0lVGXWQ.js",
+    "file": "assets/app-zelXwwE6.js",
     "name": "app",
     "src": "index.html",
     "isEntry": true,
@@ -11,11 +11,11 @@
       "src/pages/CollisionDemoPage.tsx"
     ],
     "css": [
-      "assets/app-4BjkKCJk.css"
+      "assets/app-Dw9v1fvh.css"
     ]
   },
   "src/pages/ButtonGuidePage.tsx": {
-    "file": "assets/ButtonGuidePage-BPOlBUq9.js",
+    "file": "assets/ButtonGuidePage-qZIQKpZJ.js",
     "name": "ButtonGuidePage",
     "src": "src/pages/ButtonGuidePage.tsx",
     "isDynamicEntry": true,
@@ -24,7 +24,7 @@
     ]
   },
   "src/pages/CollisionDemoPage.tsx": {
-    "file": "assets/CollisionDemoPage-Ntxfgq_W.js",
+    "file": "assets/CollisionDemoPage-C199JmAw.js",
     "name": "CollisionDemoPage",
     "src": "src/pages/CollisionDemoPage.tsx",
     "isDynamicEntry": true,
@@ -33,7 +33,7 @@
     ]
   },
   "src/pages/ColorGuidePage.tsx": {
-    "file": "assets/ColorGuidePage-V29vqJc6.js",
+    "file": "assets/ColorGuidePage-lq-Vh5On.js",
     "name": "ColorGuidePage",
     "src": "src/pages/ColorGuidePage.tsx",
     "isDynamicEntry": true,
@@ -42,7 +42,7 @@
     ]
   },
   "src/pages/DevPage.tsx": {
-    "file": "assets/DevPage-CiN2qqwn.js",
+    "file": "assets/DevPage-T8YOMX6s.js",
     "name": "DevPage",
     "src": "src/pages/DevPage.tsx",
     "isDynamicEntry": true,
