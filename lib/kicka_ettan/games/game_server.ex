@@ -191,10 +191,10 @@ defmodule KickaEttan.Games.GameServer do
         Logger.info("Player voted for first player", player_id: player_id, vote_for: vote_for_id)
         
         # If dice were rolled, schedule a delayed phase transition check
-        # The dice animation delay is 15 seconds
+        # Short delay just to ensure frontend receives the dice data
         if new_state.phase_state && Map.get(new_state.phase_state, :dice_completed_at) do
-          Logger.info("Dice rolled, scheduling delayed phase transition check in 15 seconds")
-          Process.send_after(self(), :check_dice_animation_complete, 15_000)
+          Logger.info("Dice rolled, scheduling delayed phase transition check in 0.5 seconds")
+          Process.send_after(self(), :check_dice_animation_complete, 500)
         end
         
         broadcast_update(new_state)

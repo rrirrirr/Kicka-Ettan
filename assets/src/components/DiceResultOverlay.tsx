@@ -17,6 +17,8 @@ interface DiceResultOverlayProps {
 const DiceFace: React.FC<{ value: number; color: string; delay?: number }> = ({ value, color, delay = 0 }) => {
     const [showValue, setShowValue] = useState(false);
     const [rollingValue, setRollingValue] = useState(1);
+    // Store initial delay to prevent animation restart on prop changes
+    const initialDelay = React.useRef(delay);
 
     useEffect(() => {
         // Animate through random values
@@ -28,13 +30,13 @@ const DiceFace: React.FC<{ value: number; color: string; delay?: number }> = ({ 
         const timeout = setTimeout(() => {
             clearInterval(rollInterval);
             setShowValue(true);
-        }, 1000 + delay);
+        }, 1000 + initialDelay.current);
 
         return () => {
             clearInterval(rollInterval);
             clearTimeout(timeout);
         };
-    }, [delay, value]);
+    }, []); // Run only once on mount
 
     const displayValue = showValue ? value : rollingValue;
 
@@ -102,7 +104,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
 
     useEffect(() => {
         if (isVisible) {
-            // Show winner after dice animation completes
+            // Show winner after dice animation completes (about 1.2s per die + 0.5s buffer)
             const timeout = setTimeout(() => {
                 setShowWinner(true);
             }, 1800);

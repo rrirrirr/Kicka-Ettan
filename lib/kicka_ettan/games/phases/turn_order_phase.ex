@@ -10,9 +10,9 @@ defmodule KickaEttan.Games.Phases.TurnOrderPhase do
   @behaviour KickaEttan.Games.Phase
   require Logger
 
-  # Delay (in ms) before phase completes after dice roll - gives time for animation
-  # Need at least a few seconds for frontend to capture dice data before phase transition
-  @dice_animation_delay_ms 3_000
+  # Delay (in ms) before phase completes after dice roll - gives time for frontend to receive data
+  # Short delay just to ensure data is transmitted before phase changes
+  @dice_animation_delay_ms 500
 
   @derive Jason.Encoder
   defstruct [
