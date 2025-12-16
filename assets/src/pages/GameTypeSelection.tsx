@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Settings, Info, ArrowLeft, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import GameTitle from '../components/GameTitle';
@@ -11,10 +11,11 @@ import { GAME_TYPES, GameType, getDefaultGameType, getSelectableGameTypes, fetch
 import { saveGameToHistory } from '../lib/gameHistory';
 import { StoneIcon, BanIcon } from '../components/icons/Icons';
 import { Footer } from '../components/Footer';
+import { GameTypeCarousel } from '../components/GameTypeCarousel';
+
 
 const GameTypeSelection = () => {
     const navigate = useNavigate();
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Per-game-type settings storage
     const [allGameSettings, setAllGameSettings] = useState<Record<string, Record<string, number | boolean | string>>>(() => {
@@ -52,9 +53,7 @@ const GameTypeSelection = () => {
         '#FF8800', '#9900FF', '#FF00AA', '#1A1A1A'
     ];
 
-    // Scroll state for arrows
-    const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(false);
+
 
     useEffect(() => {
         localStorage.setItem('kicka_ettan_all_game_settings', JSON.stringify(allGameSettings));
@@ -79,40 +78,7 @@ const GameTypeSelection = () => {
         }));
     };
 
-    // Update scroll button visibility
-    const updateScrollButtons = () => {
-        const container = scrollContainerRef.current;
-        if (container) {
-            setCanScrollLeft(container.scrollLeft > 0);
-            setCanScrollRight(
-                container.scrollLeft < container.scrollWidth - container.clientWidth - 10
-            );
-        }
-    };
 
-    useEffect(() => {
-        const container = scrollContainerRef.current;
-        if (container) {
-            updateScrollButtons();
-            container.addEventListener('scroll', updateScrollButtons);
-            window.addEventListener('resize', updateScrollButtons);
-            return () => {
-                container.removeEventListener('scroll', updateScrollButtons);
-                window.removeEventListener('resize', updateScrollButtons);
-            };
-        }
-    }, []);
-
-    const scrollBy = (direction: 'left' | 'right') => {
-        const container = scrollContainerRef.current;
-        if (container) {
-            const scrollAmount = 340;
-            container.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
-            });
-        }
-    };
 
     const getGameSettings = (gameTypeId: string) => {
         return allGameSettings[gameTypeId] || getDefaultGameType().defaultSettings;
@@ -195,228 +161,21 @@ const GameTypeSelection = () => {
                         </div>
                     )}
 
-                    {/* Horizontal Game Type Cards */}
+                    {/* Game Type Carousel */}
                     <div className="relative z-10">
-                        {/* Scroll arrows */}
-                        {canScrollLeft && (
-                            <button
-                                onClick={() => scrollBy('left')}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-colors -ml-3"
-                            >
-                                <ChevronLeft size={24} className="text-gray-600" />
-                            </button>
-                        )}
-                        {canScrollRight && (
-                            <button
-                                onClick={() => scrollBy('right')}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-colors -mr-3"
-                            >
-                                <ChevronRight size={24} className="text-gray-600" />
-                            </button>
-                        )}
-
-                        <div
-                            ref={scrollContainerRef}
-                            className="flex gap-4 overflow-x-auto pb-2 px-1 scrollbar-hide"
-                            style={{ scrollSnapType: 'x mandatory' }}
-                        >
-                            {selectableGameTypes.map(gameType => {
-                                const isComingSoon = gameType.visibility === 'coming_soon';
-                                const gameSettings = getGameSettings(gameType.id);
-                                const colors = getTeamColors(gameType.id);
-
-                                return (
-                                    <div
-                                        key={gameType.id}
-                                        className={`flex-shrink-0 w-[320px] bg-gradient-to-br from-lavender-200 to-red-200 p-6 rounded-3xl border border-white/50 shadow-inner relative ${isComingSoon ? 'opacity-60' : ''
-                                            }`}
-                                        style={{ scrollSnapAlign: 'start' }}
-                                    >
-                                        {/* Top Right Controls - Like the original */}
-                                        {!isComingSoon && (
-                                            <div className="absolute top-4 right-4 flex gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => setShowSettingsForGameType(gameType)}
-                                                    className="bg-white/80 hover:bg-white !p-2 h-10 w-10 !rounded-xl flex items-center justify-center animate-glow border border-white/50 shadow-sm"
-                                                    title="Game Settings"
-                                                >
-                                                    <Settings size={18} className="text-gray-500" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => setShowInfoForGameType(gameType)}
-                                                    className="bg-white/80 hover:bg-white !p-2 h-10 w-10 !rounded-xl flex items-center justify-center animate-glow border border-white/50 shadow-sm"
-                                                    title="Game Info"
-                                                >
-                                                    <Info size={18} className="text-gray-500" />
-                                                </Button>
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-6 text-left mb-6">
-                                            {/* Game Type Title */}
-                                            <div className="pr-28">
-                                                <label className="block text-sm font-bold text-gray-500 mb-1 ml-1 lowercase tracking-tight">
-                                                    game type
-                                                </label>
-                                                <h2 className="text-2xl font-black text-gray-900 lowercase tracking-tighter leading-tight">
-                                                    {gameType.name}
-                                                </h2>
-                                                <p className="text-sm text-gray-600 mt-2">
-                                                    {gameType.shortDescription}
-                                                </p>
-                                                {isComingSoon && (
-                                                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium mt-2 inline-block">
-                                                        Coming Soon
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {!isComingSoon && (
-                                                <>
-                                                    {/* Important Settings - Like original */}
-                                                    {Object.entries(gameType.settingsSchema)
-                                                        .filter(([_, setting]) => setting.important)
-                                                        .map(([key, setting]) => (
-                                                            <div key={key}>
-                                                                <div className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight flex items-center gap-2">
-                                                                    {setting.label.toLowerCase()}
-                                                                    {key === 'ban_circle_radius' && (
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            shape="circle"
-                                                                            size="sm"
-                                                                            onClick={() => setShowBanSizeInfo(true)}
-                                                                            className="!w-5 !h-5 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
-                                                                            aria-label="Info about ban circle sizes"
-                                                                        >
-                                                                            <Info size={14} className="text-gray-700" />
-                                                                        </Button>
-                                                                    )}
-                                                                    {key === 'stones_per_team' && (
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            shape="circle"
-                                                                            size="sm"
-                                                                            onClick={() => setShowStonesInfo(true)}
-                                                                            className="!w-5 !h-5 !bg-white/90 hover:!bg-gray-100 backdrop-blur-md !shadow hover:!shadow-md flex-shrink-0 !p-0 !border-gray-200/50"
-                                                                            aria-label="Info about stones per team"
-                                                                        >
-                                                                            <Info size={14} className="text-gray-700" />
-                                                                        </Button>
-                                                                    )}
-                                                                </div>
-                                                                {setting.type === 'integer' && (
-                                                                    <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl shadow-md">
-                                                                        <input
-                                                                            type="range"
-                                                                            min={setting.min ?? 1}
-                                                                            max={setting.max || 10}
-                                                                            value={gameSettings[key] as number}
-                                                                            onChange={(e) => updateGameSetting(gameType.id, key, parseInt(e.target.value))}
-                                                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-icy-button-bg"
-                                                                        />
-                                                                        <div className="w-8 h-8 relative flex items-center justify-center overflow-hidden">
-                                                                            <AnimatePresence mode="popLayout" initial={false}>
-                                                                                <motion.span
-                                                                                    key={gameSettings[key] as number}
-                                                                                    initial={{ opacity: 0, scale: 0, y: 10 }}
-                                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                                    exit={{ opacity: 0, scale: 0.5, y: -10 }}
-                                                                                    transition={{
-                                                                                        type: "spring",
-                                                                                        stiffness: 500,
-                                                                                        damping: 15,
-                                                                                        mass: 0.5
-                                                                                    }}
-                                                                                    className="font-bold text-2xl text-icy-button-bg absolute inset-0 flex items-center justify-center"
-                                                                                >
-                                                                                    {setting.valueLabels && setting.valueLabels[gameSettings[key] as number]
-                                                                                        ? setting.valueLabels[gameSettings[key] as number]
-                                                                                        : gameSettings[key] as number}
-                                                                                </motion.span>
-                                                                            </AnimatePresence>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {setting.type === 'select' && setting.options && (
-                                                                    <div className="flex gap-2">
-                                                                        {setting.options.map((option) => {
-                                                                            const isActive = gameSettings[key] === option;
-                                                                            return (
-                                                                                <Button
-                                                                                    key={option}
-                                                                                    variant="outline"
-                                                                                    onClick={() => updateGameSetting(gameType.id, key, option)}
-                                                                                    className={`flex-1 h-12 ${isActive
-                                                                                        ? '!bg-active text-white hover:!bg-lavender-600 !border-active'
-                                                                                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
-                                                                                        } transition-colors`}
-                                                                                >
-                                                                                    {option}
-                                                                                </Button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-
-                                                    {/* Team Colors */}
-                                                    <div>
-                                                        <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 lowercase tracking-tight">
-                                                            team colors
-                                                        </label>
-                                                        <div className="flex gap-4">
-                                                            <Button
-                                                                variant="outline"
-                                                                onClick={() => setShowColorPicker({ gameTypeId: gameType.id, team: 'team1' })}
-                                                                className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
-                                                            >
-                                                                <div
-                                                                    className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
-                                                                    style={{ backgroundColor: colors.team1 }}
-                                                                >
-                                                                    <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
-                                                                </div>
-                                                                <span className="font-bold text-gray-700 lowercase text-base">team 1</span>
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                onClick={() => setShowColorPicker({ gameTypeId: gameType.id, team: 'team2' })}
-                                                                className="flex-1 bg-gray-50 hover:bg-gray-100 !p-4 h-auto !rounded-2xl flex items-center justify-center gap-3 animate-glow border-0"
-                                                            >
-                                                                <div
-                                                                    className="w-9 h-9 rounded-full shadow-sm border border-black/5 relative overflow-hidden"
-                                                                    style={{ backgroundColor: colors.team2 }}
-                                                                >
-                                                                    <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
-                                                                </div>
-                                                                <span className="font-bold text-gray-700 lowercase text-base">team 2</span>
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {!isComingSoon && (
-                                            <Button
-                                                onClick={() => createGame(gameType)}
-                                                isLoading={isLoading === gameType.id}
-                                                shape="pill"
-                                                size="xl"
-                                                className="w-full bg-icy-accent hover:bg-icy-accent-hover text-white shadow-none animate-glow relative z-10 text-lg py-4"
-                                            >
-                                                <Play size={20} fill="currentColor" />
-                                                create game
-                                            </Button>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        <GameTypeCarousel
+                            gameTypes={selectableGameTypes}
+                            onCreateGame={createGame}
+                            onOpenSettings={(gameType) => setShowSettingsForGameType(gameType)}
+                            onOpenInfo={(gameType) => setShowInfoForGameType(gameType)}
+                            isLoading={isLoading}
+                            getGameSettings={getGameSettings}
+                            getTeamColors={getTeamColors}
+                            onOpenColorPicker={(gameTypeId, team) => setShowColorPicker({ gameTypeId, team })}
+                            updateGameSetting={updateGameSetting}
+                            onOpenBanInfo={() => setShowBanSizeInfo(true)}
+                            onOpenStonesInfo={() => setShowStonesInfo(true)}
+                        />
                     </div>
 
                     {/* Back Button - At bottom of card */}
