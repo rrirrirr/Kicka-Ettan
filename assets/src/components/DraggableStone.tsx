@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
+import { motion, useMotionValue, useAnimation } from 'framer-motion';
 
 interface DraggableStoneProps {
     color: 'red' | 'yellow';
@@ -13,6 +13,8 @@ interface DraggableStoneProps {
     onClick?: (e: React.MouseEvent) => void;
     opacity?: number;
     interactive?: boolean;
+    // New: reset key - when this changes, position resets to origin
+    resetKey?: number;
 }
 
 const DraggableStone: React.FC<DraggableStoneProps> = ({
@@ -26,7 +28,8 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
     size = 40,
     onClick,
     opacity = 1,
-    interactive = true
+    interactive = true,
+    resetKey = 0
 }) => {
     const stoneColor = customColor || (color === 'red' ? '#ff0000' : '#ffdd00');
     // Calculate a darker shade for handle and inner border
@@ -40,6 +43,17 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
         return `#${darkerR.toString(16).padStart(2, '0')}${darkerG.toString(16).padStart(2, '0')}${darkerB.toString(16).padStart(2, '0')}`;
     };
     const darkerShade = getBorderColor(stoneColor);
+
+    // Motion values for controlled drag position
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    const controls = useAnimation();
+
+    // Reset position when resetKey changes
+    useEffect(() => {
+        x.set(0);
+        y.set(0);
+    }, [resetKey, x, y]);
 
     if (!interactive) {
         return (
@@ -81,11 +95,12 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
             drag
             dragMomentum={false}
             dragElastic={0}
+            animate={controls}
             whileDrag={{ scale: 1.1, zIndex: 100 }}
             onDragEnd={(_event, info) => {
-                const x = info.point.x;
-                const y = info.point.y;
-                onDragEnd(index, { x, y });
+                const dropX = info.point.x;
+                const dropY = info.point.y;
+                onDragEnd(index, { x: dropX, y: dropY });
             }}
             onDrag={(_event, info) => {
                 if (onDrag) {
@@ -95,6 +110,8 @@ const DraggableStone: React.FC<DraggableStoneProps> = ({
             onClick={onClick}
             className="animate-glow draggable-on-sheet"
             style={{
+                x,
+                y,
                 width: size,
                 height: size,
                 borderRadius: '50%',

@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
+import { motion, useMotionValue, useAnimation } from 'framer-motion';
 import { X } from 'lucide-react';
 
 interface DraggableBanProps {
@@ -11,6 +11,8 @@ interface DraggableBanProps {
     size?: number;
     opacity?: number;
     interactive?: boolean;
+    // New: reset key - when this changes, position resets to origin
+    resetKey?: number;
 }
 
 const DraggableBan: React.FC<DraggableBanProps> = ({
@@ -21,8 +23,20 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
     isPlaced = false,
     size = 44,
     opacity = 1,
-    interactive = true
+    interactive = true,
+    resetKey = 0
 }) => {
+    // Motion values for controlled drag position
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    const controls = useAnimation();
+
+    // Reset position when resetKey changes
+    useEffect(() => {
+        x.set(0);
+        y.set(0);
+    }, [resetKey, x, y]);
+
     if (!interactive) {
         return (
             <div
@@ -54,11 +68,12 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
             drag
             dragMomentum={false}
             dragElastic={0}
+            animate={controls}
             whileDrag={{ scale: 1.1, zIndex: 100 }}
             onDragEnd={(_event, info) => {
-                const x = info.point.x;
-                const y = info.point.y;
-                onDragEnd(index, { x, y });
+                const dropX = info.point.x;
+                const dropY = info.point.y;
+                onDragEnd(index, { x: dropX, y: dropY });
             }}
             onDrag={(_event, info) => {
                 if (onDrag) {
@@ -67,6 +82,8 @@ const DraggableBan: React.FC<DraggableBanProps> = ({
             }}
             className="draggable-ban-on-sheet"
             style={{
+                x,
+                y,
                 width: size,
                 height: size,
                 borderRadius: '50%',

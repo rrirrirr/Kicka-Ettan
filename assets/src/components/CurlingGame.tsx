@@ -6,6 +6,7 @@ import { Button } from "./ui/Button";
 import DraggableStone from "./DraggableStone";
 
 import UnifiedSelectionBar from "./UnifiedSelectionBar";
+import { isPointInSelectionBar } from "./SelectionBar";
 import FirstPlayerDecision from "./FirstPlayerDecision";
 import BanSelectionBar, { BanPosition } from "./BanSelectionBar";
 import { StoneMeasurements } from "./StoneMeasurements";
@@ -2679,6 +2680,35 @@ const CurlingGameContent = ({
                               dragState.isDragging ? dragState.stoneIndex : null
                             }
                             teamColors={gameState.team_colors}
+
+                            // External drag state: when a placed stone/ban is dragged from sheet toward bar
+                            externalDragState={(() => {
+                              // Check if dragging a placed stone from sheet
+                              if (dragState.isDragging && dragState.stoneIndex !== null) {
+                                const stone = myStones.find(s => s.index === dragState.stoneIndex);
+                                if (stone?.placed) {
+                                  return {
+                                    type: 'stone' as const,
+                                    index: dragState.stoneIndex,
+                                    x: dragState.x,
+                                    isOverBar: isPointInSelectionBar(dragState.x, dragState.y)
+                                  };
+                                }
+                              }
+                              // Check if dragging a placed ban from sheet
+                              if (banDragState.isDragging && banDragState.banIndex !== null) {
+                                const ban = myBans.find(b => b.index === banDragState.banIndex);
+                                if (ban?.placed) {
+                                  return {
+                                    type: 'ban' as const,
+                                    index: banDragState.banIndex,
+                                    x: banDragState.x,
+                                    isOverBar: isPointInSelectionBar(banDragState.x, banDragState.y)
+                                  };
+                                }
+                              }
+                              return null;
+                            })()}
                           />
                         )}
                       </div>
